@@ -27,6 +27,7 @@ export default function Lookup2Mode({
 }) {
     const subgroupedInputs = groupInputsBySubgroup(groupInputs, group)
     const selectedIndices = group.selectedIndices || {}
+    const prefillEnabled = config.prefillLookups !== false
 
     // Helper to get selected input for a subgroup (using index)
     const getSelectedForSubgroup = (subgroupId, inputs) => {
@@ -318,7 +319,7 @@ export default function Lookup2Mode({
                                     const selectedInput = getSelectedForSubgroup(sg.id, sg.inputs)
                                     if (!selectedInput) return null
                                     const rawValues = getLookup2ValuesArray(selectedInput, periods, group.frequency)
-                                    // Fill forward zeros
+                                    // Fill forward zeros (if enabled)
                                     const filledValues = []
                                     const isFilledFromPrev = []
                                     let lastNonZero = 0
@@ -327,9 +328,12 @@ export default function Lookup2Mode({
                                             filledValues.push(rawValues[i])
                                             isFilledFromPrev.push(false)
                                             lastNonZero = rawValues[i]
-                                        } else {
+                                        } else if (prefillEnabled) {
                                             filledValues.push(lastNonZero)
                                             isFilledFromPrev.push(lastNonZero !== 0)
+                                        } else {
+                                            filledValues.push(0)
+                                            isFilledFromPrev.push(false)
                                         }
                                     }
                                     const selectedTotal = filledValues.reduce((sum, v) => sum + (parseFloat(v) || 0), 0)
@@ -370,12 +374,15 @@ export default function Lookup2Mode({
                                             const selectedInput = getSelectedForSubgroup(sg.id, sg.inputs)
                                             if (!selectedInput) return sum
                                             const rawValues = getLookup2ValuesArray(selectedInput, periods, group.frequency)
-                                            // Fill forward for totals too
-                                            let lastNonZero = 0
-                                            for (let i = 0; i <= periodIdx; i++) {
-                                                if (rawValues[i] !== 0) lastNonZero = rawValues[i]
+                                            // Fill forward for totals too (if enabled)
+                                            if (prefillEnabled) {
+                                                let lastNonZero = 0
+                                                for (let i = 0; i <= periodIdx; i++) {
+                                                    if (rawValues[i] !== 0) lastNonZero = rawValues[i]
+                                                }
+                                                return sum + (rawValues[periodIdx] !== 0 ? rawValues[periodIdx] : lastNonZero)
                                             }
-                                            return sum + (rawValues[periodIdx] !== 0 ? rawValues[periodIdx] : lastNonZero)
+                                            return sum + (parseFloat(rawValues[periodIdx]) || 0)
                                         }, 0)
                                     })
                                     const groupGrandTotal = groupPeriodTotals.reduce((sum, v) => sum + v, 0)
@@ -416,7 +423,7 @@ export default function Lookup2Mode({
                                         )}
                                         {sg.inputs.map(input => {
                                             const rawValues = getLookup2ValuesArray(input, periods, group.frequency)
-                                            // Fill forward zeros
+                                            // Fill forward zeros (if enabled)
                                             const filledValues = []
                                             const isFilledFromPrev = []
                                             let lastNonZero = 0
@@ -425,9 +432,12 @@ export default function Lookup2Mode({
                                                     filledValues.push(rawValues[i])
                                                     isFilledFromPrev.push(false)
                                                     lastNonZero = rawValues[i]
-                                                } else {
+                                                } else if (prefillEnabled) {
                                                     filledValues.push(lastNonZero)
                                                     isFilledFromPrev.push(lastNonZero !== 0)
+                                                } else {
+                                                    filledValues.push(0)
+                                                    isFilledFromPrev.push(false)
                                                 }
                                             }
                                             const total = filledValues.reduce((sum, v) => sum + (parseFloat(v) || 0), 0)
