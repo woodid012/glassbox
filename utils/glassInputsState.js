@@ -24,7 +24,6 @@ export function getDefaultState() {
             fyStartMonth: 7 // Fiscal year start month (1-12), default July
         },
         viewMode: 'Y', // M, Q, Y, FY
-        activeTab: 'keyPeriods', // 'keyPeriods' | 'inputs' | 'arrayView'
         showConfig: true,
         showKeyPeriods: true,
         showInputs: true,

@@ -1,23 +1,25 @@
 'use client'
 
 import KeyPeriods from '@/components/inputs/KeyPeriods'
-import { calculateLinkedStartPeriod, calculateLinkedAllPeriods, hasCircularDependency } from '../../../../utils/dateCalculations'
+import { calculateLinkedStartPeriod, calculateLinkedAllPeriods, hasCircularDependency } from '../../../utils/dateCalculations'
+import { useDashboard } from '../context/DashboardContext'
 
-export default function KeyPeriodsTab({
-    viewMode,
-    config,
-    keyPeriods,
-    handlers,
-    setters
-}) {
+export default function KeyPeriodsPage() {
+    const {
+        viewMode,
+        appState,
+        setters,
+        handlers
+    } = useDashboard()
+
+    const { config, keyPeriods } = appState
+    const { setConfig } = setters
     const {
         addKeyPeriod,
         updateKeyPeriod,
         removeKeyPeriod,
         reorderKeyPeriods
     } = handlers
-
-    const { setConfig } = setters || {}
 
     const handleUpdateConfig = (updates) => {
         if (setConfig) {

@@ -325,7 +325,8 @@
       "value": 70,
       "values": {},
       "formulas": {},
-      "unit": "MW"
+      "unit": "MW",
+      "spreadMethod": "lookup"
     },
     {
       "id": 101,

@@ -1,13 +1,15 @@
 'use client'
 
 import { Plus, Trash2 } from 'lucide-react'
+import { useDashboard } from '../context/DashboardContext'
 
-export default function ModulesTab({
-    appState,
-    setters,
-    keyPeriods
-}) {
-    const { modules, moduleTemplates } = appState
+export default function ModulesPage() {
+    const {
+        appState,
+        setters
+    } = useDashboard()
+
+    const { modules, moduleTemplates, keyPeriods } = appState
     const { setAppState } = setters
 
     const addModuleFromTemplate = (template) => {

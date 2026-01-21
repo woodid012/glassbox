@@ -3,14 +3,16 @@
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import ExcelInputs from '@/components/inputs/ExcelInputs'
 import IndicesSection from '@/components/inputs/IndicesSection'
+import { useDashboard } from '../context/DashboardContext'
 
-export default function InputsTab({
-    appState,
-    setters,
-    derived,
-    handlers,
-    viewMode
-}) {
+export default function InputsPage() {
+    const {
+        viewMode,
+        appState,
+        setters,
+        handlers
+    } = useDashboard()
+
     const {
         config,
         showIndices,

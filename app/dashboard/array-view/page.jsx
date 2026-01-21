@@ -2,15 +2,18 @@
 
 import React from 'react'
 import { DisplayCell } from '@/components/inputs/Cells'
-import { getAggregatedValueForArray } from '../../../../utils/valueAggregation'
+import { getAggregatedValueForArray } from '../../../utils/valueAggregation'
+import { useDashboard } from '../context/DashboardContext'
 
-export default function ArrayViewTab({
-    appState,
-    setters,
-    derived,
-    uiState,
-    viewMode
-}) {
+export default function ArrayViewPage() {
+    const {
+        viewMode,
+        appState,
+        setters,
+        derived,
+        uiState
+    } = useDashboard()
+
     const {
         inputGlass,
         inputGlassGroups,

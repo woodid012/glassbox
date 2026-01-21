@@ -1,6 +1,6 @@
 'use client'
 
-export default function NotesTab() {
+export default function NotesPage() {
     return (
         <main className="flex-1 p-6 overflow-auto">
             <div className="max-w-4xl mx-auto">
