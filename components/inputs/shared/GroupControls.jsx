@@ -118,6 +118,17 @@ export default function GroupControls({
                         </select>
                     </>
                 )}
+                {group.entryMode === 'lookup2' && (
+                    <label className="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={group.showSelected !== false}
+                            onChange={(e) => onUpdateGroup(group.id, 'showSelected', e.target.checked)}
+                            className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        Selected
+                    </label>
+                )}
                 {group.entryMode === 'lookup' && (() => {
                     // Calculate these inside the conditional to ensure fresh values
                     const lookupExtendedPeriods = generateExtendedPeriods(config, group.frequency || 'M')
