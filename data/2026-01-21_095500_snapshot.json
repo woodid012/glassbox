@@ -208,7 +208,7 @@
   "inputGlassGroups": [
     {
       "id": 100,
-      "name": "Constants",
+      "name": "Technical",
       "periods": 396,
       "linkedKeyPeriodId": null,
       "frequency": "Y",
@@ -271,11 +271,11 @@
       "subgroups": [
         {
           "id": 1,
-          "name": "Arb ($/MW)"
+          "name": "FCAS ($/MW)"
         },
         {
           "id": 2,
-          "name": "FCAS ($/MW)"
+          "name": "Arbitrage ($/MW)"
         }
       ],
       "selectedIndices": {
@@ -691,6 +691,60 @@
       "timePeriod": "Y",
       "escalation": "CPI",
       "seriesStartDate": "2030-10"
+    },
+    {
+      "id": 24,
+      "groupId": 100,
+      "inputId": "fcas.fcas_applied_revenue",
+      "name": "FCAS Applied Revenue ($/MW)",
+      "mode": "values",
+      "values": {
+        "12": 45081.005714,
+        "13": 48903.291429,
+        "14": 48495.84,
+        "15": 50460.914286,
+        "16": 47257.737143,
+        "17": 47495.531429,
+        "18": 48105.771429,
+        "19": 48291.211429,
+        "20": 48501.417143,
+        "21": 46232.102857,
+        "22": 47320.891429,
+        "23": 46871.897143,
+        "24": 42526.205714,
+        "25": 42336.16,
+        "26": 41122.4,
+        "27": 29666.348571
+      },
+      "formulas": {},
+      "unit": "$/MW"
+    },
+    {
+      "id": 25,
+      "groupId": 100,
+      "inputId": "fcas.fcas_annual_revenue",
+      "name": "FCAS Annual Revenue ($M)",
+      "mode": "values",
+      "values": {
+        "12": 3.15567,
+        "13": 3.42323,
+        "14": 3.394709,
+        "15": 3.532264,
+        "16": 3.308042,
+        "17": 3.324687,
+        "18": 3.367404,
+        "19": 3.380385,
+        "20": 3.395099,
+        "21": 3.236247,
+        "22": 3.312462,
+        "23": 3.281033,
+        "24": 2.976834,
+        "25": 2.963531,
+        "26": 2.878568,
+        "27": 2.076644
+      },
+      "formulas": {},
+      "unit": "$ M"
     },
     {
       "id": 31,
@@ -3203,18 +3257,6 @@
       "value": 0,
       "valueFrequency": "Y",
       "spreadMethod": null
-    },
-    {
-      "id": 109,
-      "groupId": 100,
-      "subgroupId": null,
-      "name": "Tolling Cost ($/MW/hr)",
-      "entryMode": "values",
-      "values": {},
-      "formulas": {},
-      "value": 21,
-      "valueFrequency": "Y",
-      "spreadMethod": null
     }
   ],
   "collapsedInputType1Groups": [],
@@ -3373,34 +3415,22 @@
       "description": ""
     },
     {
+      "id": 3,
+      "name": "Total Revenue",
+      "formula": "L1.1 * C1.1 ",
+      "description": "Revenue group sum"
+    },
+    {
       "id": 1768996914295,
       "name": "Tolling Revenue",
-      "formula": "C1.6 * C1.1 * T.HiY / T.MiY / 10^6 * F6",
+      "formula": "21 * C1.1 * T.HiY / T.MiY / 10^6 * F6",
       "description": ""
     },
     {
       "id": 1768996913935,
-      "name": "FCAS Revenue",
-      "formula": "L1.2 * C1.1 / T.MiY / 10^6 * F7",
+      "name": "Market Revenue",
+      "formula": "",
       "description": ""
-    },
-    {
-      "id": 1769036835971,
-      "name": "Arb Revenue",
-      "formula": "L1.1 * C1.1 / T.MiY / 10^6 * F7",
-      "description": ""
-    },
-    {
-      "id": 1769037050155,
-      "name": "Merchant Revenue",
-      "formula": "R5+R6",
-      "description": ""
-    },
-    {
-      "id": 3,
-      "name": "Total Revenue",
-      "formula": "R4+R7",
-      "description": "Revenue group sum"
     },
     {
       "id": 4,
@@ -3411,7 +3441,7 @@
     {
       "id": 5,
       "name": "Gross Margin",
-      "formula": "R8 - R9",
+      "formula": "R4 - R7",
       "description": "Revenue minus OPEX"
     }
   ],
