@@ -147,6 +147,39 @@ export const MODULE_TEMPLATES = {
             { key: 'capex_cumulative', label: 'Cumulative Capex', type: 'stock' },
             { key: 'contingency_spend', label: 'Contingency Spend', type: 'flow' }
         ]
+    },
+
+    degradation_profile: {
+        type: 'degradation_profile',
+        name: 'Degradation Profile',
+        description: 'Cumulative degradation factor for assets with time-varying decay',
+        inputs: [
+            {
+                key: 'degradationRateRef',
+                label: 'Degradation Rate',
+                type: 'reference',
+                refType: 'any',
+                required: true
+            },
+            {
+                key: 'initialValue',
+                label: 'Initial Value',
+                type: 'number',
+                required: false,
+                default: 1
+            },
+            {
+                key: 'startPeriodIndex',
+                label: 'Start Period',
+                type: 'period',
+                required: true
+            }
+        ],
+        outputs: [
+            { key: 'degradation_factor', label: 'Cumulative Degradation Factor', type: 'stock' },
+            { key: 'period_degradation', label: 'Period Degradation Rate', type: 'flow' },
+            { key: 'degraded_value', label: 'Degraded Value', type: 'stock' }
+        ]
     }
 }
 
@@ -176,6 +209,8 @@ export function calculateModuleOutputs(moduleInstance, arrayLength, context) {
             return calculateTaxLossCarryforward(inputs, arrayLength, context)
         case 'capex_schedule':
             return calculateCapexSchedule(inputs, arrayLength)
+        case 'degradation_profile':
+            return calculateDegradationProfile(inputs, arrayLength, context)
         default:
             return outputs
     }
@@ -513,6 +548,44 @@ function calculateCapexSchedule(inputs, arrayLength) {
         outputs.capex_cumulative[i] = cumulative
     }
     
+    return outputs
+}
+
+function calculateDegradationProfile(inputs, arrayLength, context) {
+    const {
+        degradationRateRef = null,
+        initialValue = 1,
+        startPeriodIndex = 0
+    } = inputs
+
+    const outputs = {
+        degradation_factor: new Array(arrayLength).fill(0),
+        period_degradation: new Array(arrayLength).fill(0),
+        degraded_value: new Array(arrayLength).fill(0)
+    }
+
+    // Get degradation rate array from context
+    let degradationRates = context[degradationRateRef] || new Array(arrayLength).fill(0)
+
+    let cumulativeFactor = 1
+
+    for (let i = 0; i < arrayLength; i++) {
+        if (i < startPeriodIndex) {
+            outputs.degradation_factor[i] = 1
+            outputs.period_degradation[i] = 0
+            outputs.degraded_value[i] = initialValue
+        } else {
+            const periodRate = degradationRates[i] || 0
+            outputs.period_degradation[i] = periodRate
+
+            if (i > startPeriodIndex) {
+                cumulativeFactor *= (1 - periodRate)
+            }
+            outputs.degradation_factor[i] = Math.max(0, cumulativeFactor)
+            outputs.degraded_value[i] = initialValue * outputs.degradation_factor[i]
+        }
+    }
+
     return outputs
 }
 
