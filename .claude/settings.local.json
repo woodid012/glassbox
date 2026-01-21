@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(curl:*)",
+      "Bash(npx next build)",
+      "Bash(wc:*)",
+      "Bash(dir /b \"C:\\\\Projects\\\\glassbox\\\\app\")",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 20 npm run build:*)",
+      "Bash(tree:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(npm run build:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 22708 -Force\")",
+      "Bash(node -e:*)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)",
+      "Bash(npx next lint:*)",
+      "Bash(node --check:*)",
+      "Bash(xargs:*)",
+      "Bash(find:*)",
+      "Bash(ls -la \"C:\\\\Projects\\\\glassbox\\\\app\"\" | grep -v \"^. \")",
+      "Bash(ls -la \"C:\\\\Projects\\\\glassbox\\\\app\\\\glassinputs\"\" 2>/dev/null || echo \"glassinputs dir not found \")",
+      "Bash(npx next build --no-lint)",
+      "Bash(git checkout:*)",
+      "Bash(git stash show:*)",
+      "Bash(npx eslint:*)",
+      "Bash(powershell -Command \"\\(Get-Content ''C:\\\\Projects\\\\glassbox\\\\data\\\\glass-inputs-autosave.json'' -Raw\\).Length\")",
+      "Bash(powershell -Command:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
