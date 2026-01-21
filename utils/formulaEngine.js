@@ -397,7 +397,10 @@ export function evaluateFormula(formula, context, arrayLength) {
                 expr = expr.replace(regex, `__fn.${fn}(`)
             }
         })
-        
+
+        // Replace ^ with ** for exponentiation (JS uses ** not ^)
+        expr = expr.replace(/\^/g, '**')
+
         // Build evaluation function
         const evalFn = new Function('__ctx', '__fn', '__len', `return ${expr}`)
         const result = evalFn(context, FUNCTIONS, arrayLength)

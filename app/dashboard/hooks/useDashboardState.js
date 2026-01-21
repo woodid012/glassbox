@@ -18,7 +18,6 @@ export function useDashboardState(viewMode) {
     // Destructure state for easier access
     const {
         config,
-        activeTab,
         showConfig,
         showKeyPeriods,
         showInputs,
@@ -47,9 +46,6 @@ export function useDashboardState(viewMode) {
     // Helper setter functions - maintain same API as before
     const setConfig = useCallback((newConfig) => {
         setAppState(prev => ({ ...prev, config: typeof newConfig === 'function' ? newConfig(prev.config) : newConfig }))
-    }, [])
-    const setActiveTab = useCallback((tab) => {
-        setAppState(prev => ({ ...prev, activeTab: typeof tab === 'function' ? tab(prev.activeTab) : tab }))
     }, [])
     const setShowConfig = useCallback((show) => {
         setAppState(prev => ({ ...prev, showConfig: typeof show === 'function' ? show(prev.showConfig) : show }))
@@ -357,24 +353,28 @@ export function useDashboardState(viewMode) {
         const activeGroups = inputGlassGroups.filter(group =>
             inputGlass.some(input => input.groupId === group.id)
         )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0 }
+        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
 
         activeGroups.forEach(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
 
-            // Determine group mode/type - check groupType first, then fall back to input mode
+            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
             } else {
-                const groupMode = groupInputs[0]?.mode || 'values'
-                normalizedMode = groupMode === 'constants' ? 'constant' : groupMode
+                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
+                // Normalize mode names
+                if (groupMode === 'constants') normalizedMode = 'constant'
+                else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+                else normalizedMode = groupMode
             }
 
             modeIndices[normalizedMode]++
             const modePrefix = normalizedMode === 'timing' ? 'T' :
                               normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' : 'V'
+                              normalizedMode === 'constant' ? 'C' :
+                              normalizedMode === 'lookup' ? 'L' : 'V'
             const groupIndex = modeIndices[normalizedMode]
             const groupRef = `${modePrefix}${groupIndex}`
 
@@ -809,7 +809,9 @@ export function useDashboardState(viewMode) {
                     expr = expr.replace(regex, value.toString())
                 }
 
-                const safeExpr = expr.replace(/[^0-9+\-*/().e\s]/gi, '')
+                let safeExpr = expr.replace(/[^0-9+\-*/().e\s^]/gi, '')
+                // Replace ^ with ** for exponentiation (JS uses ** not ^)
+                safeExpr = safeExpr.replace(/\^/g, '**')
                 if (safeExpr.trim()) {
                     try {
                         const evalFn = new Function(`return (${safeExpr})`)
@@ -1066,7 +1068,6 @@ export function useDashboardState(viewMode) {
     // Collect all setters
     const setters = {
         setConfig,
-        setActiveTab,
         setShowConfig,
         setShowKeyPeriods,
         setShowInputs,
