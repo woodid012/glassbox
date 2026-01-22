@@ -6,8 +6,9 @@ import { getDefaultState } from '../../../utils/glassInputsState'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useInputManagement } from '@/hooks/useInputManagement'
 import { useInputArrays } from '@/hooks/useInputArrays'
-import { detectFlowOrStock } from '@/utils/valueProvider'
+import { detectFlowOrStock } from '@/components/inputs/utils/inputHelpers'
 import { calculateModuleOutputs, MODULE_TEMPLATES } from '@/utils/moduleTemplates'
+import { processArrayFunctions, evaluateSafeExpression } from '@/utils/formulaEvaluator'
 
 export function useDashboardState(viewMode) {
     // Single state object - all state in one place for easy save/load
@@ -38,6 +39,7 @@ export function useDashboardState(viewMode) {
         modules,
         moduleTemplates,
         calculations,
+        calculationsTabs,
         calculationsGroups,
         collapsedCalculationsGroups,
         groups,
@@ -135,6 +137,9 @@ export function useDashboardState(viewMode) {
     }, [])
     const setCalculationsGroups = useCallback((groups) => {
         setAppState(prev => ({ ...prev, calculationsGroups: typeof groups === 'function' ? groups(prev.calculationsGroups) : groups }))
+    }, [])
+    const setCalculationsTabs = useCallback((tabs) => {
+        setAppState(prev => ({ ...prev, calculationsTabs: typeof tabs === 'function' ? tabs(prev.calculationsTabs) : tabs }))
     }, [])
     const setCollapsedCalculationsGroups = useCallback((setOrArray) => {
         setAppState(prev => {
@@ -851,110 +856,9 @@ export function useDashboardState(viewMode) {
                 }
             }
 
-            // Pre-process array functions (CUMPROD, CUMPROD_Y, CUMSUM)
+            // Pre-process array functions (CUMPROD, CUMPROD_Y, CUMSUM, CUMSUM_Y)
             // These need to be evaluated across all periods first, then substituted
-            let processedFormula = formula
-            const arrayFnResults = {}
-            let arrayFnCounter = 0
-
-            // Helper to evaluate an expression for all periods and get an array
-            const evalExprForAllPeriods = (expr) => {
-                const arr = new Array(timeline.periods).fill(0)
-                const sortedRefs = Object.keys(allRefs).sort((a, b) => b.length - a.length)
-                for (let i = 0; i < timeline.periods; i++) {
-                    let periodExpr = expr
-                    for (const ref of sortedRefs) {
-                        const value = allRefs[ref]?.[i] ?? 0
-                        const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
-                        periodExpr = periodExpr.replace(regex, value.toString())
-                    }
-                    let safeExpr = periodExpr.replace(/[^0-9+\-*/().e\s^]/gi, '')
-                    safeExpr = safeExpr.replace(/\^/g, '**')
-                    if (safeExpr.trim()) {
-                        try {
-                            const evalFn = new Function(`return (${safeExpr})`)
-                            const result = evalFn()
-                            arr[i] = typeof result === 'number' && isFinite(result) ? result : 0
-                        } catch {
-                            arr[i] = 0
-                        }
-                    }
-                }
-                return arr
-            }
-
-            // CUMPROD_Y(expr) - Cumulative product at year boundaries only (for annual rates)
-            // When year changes, applies the PREVIOUS year's value (last value before transition)
-            const cumprodYRegex = /CUMPROD_Y\s*\(([^)]+)\)/gi
-            let match
-            while ((match = cumprodYRegex.exec(processedFormula)) !== null) {
-                const innerExpr = match[1]
-                const innerArray = evalExprForAllPeriods(innerExpr)
-
-                // Compute cumulative product only at year changes
-                const cumprodArray = new Array(timeline.periods).fill(0)
-                let product = 1
-                let lastYear = null
-                let lastYearValue = null
-                for (let i = 0; i < timeline.periods; i++) {
-                    const currentYear = timeline.year?.[i]
-                    // Apply factor only when year changes (not on first period)
-                    // Use the PREVIOUS year's value (stored in lastYearValue)
-                    if (lastYear !== null && currentYear !== lastYear && lastYearValue !== null) {
-                        product *= lastYearValue
-                    }
-                    cumprodArray[i] = product
-                    // Track last year's value (update at end of each period)
-                    if (currentYear !== lastYear) {
-                        lastYearValue = innerArray[i] // First value of new year becomes "last year's value" for next transition
-                    }
-                    lastYear = currentYear
-                }
-
-                const placeholder = `__ARRAYFN${arrayFnCounter++}__`
-                arrayFnResults[placeholder] = cumprodArray
-                processedFormula = processedFormula.replace(match[0], placeholder)
-                cumprodYRegex.lastIndex = 0 // Reset for next search
-            }
-
-            // CUMPROD(expr) - Standard cumulative product (every period)
-            const cumprodRegex = /CUMPROD\s*\(([^)]+)\)/gi
-            while ((match = cumprodRegex.exec(processedFormula)) !== null) {
-                const innerExpr = match[1]
-                const innerArray = evalExprForAllPeriods(innerExpr)
-
-                // Compute cumulative product
-                const cumprodArray = new Array(timeline.periods).fill(0)
-                let product = 1
-                for (let i = 0; i < timeline.periods; i++) {
-                    product *= innerArray[i]
-                    cumprodArray[i] = product
-                }
-
-                const placeholder = `__ARRAYFN${arrayFnCounter++}__`
-                arrayFnResults[placeholder] = cumprodArray
-                processedFormula = processedFormula.replace(match[0], placeholder)
-                cumprodRegex.lastIndex = 0
-            }
-
-            // CUMSUM(expr) - Cumulative sum
-            const cumsumRegex = /CUMSUM\s*\(([^)]+)\)/gi
-            while ((match = cumsumRegex.exec(processedFormula)) !== null) {
-                const innerExpr = match[1]
-                const innerArray = evalExprForAllPeriods(innerExpr)
-
-                const cumsumArray = new Array(timeline.periods).fill(0)
-                let sum = 0
-                for (let i = 0; i < timeline.periods; i++) {
-                    sum += innerArray[i]
-                    cumsumArray[i] = sum
-                }
-
-                const placeholder = `__ARRAYFN${arrayFnCounter++}__`
-                arrayFnResults[placeholder] = cumsumArray
-                processedFormula = processedFormula.replace(match[0], placeholder)
-                cumsumRegex.lastIndex = 0
-            }
+            const { processedFormula, arrayFnResults } = processArrayFunctions(formula, allRefs, timeline)
 
             for (let i = 0; i < timeline.periods; i++) {
                 let expr = processedFormula
@@ -971,18 +875,7 @@ export function useDashboardState(viewMode) {
                     expr = expr.replace(placeholder, arr[i].toString())
                 }
 
-                let safeExpr = expr.replace(/[^0-9+\-*/().e\s^]/gi, '')
-                // Replace ^ with ** for exponentiation (JS uses ** not ^)
-                safeExpr = safeExpr.replace(/\^/g, '**')
-                if (safeExpr.trim()) {
-                    try {
-                        const evalFn = new Function(`return (${safeExpr})`)
-                        const result = evalFn()
-                        resultArray[i] = typeof result === 'number' && isFinite(result) ? result : 0
-                    } catch {
-                        resultArray[i] = 0
-                    }
-                }
+                resultArray[i] = evaluateSafeExpression(expr)
             }
 
             return { values: resultArray, error: null }
@@ -1149,6 +1042,8 @@ export function useDashboardState(viewMode) {
         setIndices,
         calculations,
         setCalculations,
+        calculationsTabs,
+        setCalculationsTabs,
         calculationsGroups,
         setCalculationsGroups,
         groups,
@@ -1254,6 +1149,7 @@ export function useDashboardState(viewMode) {
         setCollapsedInputGlassGroups,
         setCollapsedKeyPeriodGroups,
         setCalculations,
+        setCalculationsTabs,
         setCalculationsGroups,
         setCollapsedCalculationsGroups,
         setGroups,

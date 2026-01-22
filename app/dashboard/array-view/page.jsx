@@ -20,6 +20,8 @@ export default function ArrayViewPage() {
         inputGlassGroups,
         modules,
         calculations,
+        calculationsTabs,
+        calculationsGroups,
         config,
         keyPeriods
     } = appState
@@ -38,6 +40,20 @@ export default function ArrayViewPage() {
     } = derived
 
     const { arrayViewSubTab } = uiState
+
+    // Build calcIndexMap for stable R references (same logic as calculations page)
+    const calcIndexMap = new Map()
+    let calcIndex = 1
+    ;(calculationsGroups || []).forEach(group => {
+        const groupCalcs = (calculations || []).filter(c => c.groupId === group.id)
+        groupCalcs.forEach(calc => {
+            calcIndexMap.set(calc.id, calcIndex++)
+        })
+    })
+    // Ungrouped calculations
+    ;(calculations || []).filter(c => !c.groupId || !(calculationsGroups || []).some(g => g.id === c.groupId)).forEach(calc => {
+        calcIndexMap.set(calc.id, calcIndex++)
+    })
 
     return (
         <main className="max-w-[1800px] mx-auto px-6 py-6">
@@ -127,10 +143,13 @@ export default function ArrayViewPage() {
                             {arrayViewSubTab === 'results' && (
                                 <ResultsSubTab
                                     calculations={calculations}
+                                    calculationsTabs={calculationsTabs}
+                                    calculationsGroups={calculationsGroups}
                                     calculationResults={calculationResults}
                                     calculationTypes={calculationTypes}
                                     viewHeaders={viewHeaders}
                                     viewMode={viewMode}
+                                    calcIndexMap={calcIndexMap}
                                 />
                             )}
                         </tbody>
@@ -497,7 +516,7 @@ function ModulesSubTab({ modules, viewHeaders, viewMode }) {
     )
 }
 
-function ResultsSubTab({ calculations, calculationResults, calculationTypes, viewHeaders, viewMode }) {
+function ResultsSubTab({ calculations, calculationsTabs, calculationsGroups, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap }) {
     if (!calculations || calculations.length === 0) {
         return (
             <tr>
@@ -508,43 +527,164 @@ function ResultsSubTab({ calculations, calculationResults, calculationTypes, vie
         )
     }
 
+    // Helper to render a single calculation row
+    const renderCalcRow = (calc, isIndented = false) => {
+        const calcRef = `R${calcIndexMap.get(calc.id)}`
+        const resultArray = calculationResults[calcRef] || []
+        const calcType = calculationTypes?.[calcRef] || 'flow'
+        return (
+            <tr key={calc.id} className="hover:bg-slate-50 transition-colors border-b border-slate-200">
+                <td className={`frozen-col w-[300px] min-w-[300px] border-r border-slate-200 py-2 ${isIndented ? 'px-8' : 'px-4'}`}>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded font-medium">{calcRef}</span>
+                        <span className="text-sm font-medium text-slate-900">{calc.name}</span>
+                        <span className={`text-[10px] px-1 py-0.5 rounded ${
+                            calcType === 'flow'
+                                ? 'text-emerald-600 bg-emerald-50'
+                                : 'text-slate-500 bg-slate-100'
+                        }`}>
+                            {calcType === 'flow' ? 'flow' : 'stock'}
+                        </span>
+                    </div>
+                </td>
+                {viewHeaders.map((header, colIndex) => {
+                    const isMonthlyView = viewMode === 'M'
+                    const cellValue = isMonthlyView
+                        ? (resultArray[header.index] ?? 0)
+                        : getAggregatedValueForArray(resultArray, header.indices, calcType)
+                    return (
+                        <td key={colIndex} className="spreadsheet-cell min-w-[90px] h-[36px] p-0">
+                            <DisplayCell value={cellValue} category="result" isTimeline={false} />
+                        </td>
+                    )
+                })}
+            </tr>
+        )
+    }
+
+    // Helper to render a group header row
+    const renderGroupHeader = (group, groupCalcs) => {
+        // Calculate group subtotal (sum of flows only)
+        const groupSubtotalByPeriod = viewHeaders.map((header) => {
+            return groupCalcs.reduce((sum, calc) => {
+                const calcRef = `R${calcIndexMap.get(calc.id)}`
+                const resultArray = calculationResults[calcRef] || []
+                const calcType = calculationTypes?.[calcRef] || 'flow'
+                if (calcType === 'stock') return sum
+                if (viewMode === 'M') {
+                    return sum + (resultArray[header.index] ?? 0)
+                } else {
+                    return sum + getAggregatedValueForArray(resultArray, header.indices || [header.index], calcType)
+                }
+            }, 0)
+        })
+
+        return (
+            <tr key={`group-${group.id}`} className="bg-rose-50 border-b border-rose-200">
+                <td className="frozen-col w-[300px] min-w-[300px] border-r border-rose-200 px-6 py-2 bg-rose-50">
+                    <span className="text-sm font-semibold text-rose-800">{group.name}</span>
+                </td>
+                {viewHeaders.map((header, colIndex) => (
+                    <td key={colIndex} className="spreadsheet-cell min-w-[90px] h-[36px] p-0 bg-rose-50">
+                        <DisplayCell value={groupSubtotalByPeriod[colIndex]} category="result" isTimeline={false} />
+                    </td>
+                ))}
+            </tr>
+        )
+    }
+
+    // Helper to render a tab header row
+    const renderTabHeader = (tab) => {
+        return (
+            <tr key={`tab-${tab.id}`} className="bg-indigo-100 border-b border-indigo-200">
+                <td className="frozen-col w-[300px] min-w-[300px] border-r border-indigo-200 px-4 py-2 bg-indigo-100">
+                    <span className="text-sm font-bold text-indigo-900">{tab.name}</span>
+                </td>
+                {viewHeaders.map((_, colIndex) => (
+                    <td key={colIndex} className="spreadsheet-cell min-w-[90px] h-[36px] p-0 bg-indigo-100" />
+                ))}
+            </tr>
+        )
+    }
+
+    // Get first tab id for backwards compatibility
+    const firstTabId = (calculationsTabs || [])[0]?.id
+
     return (
         <>
-            {calculations.map((calc, calcIndex) => {
-                const calcRef = `R${calcIndex + 1}`
-                const resultArray = calculationResults[calcRef] || []
-                // Get type from calculationTypes (defaults to 'flow' if not found)
-                const calcType = calculationTypes?.[calcRef] || 'flow'
+            {/* Calculations organized by tabs */}
+            {(calculationsTabs || []).map((tab) => {
+                const isFirstTab = tab.id === firstTabId
+                // Include calculations without tabId in first tab for backwards compatibility
+                const tabGroups = (calculationsGroups || []).filter(g =>
+                    g.tabId === tab.id || (isFirstTab && !g.tabId)
+                )
+                const tabCalcs = calculations.filter(c =>
+                    c.tabId === tab.id || (isFirstTab && !c.tabId)
+                )
+
+                // Skip tabs with no calculations
+                if (tabCalcs.length === 0) return null
+
                 return (
-                    <tr key={calc.id} className="hover:bg-slate-50 transition-colors border-b border-slate-200">
-                        <td className="frozen-col w-[300px] min-w-[300px] border-r border-slate-200 px-4 py-2">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded font-medium">{calcRef}</span>
-                                <span className="text-sm font-medium text-slate-900">{calc.name}</span>
-                                {/* Show type indicator */}
-                                <span className={`text-[10px] px-1 py-0.5 rounded ${
-                                    calcType === 'flow'
-                                        ? 'text-emerald-600 bg-emerald-50'
-                                        : 'text-slate-500 bg-slate-100'
-                                }`}>
-                                    {calcType === 'flow' ? 'flow' : 'stock'}
-                                </span>
-                            </div>
-                        </td>
-                        {viewHeaders.map((header, colIndex) => {
-                            const isMonthlyView = viewMode === 'M'
-                            const cellValue = isMonthlyView
-                                ? (resultArray[header.index] ?? 0)
-                                : getAggregatedValueForArray(resultArray, header.indices, calcType)
+                    <React.Fragment key={tab.id}>
+                        {/* Tab header */}
+                        {renderTabHeader(tab)}
+
+                        {/* Groups within this tab */}
+                        {tabGroups.map((group) => {
+                            const groupCalcs = tabCalcs.filter(c => c.groupId === group.id)
+                            if (groupCalcs.length === 0) return null
+
                             return (
-                                <td key={colIndex} className="spreadsheet-cell min-w-[90px] h-[36px] p-0">
-                                    <DisplayCell value={cellValue} category="result" isTimeline={false} />
-                                </td>
+                                <React.Fragment key={group.id}>
+                                    {renderGroupHeader(group, groupCalcs)}
+                                    {groupCalcs.map(calc => renderCalcRow(calc, true))}
+                                </React.Fragment>
                             )
                         })}
-                    </tr>
+
+                        {/* Ungrouped calculations in this tab */}
+                        {tabCalcs
+                            .filter(c => !c.groupId || !tabGroups.some(g => g.id === c.groupId))
+                            .map(calc => renderCalcRow(calc, false))
+                        }
+                    </React.Fragment>
                 )
             })}
+
+            {/* Calculations with invalid tabId (orphaned - tab was deleted) */}
+            {(() => {
+                // Only show calcs that have a tabId that doesn't exist (not just missing tabId)
+                const orphanedCalcs = calculations.filter(c =>
+                    c.tabId && !(calculationsTabs || []).some(t => t.id === c.tabId)
+                )
+                if (orphanedCalcs.length === 0) return null
+
+                const orphanedGroups = (calculationsGroups || []).filter(g =>
+                    g.tabId && !(calculationsTabs || []).some(t => t.id === g.tabId)
+                )
+
+                return (
+                    <>
+                        {orphanedGroups.map((group) => {
+                            const groupCalcs = orphanedCalcs.filter(c => c.groupId === group.id)
+                            if (groupCalcs.length === 0) return null
+
+                            return (
+                                <React.Fragment key={group.id}>
+                                    {renderGroupHeader(group, groupCalcs)}
+                                    {groupCalcs.map(calc => renderCalcRow(calc, true))}
+                                </React.Fragment>
+                            )
+                        })}
+                        {orphanedCalcs
+                            .filter(c => !c.groupId || !orphanedGroups.some(g => g.id === c.groupId))
+                            .map(calc => renderCalcRow(calc, false))
+                        }
+                    </>
+                )
+            })()}
         </>
     )
 }

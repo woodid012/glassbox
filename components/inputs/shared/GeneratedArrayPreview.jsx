@@ -4,7 +4,7 @@ import {
     getValuesArray,
     calculatePeriodTotals,
     groupInputsBySubgroup,
-    getMonthsPerPeriod
+    generatePeriods
 } from '../utils/inputHelpers'
 
 /**
@@ -18,78 +18,8 @@ export default function GeneratedArrayPreview({
     viewMode = 'M',
     keyPeriods = []
 }) {
-    // Generate preview periods based on viewMode (not group.frequency)
-    const monthsPerPeriod = getMonthsPerPeriod(viewMode)
-
-    // Resolve linked key period dates if applicable
-    let startYear, startMonth, totalMonths
-    if (keyPeriods && group.linkedKeyPeriodId) {
-        const linkedKeyPeriod = keyPeriods.find(kp =>
-            String(kp.id) === String(group.linkedKeyPeriodId)
-        )
-        if (linkedKeyPeriod) {
-            startYear = linkedKeyPeriod.startYear ?? config.startYear ?? 2024
-            startMonth = linkedKeyPeriod.startMonth ?? config.startMonth ?? 1
-            totalMonths = linkedKeyPeriod.periods || 12
-        } else {
-            startYear = group.startYear ?? config.startYear ?? 2024
-            startMonth = group.startMonth ?? config.startMonth ?? 1
-            totalMonths = group.periods || 12
-        }
-    } else {
-        startYear = group.startYear ?? config.startYear ?? 2024
-        startMonth = group.startMonth ?? config.startMonth ?? 1
-        if (group.startDate && !group.startYear) {
-            const [y, m] = group.startDate.split('-').map(Number)
-            startYear = y
-            startMonth = m
-        }
-        totalMonths = group.periods || 12
-    }
-
-    // For FY view, align periods to fiscal year boundaries
-    const previewPeriods = []
-    const fyStartMonth = config?.fyStartMonth || 7
-
-    if (viewMode === 'FY') {
-        // Find the fiscal year that contains the start date
-        // FY starts at fyStartMonth. If startMonth < fyStartMonth, we're in the FY ending this calendar year
-        // If startMonth >= fyStartMonth, we're in the FY ending next calendar year
-        let fyStartYear = startMonth < fyStartMonth ? startYear - 1 : startYear
-        let fyStart = fyStartMonth
-
-        // Calculate how many fiscal years we need
-        // End date is startYear + totalMonths
-        const endYear = startYear + Math.floor((startMonth - 1 + totalMonths) / 12)
-        const endMonth = ((startMonth - 1 + totalMonths) % 12) + 1
-        const fyEndYear = endMonth < fyStartMonth ? endYear - 1 : endYear
-
-        const numFYPeriods = fyEndYear - fyStartYear + 1
-
-        for (let i = 0; i < numFYPeriods; i++) {
-            // Each FY period starts at fyStartMonth of fyStartYear + i
-            previewPeriods.push({
-                year: fyStartYear + i,
-                month: fyStart,
-                index: i,
-                // Store FY info for label
-                fyEndYear: fyStartYear + i + 1
-            })
-        }
-    } else {
-        // Standard period generation for M, Q, Y
-        const numPreviewPeriods = Math.ceil(totalMonths / monthsPerPeriod)
-        let currentYear = startYear
-        let currentMonth = startMonth
-        for (let i = 0; i < numPreviewPeriods; i++) {
-            previewPeriods.push({ year: currentYear, month: currentMonth, index: i })
-            currentMonth += monthsPerPeriod
-            while (currentMonth > 12) {
-                currentMonth -= 12
-                currentYear += 1
-            }
-        }
-    }
+    // Generate preview periods at viewMode frequency using shared function
+    const previewPeriods = generatePeriods(group, config, keyPeriods, viewMode)
 
     const subgroupedInputs = groupInputsBySubgroup(groupInputs, group)
     const previewGroupTotals = calculatePeriodTotals(groupInputs, previewPeriods, viewMode, group, config)

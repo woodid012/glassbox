@@ -1,6 +1,43 @@
 // Month names for formatting
 export const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+/**
+ * Auto-detect whether an input should be treated as Flow or Stock based on its name
+ * Flow (spread/divide when spreading): revenues, costs, volumes - things that accumulate over time
+ * Stock (lookup/repeat when spreading): prices, rates, factors - point-in-time values
+ *
+ * @param {string} inputName - The name of the input
+ * @returns {'flow' | 'stock'} - The detected type
+ */
+export function detectFlowOrStock(inputName) {
+    if (!inputName) return 'flow' // default
+
+    const name = inputName.toLowerCase()
+
+    // Stock keywords - values that should be repeated (not divided)
+    const stockKeywords = [
+        'price', 'rate', 'factor', 'percent', 'ratio',
+        'count', 'capacity', 'balance', 'index',
+        'escalation', 'inflation', 'growth', 'yield', 'margin', 'fee'
+    ]
+
+    // Flow keywords - values that should be divided across periods
+    const flowKeywords = [
+        'revenue', 'cost', 'expense', 'capex', 'opex',
+        'volume', 'production', 'generation', 'payment',
+        'cash', 'income', 'profit', 'loss', 'spend', 'budget', 'amount', 'total'
+    ]
+
+    // Check stock keywords first (more specific)
+    if (stockKeywords.some(k => name.includes(k))) return 'stock'
+
+    // Then check flow keywords
+    if (flowKeywords.some(k => name.includes(k))) return 'flow'
+
+    // Default to flow (safer - dividing is usually what users expect for financial inputs)
+    return 'flow'
+}
+
 export function formatPeriodLabel(year, month, frequency = 'M', config = null) {
     if (frequency === 'Y') return String(year)
     if (frequency === 'FY') {
@@ -260,7 +297,8 @@ export function generateConstantValues(input, totalMonths, groupStartYear, group
 
 // Generate period columns for a group
 // If keyPeriods is provided and group has linkedKeyPeriodId, uses the key period's dates
-export function generatePeriods(group, config, keyPeriods = null) {
+// If viewMode is provided, generates periods at that frequency (overrides group.frequency)
+export function generatePeriods(group, config, keyPeriods = null, viewMode = null) {
     const periods = []
 
     // Resolve linked key period dates if applicable
@@ -295,7 +333,40 @@ export function generatePeriods(group, config, keyPeriods = null) {
         totalMonths = group.periods || 12 // periods is always stored as months
     }
 
-    const freq = group.frequency || 'M'
+    // Use viewMode if provided, otherwise fall back to group.frequency
+    const freq = viewMode || group.frequency || 'M'
+    const fyStartMonth = config?.fyStartMonth || 7
+
+    // For FY view, align periods to fiscal year boundaries
+    if (freq === 'FY') {
+        // Find the fiscal year that contains the start date
+        // FY starts at fyStartMonth. If startMonth < fyStartMonth, we're in the FY ending this calendar year
+        // If startMonth >= fyStartMonth, we're in the FY ending next calendar year
+        let fyStartYear = startMonth < fyStartMonth ? startYear - 1 : startYear
+        let fyStart = fyStartMonth
+
+        // Calculate how many fiscal years we need
+        // End date is startYear + totalMonths
+        const endYear = startYear + Math.floor((startMonth - 1 + totalMonths) / 12)
+        const endMonth = ((startMonth - 1 + totalMonths) % 12) + 1
+        const fyEndYear = endMonth < fyStartMonth ? endYear - 1 : endYear
+
+        const numFYPeriods = fyEndYear - fyStartYear + 1
+
+        for (let i = 0; i < numFYPeriods; i++) {
+            // Each FY period starts at fyStartMonth of fyStartYear + i
+            periods.push({
+                year: fyStartYear + i,
+                month: fyStart,
+                index: i,
+                // Store FY info for label
+                fyEndYear: fyStartYear + i + 1
+            })
+        }
+        return periods
+    }
+
+    // Standard period generation for M, Q, Y
     const monthsPerPeriod = getMonthsPerPeriod(freq)
     const numDisplayPeriods = Math.ceil(totalMonths / monthsPerPeriod)
 

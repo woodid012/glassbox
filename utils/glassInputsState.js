@@ -190,36 +190,44 @@ export function getDefaultState() {
         calculations: [
             {
                 id: 1,
+                tabId: 1,
+                groupId: 1,
                 name: 'Total Capex',
                 formula: 'V1.1 + V1.2',
                 description: 'Example: Sum of sub-items'
             },
             {
                 id: 2,
+                tabId: 1,
+                groupId: 1,
                 name: 'Indexed Revenue',
                 formula: 'S1 * I1',
                 description: 'Example: Series multiplied by indexation'
             },
             {
                 id: 3,
+                tabId: 1,
+                groupId: 1,
                 name: 'Flagged Opex',
                 formula: 'S1.1 * F1',
                 description: 'Example: Sub-item active only when flag is 1'
             },
             {
                 id: 4,
+                tabId: 1,
+                groupId: 1,
                 name: 'Net Cashflow',
                 formula: 'R2 - R1',
                 description: 'Example: Chain calculations together'
             }
         ],
+        calculationsTabs: [
+            { id: 1, name: 'Sheet 1' }
+        ],
         calculationsGroups: [{
             id: 1,
-            name: 'Group 1',
-            startYear: defaultStartYear,
-            startMonth: defaultStartMonth,
-            endYear: defaultEndYear,
-            endMonth: defaultEndMonth
+            tabId: 1,
+            name: 'Calculations'
         }],
         collapsedCalculationsGroups: new Set(),
         groups: [

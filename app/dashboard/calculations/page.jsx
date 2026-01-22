@@ -1,6 +1,7 @@
 'use client'
 
-import { Plus, Trash2, GripVertical } from 'lucide-react'
+import React from 'react'
+import { Plus, Trash2, GripVertical, ChevronDown, ChevronRight, FolderPlus } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 import { getAggregatedValueForArray } from '@/utils/valueAggregation'
 import { groupInputsBySubgroup } from '@/components/inputs/utils/inputHelpers'
@@ -17,12 +18,21 @@ export default function CalculationsPage() {
 
     const {
         calculations,
+        calculationsTabs,
+        calculationsGroups,
+        collapsedCalculationsGroups,
         modules,
         inputGlass,
         inputGlassGroups
     } = appState
 
-    const { setAppState, setSelectedCalculationId } = setters
+    const { setAppState, setSelectedCalculationId, setCollapsedCalculationsGroups, setCalculationsTabs } = setters
+
+    // Tab state - active tab
+    const [activeTabId, setActiveTabId] = React.useState(() => {
+        const tabs = calculationsTabs || []
+        return tabs.length > 0 ? tabs[0].id : null
+    })
 
     const {
         timeline,
@@ -49,9 +59,133 @@ export default function CalculationsPage() {
         handleCalcDragEnd
     } = handlers
 
-    const addCalculation = () => {
+    // Tab management functions
+    const addTab = () => {
+        const tabs = calculationsTabs || []
+        const newId = tabs.length > 0 ? Math.max(...tabs.map(t => t.id)) + 1 : 1
+        setAppState(prev => ({
+            ...prev,
+            calculationsTabs: [...(prev.calculationsTabs || []), {
+                id: newId,
+                name: `Sheet ${newId}`
+            }]
+        }))
+        setActiveTabId(newId)
+    }
+
+    const updateTab = (tabId, name) => {
+        setAppState(prev => ({
+            ...prev,
+            calculationsTabs: (prev.calculationsTabs || []).map(t =>
+                t.id === tabId ? { ...t, name } : t
+            )
+        }))
+    }
+
+    const removeTab = (tabId) => {
+        const tabs = calculationsTabs || []
+        if (tabs.length <= 1) return // Don't allow removing the last tab
+
+        const remainingTabs = tabs.filter(t => t.id !== tabId)
+        const firstTabId = remainingTabs[0]?.id
+
+        // Move calculations and groups from deleted tab to first remaining tab
+        setAppState(prev => ({
+            ...prev,
+            calculationsTabs: remainingTabs,
+            calculationsGroups: (prev.calculationsGroups || []).map(g =>
+                g.tabId === tabId ? { ...g, tabId: firstTabId } : g
+            ),
+            calculations: (prev.calculations || []).map(c =>
+                c.tabId === tabId ? { ...c, tabId: firstTabId } : c
+            )
+        }))
+
+        if (activeTabId === tabId) {
+            setActiveTabId(firstTabId)
+        }
+    }
+
+    // Group management functions
+    const addCalculationsGroup = () => {
+        const groups = calculationsGroups || []
+        const newId = groups.length > 0 ? Math.max(...groups.map(g => g.id)) + 1 : 1
+        setAppState(prev => ({
+            ...prev,
+            calculationsGroups: [...(prev.calculationsGroups || []), {
+                id: newId,
+                tabId: activeTabId,
+                name: `Group ${newId}`
+            }]
+        }))
+    }
+
+    const updateCalculationsGroup = (groupId, field, value) => {
+        setAppState(prev => ({
+            ...prev,
+            calculationsGroups: (prev.calculationsGroups || []).map(g =>
+                g.id === groupId ? { ...g, [field]: value } : g
+            )
+        }))
+    }
+
+    const removeCalculationsGroup = (groupId) => {
+        // Move calculations to first remaining group or delete them
+        const groups = calculationsGroups || []
+        const remainingGroups = groups.filter(g => g.id !== groupId)
+        const firstGroupId = remainingGroups.length > 0 ? remainingGroups[0].id : null
+
+        setAppState(prev => ({
+            ...prev,
+            calculationsGroups: remainingGroups,
+            calculations: firstGroupId
+                ? (prev.calculations || []).map(c =>
+                    c.groupId === groupId ? { ...c, groupId: firstGroupId } : c
+                )
+                : (prev.calculations || []).filter(c => c.groupId !== groupId)
+        }))
+    }
+
+    const toggleGroupCollapse = (groupId) => {
+        setCollapsedCalculationsGroups(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(groupId)) {
+                newSet.delete(groupId)
+            } else {
+                newSet.add(groupId)
+            }
+            return newSet
+        })
+    }
+
+    const addCalculation = (groupId = null) => {
+        const tabGroups = (calculationsGroups || []).filter(g => g.tabId === activeTabId)
+        const targetGroupId = groupId || (tabGroups.length > 0 ? tabGroups[0].id : null)
+
+        // If no groups exist for this tab, create one first
+        if (!targetGroupId) {
+            const newGroupId = (calculationsGroups || []).length > 0
+                ? Math.max(...(calculationsGroups || []).map(g => g.id)) + 1
+                : 1
+            setAppState(prev => ({
+                ...prev,
+                calculationsGroups: [...(prev.calculationsGroups || []), { id: newGroupId, tabId: activeTabId, name: 'Calculations' }],
+                calculations: [...(prev.calculations || []), {
+                    id: Date.now(),
+                    tabId: activeTabId,
+                    groupId: newGroupId,
+                    name: 'New Calculation',
+                    formula: '',
+                    description: ''
+                }]
+            }))
+            return
+        }
+
         const newCalc = {
             id: Date.now(),
+            tabId: activeTabId,
+            groupId: targetGroupId,
             name: 'New Calculation',
             formula: '',
             description: ''
@@ -118,6 +252,22 @@ export default function CalculationsPage() {
 
     const referenceList = buildReferenceList()
 
+    // Build calculation index map for R references
+    const calcIndexMap = new Map()
+    let globalCalcIndex = 0
+    ;(calculationsGroups || []).forEach(group => {
+        const groupCalcs = (calculations || []).filter(c => c.groupId === group.id)
+        groupCalcs.forEach(calc => {
+            globalCalcIndex++
+            calcIndexMap.set(calc.id, globalCalcIndex)
+        })
+    })
+    // Also include ungrouped calculations
+    ;(calculations || []).filter(c => !c.groupId || !(calculationsGroups || []).some(g => g.id === c.groupId)).forEach(calc => {
+        globalCalcIndex++
+        calcIndexMap.set(calc.id, globalCalcIndex)
+    })
+
     return (
         <main className="max-w-[1800px] mx-auto px-6 py-6">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -135,13 +285,22 @@ export default function CalculationsPage() {
                                 <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">R1 + R2</code> Chain calculations</span>
                             </div>
                         </div>
-                        <button
-                            onClick={addCalculation}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Calculation
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={addCalculationsGroup}
+                                className="flex items-center gap-2 px-3 py-2 text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors"
+                            >
+                                <FolderPlus className="w-4 h-4" />
+                                Add Group
+                            </button>
+                            <button
+                                onClick={() => addCalculation()}
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add Calculation
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -398,100 +557,316 @@ export default function CalculationsPage() {
                         )}
                     </div>
 
-                    {/* Calculations List */}
-                    <div className="flex-1 p-6">
-                        {(!calculations || calculations.length === 0) ? (
-                            <div className="text-center py-12 text-slate-500">
-                                <div className="text-4xl mb-3">∑</div>
-                                <p className="text-sm">No calculations yet</p>
-                                <p className="text-xs mt-1">Click "Add Calculation" to create your first formula</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {calculations.map((calc, calcIndex) => {
-                                    const isSelected = selectedCalculationId === calc.id
-                                    const isDragging = calcDraggedIndex === calcIndex
-                                    const isDragOver = calcDragOverIndex === calcIndex
-                                    return (
-                                        <div
-                                            key={calc.id}
-                                            draggable
-                                            onDragStart={(e) => handleCalcDragStart(e, calcIndex)}
-                                            onDragOver={(e) => handleCalcDragOver(e, calcIndex)}
-                                            onDrop={(e) => handleCalcDrop(e, calcIndex)}
-                                            onDragEnd={handleCalcDragEnd}
-                                            onClick={() => setSelectedCalculationId(isSelected ? null : calc.id)}
-                                            className={`border rounded-lg p-4 bg-white transition-colors cursor-pointer ${
-                                                isSelected
-                                                    ? 'border-indigo-500 ring-2 ring-indigo-200'
-                                                    : 'border-slate-200 hover:border-indigo-300'
-                                            } ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-t-4 border-t-indigo-500' : ''}`}
+                    {/* Calculations List - Grouped */}
+                    <div className="flex-1 flex flex-col">
+                        {/* Tab Bar */}
+                        <div className="px-4 py-2 border-b border-slate-200 bg-white flex items-center gap-1 overflow-x-auto">
+                            {(calculationsTabs || []).map((tab) => (
+                                <div
+                                    key={tab.id}
+                                    className={`group flex items-center gap-1 px-3 py-1.5 rounded-t-lg border-b-2 transition-colors ${
+                                        activeTabId === tab.id
+                                            ? 'bg-slate-100 border-indigo-500 text-slate-900'
+                                            : 'bg-slate-50 border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <input
+                                        type="text"
+                                        value={tab.name}
+                                        onChange={(e) => updateTab(tab.id, e.target.value)}
+                                        onClick={() => setActiveTabId(tab.id)}
+                                        className="bg-transparent border-none outline-none text-sm font-medium w-20 min-w-[60px] max-w-[120px]"
+                                        style={{ width: `${Math.max(60, tab.name.length * 8)}px` }}
+                                    />
+                                    {(calculationsTabs || []).length > 1 && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                removeTab(tab.id)
+                                            }}
+                                            className="p-0.5 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex-1">
-                                                    {/* Label row: Drag Handle | R1 | Name = Expanded Formula */}
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <div
-                                                            className="p-1 rounded hover:bg-slate-200 cursor-grab active:cursor-grabbing transition-colors"
-                                                            onMouseDown={(e) => e.stopPropagation()}
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            <button
+                                onClick={addTab}
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded transition-colors"
+                                title="Add new tab"
+                            >
+                                <Plus className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 p-6 overflow-y-auto">
+                        {(() => {
+                            // Get first tab id for backwards compatibility (calcs without tabId go to first tab)
+                            const firstTabId = (calculationsTabs || [])[0]?.id
+                            const isFirstTab = activeTabId === firstTabId
+
+                            // Filter calculations - include those without tabId if we're on the first tab
+                            const tabCalcs = (calculations || []).filter(c =>
+                                c.tabId === activeTabId || (isFirstTab && !c.tabId)
+                            )
+                            const tabGroups = (calculationsGroups || []).filter(g =>
+                                g.tabId === activeTabId || (isFirstTab && !g.tabId)
+                            )
+
+                            if (tabCalcs.length === 0 && tabGroups.length === 0) {
+                                return (
+                                    <div className="text-center py-12 text-slate-500">
+                                        <div className="text-4xl mb-3">∑</div>
+                                        <p className="text-sm">No calculations in this tab yet</p>
+                                        <p className="text-xs mt-1">Click "Add Calculation" to create your first formula</p>
+                                    </div>
+                                )
+                            }
+                            return (
+                            <div className="space-y-6">
+                                {tabGroups.map((group) => {
+                                    const groupCalcs = tabCalcs.filter(c => c.groupId === group.id)
+                                    const isCollapsed = collapsedCalculationsGroups?.has(group.id)
+
+                                    return (
+                                        <div key={group.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                                            {/* Group Header */}
+                                            <div
+                                                className="flex items-center justify-between px-4 py-3 bg-slate-100 border-b border-slate-200 cursor-pointer hover:bg-slate-150"
+                                                onClick={() => toggleGroupCollapse(group.id)}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {isCollapsed ? (
+                                                        <ChevronRight className="w-4 h-4 text-slate-500" />
+                                                    ) : (
+                                                        <ChevronDown className="w-4 h-4 text-slate-500" />
+                                                    )}
+                                                    <input
+                                                        type="text"
+                                                        value={group.name}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        onChange={(e) => updateCalculationsGroup(group.id, 'name', e.target.value)}
+                                                        className="text-sm font-semibold text-slate-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white rounded px-1"
+                                                    />
+                                                    <span className="text-xs text-slate-500">({groupCalcs.length} calculations)</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            addCalculation(group.id)
+                                                        }}
+                                                        className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                                        title="Add calculation to this group"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
+                                                    </button>
+                                                    {(calculationsGroups || []).length > 1 && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                removeCalculationsGroup(group.id)
+                                                            }}
+                                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                            title="Delete group"
                                                         >
-                                                            <GripVertical className="w-5 h-5 text-slate-400 hover:text-slate-600" />
-                                                        </div>
-                                                        <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100">
-                                                            R{calcIndex + 1}
-                                                        </span>
-                                                        <input
-                                                            type="text"
-                                                            value={calc.name}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            onChange={(e) => updateCalculation(calc.id, 'name', e.target.value)}
-                                                            className="text-sm font-semibold text-slate-900 bg-slate-100 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                                            placeholder="Calculation name"
-                                                        />
-                                                        <span className="text-sm text-slate-500">=</span>
-                                                        <span className="text-sm text-slate-600 italic">
-                                                            {expandFormulaToNames(calc.formula) || 'Enter formula below...'}
-                                                        </span>
-                                                    </div>
-                                                    {/* Formula input row */}
-                                                    <div className="flex items-center gap-2 pl-8">
-                                                        <span className="text-xs text-slate-400 w-14">Formula:</span>
-                                                        <input
-                                                            type="text"
-                                                            value={calc.formula}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            onChange={(e) => updateCalculation(calc.id, 'formula', e.target.value)}
-                                                            className="flex-1 text-sm font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                                            placeholder="e.g., V1 * F1 + S1.1"
-                                                        />
-                                                    </div>
-                                                    {/* Preview and Sample Calculation */}
-                                                    {isSelected && calc.formula && (
-                                                        <CalculationPreview
-                                                            calc={calc}
-                                                            calcIndex={calcIndex}
-                                                            timeline={timeline}
-                                                            referenceMap={referenceMap}
-                                                            calculationResults={calculationResults}
-                                                            error={calculationErrors?.[`R${calcIndex + 1}`]}
-                                                        />
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
                                                     )}
                                                 </div>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        removeCalculation(calc.id)
-                                                    }}
-                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
                                             </div>
+
+                                            {/* Group Content */}
+                                            {!isCollapsed && (
+                                                <div className="p-4 space-y-3">
+                                                    {groupCalcs.length === 0 ? (
+                                                        <div className="text-center py-6 text-slate-400 text-sm">
+                                                            No calculations in this group
+                                                        </div>
+                                                    ) : (
+                                                        groupCalcs.map((calc) => {
+                                                            const calcIndex = calcIndexMap.get(calc.id) - 1
+                                                            const isSelected = selectedCalculationId === calc.id
+                                                            const isDragging = calcDraggedIndex === calcIndex
+                                                            const isDragOver = calcDragOverIndex === calcIndex
+
+                                                            return (
+                                                                <div
+                                                                    key={calc.id}
+                                                                    draggable
+                                                                    onDragStart={(e) => handleCalcDragStart(e, calcIndex)}
+                                                                    onDragOver={(e) => handleCalcDragOver(e, calcIndex)}
+                                                                    onDrop={(e) => handleCalcDrop(e, calcIndex)}
+                                                                    onDragEnd={handleCalcDragEnd}
+                                                                    onClick={() => setSelectedCalculationId(isSelected ? null : calc.id)}
+                                                                    className={`border rounded-lg p-4 bg-white transition-colors cursor-pointer ${
+                                                                        isSelected
+                                                                            ? 'border-indigo-500 ring-2 ring-indigo-200'
+                                                                            : 'border-slate-200 hover:border-indigo-300'
+                                                                    } ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-t-4 border-t-indigo-500' : ''}`}
+                                                                >
+                                                                    <div className="flex items-start justify-between gap-4">
+                                                                        <div className="flex-1">
+                                                                            {/* Label row: Drag Handle | R1 | Name = Expanded Formula */}
+                                                                            <div className="flex items-center gap-2 mb-2">
+                                                                                <div
+                                                                                    className="p-1 rounded hover:bg-slate-200 cursor-grab active:cursor-grabbing transition-colors"
+                                                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                                                >
+                                                                                    <GripVertical className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                                                                                </div>
+                                                                                <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100">
+                                                                                    R{calcIndexMap.get(calc.id)}
+                                                                                </span>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={calc.name}
+                                                                                    onClick={(e) => e.stopPropagation()}
+                                                                                    onChange={(e) => updateCalculation(calc.id, 'name', e.target.value)}
+                                                                                    className="text-sm font-semibold text-slate-900 bg-slate-100 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                                                    placeholder="Calculation name"
+                                                                                />
+                                                                                <span className="text-sm text-slate-500">=</span>
+                                                                                <span className="text-sm text-slate-600 italic">
+                                                                                    {expandFormulaToNames(calc.formula) || 'Enter formula below...'}
+                                                                                </span>
+                                                                            </div>
+                                                                            {/* Formula input row */}
+                                                                            <div className="flex items-center gap-2 pl-8">
+                                                                                <span className="text-xs text-slate-400 w-14">Formula:</span>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={calc.formula}
+                                                                                    onClick={(e) => e.stopPropagation()}
+                                                                                    onChange={(e) => updateCalculation(calc.id, 'formula', e.target.value)}
+                                                                                    className="flex-1 text-sm font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                                                    placeholder="e.g., V1 * F1 + S1.1"
+                                                                                />
+                                                                            </div>
+                                                                            {/* Preview and Sample Calculation */}
+                                                                            {isSelected && calc.formula && (
+                                                                                <CalculationPreview
+                                                                                    calc={calc}
+                                                                                    calcIndex={calcIndexMap.get(calc.id) - 1}
+                                                                                    timeline={timeline}
+                                                                                    referenceMap={referenceMap}
+                                                                                    calculationResults={calculationResults}
+                                                                                    error={calculationErrors?.[`R${calcIndexMap.get(calc.id)}`]}
+                                                                                />
+                                                                            )}
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                removeCalculation(calc.id)
+                                                                            }}
+                                                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )
                                 })}
+
+                                {/* Ungrouped calculations (for backwards compatibility) */}
+                                {(() => {
+                                    const ungroupedCalcs = tabCalcs.filter(c =>
+                                        !c.groupId || !tabGroups.some(g => g.id === c.groupId)
+                                    )
+                                    if (ungroupedCalcs.length === 0) return null
+
+                                    return (
+                                        <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                            <div className="px-4 py-3 bg-slate-100 border-b border-slate-200">
+                                                <span className="text-sm font-semibold text-slate-700">Ungrouped</span>
+                                                <span className="text-xs text-slate-500 ml-2">({ungroupedCalcs.length})</span>
+                                            </div>
+                                            <div className="p-4 space-y-3">
+                                                {ungroupedCalcs.map((calc) => {
+                                                    const calcIndex = calcIndexMap.get(calc.id) - 1
+                                                    const isSelected = selectedCalculationId === calc.id
+
+                                                    return (
+                                                        <div
+                                                            key={calc.id}
+                                                            onClick={() => setSelectedCalculationId(isSelected ? null : calc.id)}
+                                                            className={`border rounded-lg p-4 bg-white transition-colors cursor-pointer ${
+                                                                isSelected
+                                                                    ? 'border-indigo-500 ring-2 ring-indigo-200'
+                                                                    : 'border-slate-200 hover:border-indigo-300'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100">
+                                                                            R{calcIndexMap.get(calc.id)}
+                                                                        </span>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={calc.name}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            onChange={(e) => updateCalculation(calc.id, 'name', e.target.value)}
+                                                                            className="text-sm font-semibold text-slate-900 bg-slate-100 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                            placeholder="Calculation name"
+                                                                        />
+                                                                        <span className="text-sm text-slate-500">=</span>
+                                                                        <span className="text-sm text-slate-600 italic">
+                                                                            {expandFormulaToNames(calc.formula) || 'Enter formula below...'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 pl-8">
+                                                                        <span className="text-xs text-slate-400 w-14">Formula:</span>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={calc.formula}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            onChange={(e) => updateCalculation(calc.id, 'formula', e.target.value)}
+                                                                            className="flex-1 text-sm font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                            placeholder="e.g., V1 * F1 + S1.1"
+                                                                        />
+                                                                    </div>
+                                                                    {/* Preview and Sample Calculation */}
+                                                                    {isSelected && calc.formula && (
+                                                                        <CalculationPreview
+                                                                            calc={calc}
+                                                                            calcIndex={calcIndexMap.get(calc.id) - 1}
+                                                                            timeline={timeline}
+                                                                            referenceMap={referenceMap}
+                                                                            calculationResults={calculationResults}
+                                                                            error={calculationErrors?.[`R${calcIndexMap.get(calc.id)}`]}
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        removeCalculation(calc.id)
+                                                                    }}
+                                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
                             </div>
-                        )}
+                            )
+                        })()}
+                        </div>
                     </div>
                 </div>
 
@@ -510,10 +885,12 @@ export default function CalculationsPage() {
                 {calculations && calculations.length > 0 && (
                     <CalculationsTimeSeriesPreview
                         calculations={calculations}
+                        calculationsGroups={calculationsGroups}
                         calculationResults={calculationResults}
                         calculationTypes={calculationTypes}
                         viewHeaders={viewHeaders}
                         viewMode={viewMode}
+                        calcIndexMap={calcIndexMap}
                     />
                 )}
             </div>
@@ -609,15 +986,15 @@ function CalculationPreview({ calc, calcIndex, timeline, referenceMap, calculati
     )
 }
 
-function CalculationsTimeSeriesPreview({ calculations, calculationResults, calculationTypes, viewHeaders, viewMode }) {
+function CalculationsTimeSeriesPreview({ calculations, calculationsGroups, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap }) {
     const viewModeLabel = viewMode === 'M' ? 'Monthly' :
                           viewMode === 'Q' ? 'Quarterly' :
                           viewMode === 'Y' ? 'Yearly' : 'Financial Year'
 
     // Calculate grand total across all calculations (only sum flows, not stocks)
     const grandTotalByPeriod = viewHeaders.map((header) => {
-        return calculations.reduce((sum, calc, calcIndex) => {
-            const calcRef = `R${calcIndex + 1}`
+        return calculations.reduce((sum, calc) => {
+            const calcRef = `R${calcIndexMap.get(calc.id)}`
             const resultArray = calculationResults[calcRef] || []
             const calcType = calculationTypes?.[calcRef] || 'flow'
 
@@ -656,54 +1033,145 @@ function CalculationsTimeSeriesPreview({ calculations, calculationResults, calcu
                         </tr>
                     </thead>
                     <tbody>
-                        {/* Individual calculation rows */}
-                        {calculations.map((calc, calcIndex) => {
-                            const calcRef = `R${calcIndex + 1}`
-                            const resultArray = calculationResults[calcRef] || []
-                            const calcType = calculationTypes?.[calcRef] || 'flow'
+                        {/* Grouped calculations */}
+                        {(calculationsGroups || []).map((group) => {
+                            const groupCalcs = calculations.filter(c => c.groupId === group.id)
+                            if (groupCalcs.length === 0) return null
 
-                            // Get values at view frequency with proper stock/flow aggregation
-                            const periodValues = viewHeaders.map((header) => {
-                                if (viewMode === 'M') {
-                                    return resultArray[header.index] ?? 0
-                                } else {
-                                    return getAggregatedValueForArray(resultArray, header.indices || [header.index], calcType)
-                                }
+                            // Calculate group subtotal
+                            const groupSubtotalByPeriod = viewHeaders.map((header) => {
+                                return groupCalcs.reduce((sum, calc) => {
+                                    const calcRef = `R${calcIndexMap.get(calc.id)}`
+                                    const resultArray = calculationResults[calcRef] || []
+                                    const calcType = calculationTypes?.[calcRef] || 'flow'
+                                    if (calcType === 'stock') return sum
+                                    if (viewMode === 'M') {
+                                        return sum + (resultArray[header.index] ?? 0)
+                                    } else {
+                                        return sum + getAggregatedValueForArray(resultArray, header.indices || [header.index], calcType)
+                                    }
+                                }, 0)
                             })
-                            // For stocks, total is meaningless - show last value or average
-                            // For flows, sum the values
-                            const total = calcType === 'stock'
-                                ? periodValues[periodValues.length - 1] || 0
-                                : periodValues.reduce((sum, v) => sum + v, 0)
+                            const groupTotal = groupSubtotalByPeriod.reduce((sum, v) => sum + v, 0)
 
                             return (
-                                <tr key={calc.id} className="border-b border-slate-100 hover:bg-rose-50/30">
-                                    <td className="py-1 px-3 text-xs text-slate-700 w-[240px] min-w-[240px] sticky left-0 z-20 bg-white">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100">
-                                                {calcRef}
-                                            </span>
-                                            <span className="truncate">{calc.name}</span>
-                                            <span className={`text-[10px] px-1 py-0.5 rounded ${
-                                                calcType === 'flow'
-                                                    ? 'text-emerald-600 bg-emerald-50'
-                                                    : 'text-slate-500 bg-slate-100'
-                                            }`}>
-                                                {calcType}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="py-1 px-3 text-right text-xs font-medium text-slate-900 w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-white border-r border-slate-200">
-                                        {total.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                                    </td>
-                                    {periodValues.map((val, i) => (
-                                        <td key={i} className="py-1 px-0.5 text-right text-[11px] text-slate-600 min-w-[55px] w-[55px] border-r border-slate-100">
-                                            {val !== 0 ? val.toLocaleString('en-US', { maximumFractionDigits: 2 }) : ''}
+                                <React.Fragment key={group.id}>
+                                    {/* Group header row */}
+                                    <tr className="bg-rose-50 border-b border-rose-200">
+                                        <td className="py-1.5 px-3 text-xs font-semibold text-rose-800 w-[240px] min-w-[240px] sticky left-0 z-20 bg-rose-50">
+                                            {group.name}
                                         </td>
-                                    ))}
-                                </tr>
+                                        <td className="py-1.5 px-3 text-right text-xs font-bold text-rose-900 w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-rose-50 border-r border-rose-200">
+                                            {groupTotal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                                        </td>
+                                        {groupSubtotalByPeriod.map((val, i) => (
+                                            <td key={i} className="py-1 px-0.5 text-right text-[11px] font-semibold text-rose-700 min-w-[55px] w-[55px] border-r border-rose-100">
+                                                {val !== 0 ? val.toLocaleString('en-US', { maximumFractionDigits: 1 }) : ''}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    {/* Individual calculation rows */}
+                                    {groupCalcs.map((calc) => {
+                                        const calcRef = `R${calcIndexMap.get(calc.id)}`
+                                        const resultArray = calculationResults[calcRef] || []
+                                        const calcType = calculationTypes?.[calcRef] || 'flow'
+
+                                        const periodValues = viewHeaders.map((header) => {
+                                            if (viewMode === 'M') {
+                                                return resultArray[header.index] ?? 0
+                                            } else {
+                                                return getAggregatedValueForArray(resultArray, header.indices || [header.index], calcType)
+                                            }
+                                        })
+                                        const total = calcType === 'stock'
+                                            ? periodValues[periodValues.length - 1] || 0
+                                            : periodValues.reduce((sum, v) => sum + v, 0)
+
+                                        return (
+                                            <tr key={calc.id} className="border-b border-slate-100 hover:bg-rose-50/30">
+                                                <td className="py-1 px-3 text-xs text-slate-700 w-[240px] min-w-[240px] sticky left-0 z-20 bg-white pl-6">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100">
+                                                            {calcRef}
+                                                        </span>
+                                                        <span className="truncate">{calc.name}</span>
+                                                        <span className={`text-[10px] px-1 py-0.5 rounded ${
+                                                            calcType === 'flow'
+                                                                ? 'text-emerald-600 bg-emerald-50'
+                                                                : 'text-slate-500 bg-slate-100'
+                                                        }`}>
+                                                            {calcType}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-1 px-3 text-right text-xs font-medium text-slate-900 w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-white border-r border-slate-200">
+                                                    {total.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                                                </td>
+                                                {periodValues.map((val, i) => (
+                                                    <td key={i} className="py-1 px-0.5 text-right text-[11px] text-slate-600 min-w-[55px] w-[55px] border-r border-slate-100">
+                                                        {val !== 0 ? val.toLocaleString('en-US', { maximumFractionDigits: 2 }) : ''}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        )
+                                    })}
+                                </React.Fragment>
                             )
                         })}
+
+                        {/* Ungrouped calculations */}
+                        {(() => {
+                            const ungroupedCalcs = calculations.filter(c =>
+                                !c.groupId || !(calculationsGroups || []).some(g => g.id === c.groupId)
+                            )
+                            if (ungroupedCalcs.length === 0) return null
+
+                            return ungroupedCalcs.map((calc) => {
+                                const calcRef = `R${calcIndexMap.get(calc.id)}`
+                                const resultArray = calculationResults[calcRef] || []
+                                const calcType = calculationTypes?.[calcRef] || 'flow'
+
+                                const periodValues = viewHeaders.map((header) => {
+                                    if (viewMode === 'M') {
+                                        return resultArray[header.index] ?? 0
+                                    } else {
+                                        return getAggregatedValueForArray(resultArray, header.indices || [header.index], calcType)
+                                    }
+                                })
+                                const total = calcType === 'stock'
+                                    ? periodValues[periodValues.length - 1] || 0
+                                    : periodValues.reduce((sum, v) => sum + v, 0)
+
+                                return (
+                                    <tr key={calc.id} className="border-b border-slate-100 hover:bg-rose-50/30">
+                                        <td className="py-1 px-3 text-xs text-slate-700 w-[240px] min-w-[240px] sticky left-0 z-20 bg-white">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100">
+                                                    {calcRef}
+                                                </span>
+                                                <span className="truncate">{calc.name}</span>
+                                                <span className={`text-[10px] px-1 py-0.5 rounded ${
+                                                    calcType === 'flow'
+                                                        ? 'text-emerald-600 bg-emerald-50'
+                                                        : 'text-slate-500 bg-slate-100'
+                                                }`}>
+                                                    {calcType}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="py-1 px-3 text-right text-xs font-medium text-slate-900 w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-white border-r border-slate-200">
+                                            {total.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                                        </td>
+                                        {periodValues.map((val, i) => (
+                                            <td key={i} className="py-1 px-0.5 text-right text-[11px] text-slate-600 min-w-[55px] w-[55px] border-r border-slate-100">
+                                                {val !== 0 ? val.toLocaleString('en-US', { maximumFractionDigits: 2 }) : ''}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                )
+                            })
+                        })()}
+
                         {/* Grand Total row */}
                         <tr className="bg-slate-100">
                             <td className="py-1.5 px-3 text-xs font-semibold text-slate-700 w-[240px] min-w-[240px] sticky left-0 z-20 bg-slate-100">

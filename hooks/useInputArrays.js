@@ -4,8 +4,7 @@
  */
 import { useMemo } from 'react'
 import { evaluateSimpleFormula } from '@/utils/simpleFormulaEvaluator'
-import { detectFlowOrStock } from '@/utils/valueProvider'
-import { getValuesArray, generatePeriods } from '@/components/inputs/utils/inputHelpers'
+import { getValuesArray, generatePeriods, detectFlowOrStock } from '@/components/inputs/utils/inputHelpers'
 
 // Re-export detectFlowOrStock for backwards compatibility
 export { detectFlowOrStock }
