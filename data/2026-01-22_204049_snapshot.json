@@ -3506,7 +3506,7 @@
     {
       "id": 1769039047257,
       "name": "Degradation Curve",
-      "formula": "=100 * CUMSUM_Y(L3.5)",
+      "formula": "=100 * CUMPROD_Y(1 - L3.5 / 100)",
       "description": ""
     },
     {
@@ -3514,19 +3514,39 @@
       "name": "OperatingAdjustment",
       "formula": "L3.1 /100 * L3.2 /100* L3.3 /100*L3.4 /100* R11/100",
       "description": ""
-    }
-  ],
-  "calculationsTabs": [
-    {
-      "id": 1,
-      "name": "P&L"
     },
     {
-      "id": 2,
-      "name": "Sheet 2"
+      "id": 1769061961949,
+      "name": "New Calculation",
+      "formula": "C1.1",
+      "description": ""
     }
   ],
   "calculationsGroups": [
+    {
+      "id": 1,
+      "name": "CAPEX Summary",
+      "startYear": 2027,
+      "startMonth": 3,
+      "endYear": 2028,
+      "endMonth": 10
+    },
+    {
+      "id": 2,
+      "name": "Revenue",
+      "startYear": 2028,
+      "startMonth": 10,
+      "endYear": 2053,
+      "endMonth": 9
+    },
+    {
+      "id": 3,
+      "name": "Operating Costs",
+      "startYear": 2028,
+      "startMonth": 10,
+      "endYear": 2053,
+      "endMonth": 9
+    },
     {
       "id": 4,
       "name": "Profitability",
@@ -3536,9 +3556,7 @@
       "endMonth": 9
     }
   ],
-  "collapsedCalculationsGroups": [
-    4
-  ],
+  "collapsedCalculationsGroups": [],
   "groups": [
     {
       "id": "flags",
