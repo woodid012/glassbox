@@ -21,7 +21,8 @@ export function getDefaultState() {
             endYear: defaultEndYear,
             endMonth: defaultEndMonth,
             minFrequency: 'monthly', // monthly, quarterly, annual
-            fyStartMonth: 7 // Fiscal year start month (1-12), default July
+            fyStartMonth: 7, // Fiscal year start month (1-12), default July
+            defaultSpreadMethod: 'lookup' // 'lookup' (stock - same value each period) or 'spread' (flow - sum across periods)
         },
         viewMode: 'Y', // M, Q, Y, FY
         showConfig: true,
@@ -103,6 +104,7 @@ export function getDefaultState() {
         ],
         collapsedInputType1Groups: new Set(),
         collapsedInputGlassGroups: new Set(),
+        collapsedKeyPeriodGroups: new Set(),
         // Modules: reusable calculation blocks (M1, M2, etc.)
         modules: [],
         // Available module templates (pre-built)
@@ -172,6 +174,17 @@ export function getDefaultState() {
                     { key: 'method', label: 'Method', type: 'select', options: ['straight-line', 'declining-balance'], default: 'straight-line' }
                 ],
                 outputs: ['depreciation_expense', 'accumulated_depreciation', 'book_value']
+            },
+            {
+                id: 'degradation_profile',
+                name: 'Degradation Profile',
+                description: 'Annual cumulative degradation (e.g., solar panel efficiency)',
+                category: 'operations',
+                inputs: [
+                    { key: 'degradationRateRef', label: 'Degradation Rate (%)', type: 'reference', default: '', modes: ['reference'], description: 'Annual rate as % (e.g., 5 for 5%)' },
+                    { key: 'initialValue', label: 'Initial Value', type: 'number', default: 100, modes: ['constant', 'reference'], description: 'Starting capacity' }
+                ],
+                outputs: ['degradation_factor', 'period_degradation', 'degraded_value']
             }
         ],
         calculations: [
@@ -311,6 +324,7 @@ export function serializeState(state) {
         ...state,
         collapsedInputType1Groups: Array.from(state.collapsedInputType1Groups),
         collapsedInputGlassGroups: Array.from(state.collapsedInputGlassGroups),
+        collapsedKeyPeriodGroups: Array.from(state.collapsedKeyPeriodGroups || new Set()),
         collapsedCalculationsGroups: Array.from(state.collapsedCalculationsGroups),
         collapsedGroups: Array.from(state.collapsedGroups)
     }
@@ -544,6 +558,13 @@ export function deserializeState(savedState) {
     const defaultState = getDefaultState()
     let loaded = { ...defaultState, ...savedState }
 
+    // Merge moduleTemplates: ensure new default templates are always included
+    if (defaultState.moduleTemplates && savedState.moduleTemplates) {
+        const savedTemplateIds = new Set(savedState.moduleTemplates.map(t => t.id))
+        const newTemplates = defaultState.moduleTemplates.filter(t => !savedTemplateIds.has(t.id))
+        loaded.moduleTemplates = [...savedState.moduleTemplates, ...newTemplates]
+    }
+
     // Migration: Convert old date format to new period format
     loaded = migrateToPeriodsSystem(loaded)
 
@@ -553,6 +574,11 @@ export function deserializeState(savedState) {
     }
     if (Array.isArray(loaded.collapsedInputGlassGroups)) {
         loaded.collapsedInputGlassGroups = new Set(loaded.collapsedInputGlassGroups)
+    }
+    if (Array.isArray(loaded.collapsedKeyPeriodGroups)) {
+        loaded.collapsedKeyPeriodGroups = new Set(loaded.collapsedKeyPeriodGroups)
+    } else if (!loaded.collapsedKeyPeriodGroups) {
+        loaded.collapsedKeyPeriodGroups = new Set()
     }
     if (Array.isArray(loaded.collapsedCalculationsGroups)) {
         loaded.collapsedCalculationsGroups = new Set(loaded.collapsedCalculationsGroups)

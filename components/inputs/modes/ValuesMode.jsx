@@ -1,6 +1,7 @@
 import React from 'react'
 import { Plus, Trash2, FolderPlus } from 'lucide-react'
 import EditableCell from '../shared/EditableCell'
+import GeneratedArrayPreview from '../shared/GeneratedArrayPreview'
 import {
     formatPeriodLabel,
     getValuesArray,
@@ -13,6 +14,9 @@ export default function ValuesMode({
     group,
     groupInputs,
     periods,
+    config,
+    viewMode = 'M',
+    keyPeriods = [],
     isCollapsed,
     isCellSelected,
     handleCellSelect,
@@ -25,7 +29,7 @@ export default function ValuesMode({
     onRemoveSubgroup
 }) {
     const subgroupedInputs = groupInputsBySubgroup(groupInputs, group)
-    const groupPeriodTotals = calculatePeriodTotals(groupInputs, periods, group.frequency, group)
+    const groupPeriodTotals = calculatePeriodTotals(groupInputs, periods, group.frequency, group, config)
     const groupGrandTotal = groupPeriodTotals.reduce((sum, v) => sum + v, 0)
 
     // Collapsed View
@@ -94,6 +98,7 @@ export default function ValuesMode({
     let globalRowIndex = 0
 
     return (
+        <>
         <div className="overflow-x-auto">
             <table className="text-sm table-fixed">
                 <thead>
@@ -151,7 +156,7 @@ export default function ValuesMode({
                                 {/* Input rows */}
                                 {sg.inputs.map(input => {
                                     const rowIndex = globalRowIndex++
-                                    const values = getValuesArray(input, periods, group.frequency, group)
+                                    const values = getValuesArray(input, periods, group.frequency, group, config)
                                     const total = values.reduce((sum, v) => sum + (parseFloat(v) || 0), 0)
 
                                     return (
@@ -264,5 +269,14 @@ export default function ValuesMode({
                 </tbody>
             </table>
         </div>
+
+            <GeneratedArrayPreview
+                group={group}
+                groupInputs={groupInputs}
+                config={config}
+                viewMode={viewMode}
+                keyPeriods={keyPeriods}
+            />
+        </>
     )
 }

@@ -20,6 +20,8 @@ export function useInputManagement({
     config,
     keyPeriods,
     setKeyPeriods,
+    collapsedKeyPeriodGroups,
+    setCollapsedKeyPeriodGroups,
     inputType1,
     setInputType1,
     inputType1Groups,
@@ -77,8 +79,65 @@ export function useInputManagement({
 
     const updateKeyPeriod = useCallback((periodId, updates) => {
         // Use functional update to avoid stale closure issues with rapid consecutive updates
-        setKeyPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p))
-    }, [setKeyPeriods])
+        setKeyPeriods(prev => {
+            let updated = prev.map(p => p.id === periodId ? { ...p, ...updates } : p)
+
+            // If this period is a child and dates changed, recalculate parent group dates
+            const period = updated.find(p => p.id === periodId)
+            if (period?.parentGroupId && (updates.startYear !== undefined || updates.startMonth !== undefined ||
+                updates.endYear !== undefined || updates.endMonth !== undefined)) {
+                // Need to recalculate group dates - inline the logic here since recalculateGroupDates may not be available yet
+                const group = updated.find(p => p.id === period.parentGroupId)
+                if (group && group.isGroup) {
+                    const childIds = group.childIds || []
+                    const children = childIds.map(id => updated.find(p => p.id === id)).filter(Boolean)
+
+                    if (children.length > 0) {
+                        let minStartTotal = Infinity
+                        let maxEndTotal = -Infinity
+                        let minStartYear, minStartMonth, maxEndYear, maxEndMonth
+
+                        children.forEach(child => {
+                            const childStartTotal = child.startYear * 12 + child.startMonth
+                            const childEndTotal = child.endYear * 12 + child.endMonth
+
+                            if (childStartTotal < minStartTotal) {
+                                minStartTotal = childStartTotal
+                                minStartYear = child.startYear
+                                minStartMonth = child.startMonth
+                            }
+                            if (childEndTotal > maxEndTotal) {
+                                maxEndTotal = childEndTotal
+                                maxEndYear = child.endYear
+                                maxEndMonth = child.endMonth
+                            }
+                        })
+
+                        const frequency = config.minFrequency || 'monthly'
+                        const monthsPerPeriod = frequency === 'annual' ? 12 : frequency === 'quarterly' ? 3 : 1
+                        const totalMonths = (maxEndYear - minStartYear) * 12 + (maxEndMonth - minStartMonth) + 1
+                        const numPeriods = Math.ceil(totalMonths / monthsPerPeriod)
+
+                        updated = updated.map(p => {
+                            if (p.id === period.parentGroupId) {
+                                return {
+                                    ...p,
+                                    startYear: minStartYear,
+                                    startMonth: minStartMonth,
+                                    endYear: maxEndYear,
+                                    endMonth: maxEndMonth,
+                                    periods: numPeriods
+                                }
+                            }
+                            return p
+                        })
+                    }
+                }
+            }
+
+            return updated
+        })
+    }, [setKeyPeriods, config.minFrequency])
 
     const removeKeyPeriod = useCallback((periodId) => {
         // Unlink any periods that link to this one (check both old and new property names)
@@ -119,6 +178,175 @@ export function useInputManagement({
             return newPeriods
         })
     }, [setKeyPeriods])
+
+    // Convert a period to a group (marks it as collapsible container)
+    const convertToGroup = useCallback((periodId) => {
+        setKeyPeriods(prev => prev.map(p => {
+            if (p.id === periodId) {
+                return { ...p, isGroup: true, childIds: p.childIds || [] }
+            }
+            return p
+        }))
+    }, [setKeyPeriods])
+
+    // Remove group status from a period (ungroup)
+    const ungroupPeriod = useCallback((periodId) => {
+        setKeyPeriods(prev => {
+            // First, remove parentGroupId from any children
+            const updatedPeriods = prev.map(p => {
+                if (p.parentGroupId === periodId) {
+                    return { ...p, parentGroupId: null }
+                }
+                return p
+            })
+            // Then remove group status
+            return updatedPeriods.map(p => {
+                if (p.id === periodId) {
+                    const { isGroup, childIds, ...rest } = p
+                    return rest
+                }
+                return p
+            })
+        })
+    }, [setKeyPeriods])
+
+    // Helper to recalculate group dates from children
+    const recalculateGroupDates = useCallback((periods, groupId) => {
+        const group = periods.find(p => p.id === groupId)
+        if (!group || !group.isGroup) return periods
+
+        const childIds = group.childIds || []
+        const children = childIds.map(id => periods.find(p => p.id === id)).filter(Boolean)
+
+        if (children.length === 0) return periods
+
+        // Find min start and max end from children using total months for comparison
+        let minStartTotal = Infinity
+        let maxEndTotal = -Infinity
+        let minStartYear, minStartMonth, maxEndYear, maxEndMonth
+
+        children.forEach(child => {
+            const childStartTotal = child.startYear * 12 + child.startMonth
+            const childEndTotal = child.endYear * 12 + child.endMonth
+
+            if (childStartTotal < minStartTotal) {
+                minStartTotal = childStartTotal
+                minStartYear = child.startYear
+                minStartMonth = child.startMonth
+            }
+            if (childEndTotal > maxEndTotal) {
+                maxEndTotal = childEndTotal
+                maxEndYear = child.endYear
+                maxEndMonth = child.endMonth
+            }
+        })
+
+        // Calculate periods
+        const frequency = config.minFrequency || 'monthly'
+        const monthsPerPeriod = frequency === 'annual' ? 12 : frequency === 'quarterly' ? 3 : 1
+        const totalMonths = (maxEndYear - minStartYear) * 12 + (maxEndMonth - minStartMonth) + 1
+        const numPeriods = Math.ceil(totalMonths / monthsPerPeriod)
+
+        return periods.map(p => {
+            if (p.id === groupId) {
+                return {
+                    ...p,
+                    startYear: minStartYear,
+                    startMonth: minStartMonth,
+                    endYear: maxEndYear,
+                    endMonth: maxEndMonth,
+                    periods: numPeriods,
+                    // Clear any links since group dates are derived from children
+                    startLinkedToPeriodId: null,
+                    startLinkOffset: null,
+                    endLinkedToPeriodId: null,
+                    endLinkOffset: null
+                }
+            }
+            return p
+        })
+    }, [config.minFrequency])
+
+    // Add a period to a group
+    const addToGroup = useCallback((periodId, groupId, autoLinkToPrevious = false) => {
+        setKeyPeriods(prev => {
+            const group = prev.find(p => p.id === groupId)
+            if (!group || !group.isGroup) return prev
+
+            // Get existing children to find the last one for auto-linking
+            const existingChildIds = group.childIds || []
+            const lastChildId = existingChildIds.length > 0 ? existingChildIds[existingChildIds.length - 1] : null
+
+            let updated = prev.map(p => {
+                if (p.id === groupId) {
+                    // Add to group's childIds
+                    const newChildIds = [...(p.childIds || [])]
+                    if (!newChildIds.includes(periodId)) {
+                        newChildIds.push(periodId)
+                    }
+                    return { ...p, childIds: newChildIds }
+                }
+                if (p.id === periodId) {
+                    const updates = { ...p, parentGroupId: groupId }
+                    // Auto-link to previous child's end (+1 month) if requested and there is a previous child
+                    if (autoLinkToPrevious && lastChildId) {
+                        updates.startLinkedToPeriodId = lastChildId
+                        updates.startLinkToEnd = true
+                        updates.startLinkOffset = { value: 1, unit: 'months' }
+                    }
+                    return updates
+                }
+                return p
+            })
+
+            // Recalculate group dates from children
+            return recalculateGroupDates(updated, groupId)
+        })
+    }, [setKeyPeriods, recalculateGroupDates])
+
+    // Remove a period from a group
+    const removeFromGroup = useCallback((periodId) => {
+        setKeyPeriods(prev => {
+            // Find the parent group
+            const period = prev.find(p => p.id === periodId)
+            if (!period?.parentGroupId) return prev
+
+            const parentGroupId = period.parentGroupId
+
+            let updated = prev.map(p => {
+                if (p.id === parentGroupId) {
+                    // Remove from group's childIds
+                    return {
+                        ...p,
+                        childIds: (p.childIds || []).filter(id => id !== periodId)
+                    }
+                }
+                if (p.id === periodId) {
+                    // Remove parentGroupId
+                    const { parentGroupId: _, ...rest } = p
+                    return rest
+                }
+                return p
+            })
+
+            // Recalculate group dates from remaining children
+            return recalculateGroupDates(updated, parentGroupId)
+        })
+    }, [setKeyPeriods, recalculateGroupDates])
+
+    // Toggle collapse state for a key period group
+    const toggleKeyPeriodGroup = useCallback((groupId) => {
+        if (!setCollapsedKeyPeriodGroups) return
+        setCollapsedKeyPeriodGroups(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(groupId)) {
+                newSet.delete(groupId)
+            } else {
+                newSet.add(groupId)
+            }
+            return newSet
+        })
+    }, [setCollapsedKeyPeriodGroups])
 
     // ==================== Input Type 1 ====================
 
@@ -657,6 +885,11 @@ export function useInputManagement({
         updateKeyPeriod,
         removeKeyPeriod,
         reorderKeyPeriods,
+        convertToGroup,
+        ungroupPeriod,
+        addToGroup,
+        removeFromGroup,
+        toggleKeyPeriodGroup,
         // Input Type 1
         addInputType1Group,
         updateInputType1Group,

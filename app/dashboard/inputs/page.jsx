@@ -109,6 +109,7 @@ export default function InputsPage() {
                             inputs={inputGlass}
                             config={config}
                             keyPeriods={keyPeriods}
+                            viewMode={viewMode}
                             onUpdateGroup={updateInputGlassGroup}
                             onRemoveGroup={removeInputGlassGroup}
                             onAddInput={addInputGlass}

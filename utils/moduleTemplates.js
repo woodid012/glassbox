@@ -554,7 +554,7 @@ function calculateCapexSchedule(inputs, arrayLength) {
 function calculateDegradationProfile(inputs, arrayLength, context) {
     const {
         degradationRateRef = null,
-        initialValue = 1,
+        initialValue = 100,
         startPeriodIndex = 0
     } = inputs
 
@@ -564,10 +564,15 @@ function calculateDegradationProfile(inputs, arrayLength, context) {
         degraded_value: new Array(arrayLength).fill(0)
     }
 
-    // Get degradation rate array from context
+    // Get degradation rate array from context (expects values like 5 for 5%)
     let degradationRates = context[degradationRateRef] || new Array(arrayLength).fill(0)
 
+    // Get timeline for year detection (monthly periods, apply degradation annually)
+    const timeline = context.timeline
+
     let cumulativeFactor = 1
+    let lastYear = null
+    let lastYearRate = null // Track previous year's rate to apply at transition
 
     for (let i = 0; i < arrayLength; i++) {
         if (i < startPeriodIndex) {
@@ -575,12 +580,25 @@ function calculateDegradationProfile(inputs, arrayLength, context) {
             outputs.period_degradation[i] = 0
             outputs.degraded_value[i] = initialValue
         } else {
+            const currentYear = timeline?.year?.[i]
             const periodRate = degradationRates[i] || 0
-            outputs.period_degradation[i] = periodRate
 
-            if (i > startPeriodIndex) {
-                cumulativeFactor *= (1 - periodRate)
+            // Apply degradation at year boundaries using PREVIOUS year's rate
+            // This matches CUMPROD_Y behavior: Year 1's rate applies at start of Year 2
+            if (lastYear !== null && currentYear !== lastYear && lastYearRate !== null) {
+                const rateAsDecimal = lastYearRate / 100 // Convert 5 to 0.05
+                cumulativeFactor *= (1 - rateAsDecimal)
+                outputs.period_degradation[i] = lastYearRate
+            } else {
+                outputs.period_degradation[i] = 0
             }
+
+            // Update lastYearRate when entering a new year
+            if (currentYear !== lastYear) {
+                lastYearRate = periodRate
+            }
+            lastYear = currentYear
+
             outputs.degradation_factor[i] = Math.max(0, cumulativeFactor)
             outputs.degraded_value[i] = initialValue * outputs.degradation_factor[i]
         }

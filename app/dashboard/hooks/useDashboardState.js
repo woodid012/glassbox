@@ -7,6 +7,7 @@ import { useAutoSave } from '@/hooks/useAutoSave'
 import { useInputManagement } from '@/hooks/useInputManagement'
 import { useInputArrays } from '@/hooks/useInputArrays'
 import { detectFlowOrStock } from '@/utils/valueProvider'
+import { calculateModuleOutputs, MODULE_TEMPLATES } from '@/utils/moduleTemplates'
 
 export function useDashboardState(viewMode) {
     // Single state object - all state in one place for easy save/load
@@ -33,6 +34,7 @@ export function useDashboardState(viewMode) {
         inputGlassGroups,
         collapsedInputType1Groups,
         collapsedInputGlassGroups,
+        collapsedKeyPeriodGroups,
         modules,
         moduleTemplates,
         calculations,
@@ -112,6 +114,20 @@ export function useDashboardState(viewMode) {
                 newSet = new Set(setOrArray || [])
             }
             return { ...prev, collapsedInputGlassGroups: newSet }
+        })
+    }, [])
+    const setCollapsedKeyPeriodGroups = useCallback((setOrArray) => {
+        setAppState(prev => {
+            let newSet
+            if (setOrArray instanceof Set) {
+                newSet = setOrArray
+            } else if (typeof setOrArray === 'function') {
+                const result = setOrArray(prev.collapsedKeyPeriodGroups || new Set())
+                newSet = result instanceof Set ? result : new Set(result || [])
+            } else {
+                newSet = new Set(setOrArray || [])
+            }
+            return { ...prev, collapsedKeyPeriodGroups: newSet }
         })
     }, [])
     const setCalculations = useCallback((calculations) => {
@@ -315,36 +331,9 @@ export function useDashboardState(viewMode) {
         })
         if (currentGroup) groups.push(currentGroup)
 
-        return groups
+        // Add index property (first period in group) for pass-through display
+        return groups.map(g => ({ ...g, index: g.indices[0] }))
     }, [timeline, viewMode])
-
-    // Forward-fill an array: extend the last non-zero value to fill remaining periods
-    const forwardFillArray = useCallback((arr, length) => {
-        if (!arr || arr.length === 0) return new Array(length).fill(0)
-        const result = [...arr]
-        while (result.length < length) {
-            result.push(0)
-        }
-
-        let lastNonZeroIndex = -1
-        let lastNonZeroValue = 0
-        for (let i = result.length - 1; i >= 0; i--) {
-            if (result[i] !== 0 && result[i] !== undefined) {
-                lastNonZeroIndex = i
-                lastNonZeroValue = result[i]
-                break
-            }
-        }
-
-        if (lastNonZeroIndex >= 0) {
-            for (let i = lastNonZeroIndex + 1; i < result.length; i++) {
-                if (result[i] === 0 || result[i] === undefined) {
-                    result[i] = lastNonZeroValue
-                }
-            }
-        }
-        return result
-    }, [])
 
     // Build reference map for calculations (V1, V1.1, S1, T1, F1, I1, R1, etc.)
     const referenceMap = useMemo(() => {
@@ -379,7 +368,7 @@ export function useDashboardState(viewMode) {
             const groupRef = `${modePrefix}${groupIndex}`
 
             const groupArrays = groupInputs.map(input =>
-                forwardFillArray(inputGlassArrays[`inputtype3_${input.id}`] || [], timeline.periods)
+                inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
             )
             const subtotalArray = new Array(timeline.periods).fill(0)
             for (let i = 0; i < timeline.periods; i++) {
@@ -389,7 +378,7 @@ export function useDashboardState(viewMode) {
 
             groupInputs.forEach((input, idx) => {
                 const itemRef = `${groupRef}.${idx + 1}`
-                refs[itemRef] = forwardFillArray(inputGlassArrays[`inputtype3_${input.id}`] || [], timeline.periods)
+                refs[itemRef] = inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
             })
         })
 
@@ -462,46 +451,96 @@ export function useDashboardState(viewMode) {
 
                 // Group inputs by subgroup
                 const subgroups = group.subgroups || []
-                const subgroupedInputs = []
                 const rootInputs = groupInputs.filter(inp => !inp.subgroupId)
-                if (rootInputs.length > 0 || subgroups.length === 0) {
-                    subgroupedInputs.push({ id: null, name: null, inputs: rootInputs })
-                }
-                subgroups.forEach(sg => {
-                    const sgInputs = groupInputs.filter(inp => inp.subgroupId === sg.id)
-                    subgroupedInputs.push({ id: sg.id, name: sg.name, inputs: sgInputs })
-                })
+                const hasActualSubgroups = subgroups.length > 0
 
-                // Process each subgroup
-                subgroupedInputs.forEach((sg, sgIdx) => {
-                    if (sg.inputs.length === 0) return
-
-                    const key = sg.id ?? 'root'
-                    const selectedIdx = selectedIndices[key] ?? 0
-                    const selectedInput = sg.inputs[selectedIdx] || sg.inputs[0]
-                    const subgroupRef = `${lookupRef}.${sgIdx + 1}`
-
-                    // Add subgroup reference (L1.1) - points to selected input's array
-                    if (selectedInput) {
-                        refs[subgroupRef] = forwardFillArray(
-                            inputGlassArrays[`inputtype3_${selectedInput.id}`] || [],
-                            timeline.periods
-                        )
-                    }
-
-                    // Add individual option references (L1.1.1, L1.1.2, etc.)
-                    sg.inputs.forEach((input, inputIdx) => {
-                        const optionRef = `${subgroupRef}.${inputIdx + 1}`
-                        refs[optionRef] = forwardFillArray(
-                            inputGlassArrays[`inputtype3_${input.id}`] || [],
-                            timeline.periods
-                        )
+                // If NO subgroups, reference inputs directly as L3.1, L3.2, etc.
+                if (!hasActualSubgroups) {
+                    rootInputs.forEach((input, inputIdx) => {
+                        const inputRef = `${lookupRef}.${inputIdx + 1}`
+                        refs[inputRef] = inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
                     })
-                })
+                } else {
+                    // WITH subgroups: L3.1 (subgroup), L3.1.1 (input in subgroup), etc.
+                    const subgroupedInputs = []
+                    if (rootInputs.length > 0) {
+                        subgroupedInputs.push({ id: null, name: null, inputs: rootInputs })
+                    }
+                    subgroups.forEach(sg => {
+                        const sgInputs = groupInputs.filter(inp => inp.subgroupId === sg.id)
+                        subgroupedInputs.push({ id: sg.id, name: sg.name, inputs: sgInputs })
+                    })
+
+                    subgroupedInputs.forEach((sg, sgIdx) => {
+                        if (sg.inputs.length === 0) return
+
+                        const key = sg.id ?? 'root'
+                        const selectedIdx = selectedIndices[key] ?? 0
+                        const selectedInput = sg.inputs[selectedIdx] || sg.inputs[0]
+                        const subgroupRef = `${lookupRef}.${sgIdx + 1}`
+
+                        // Add subgroup reference (L1.1) - points to selected input's array
+                        if (selectedInput) {
+                            refs[subgroupRef] = inputGlassArrays[`inputtype3_${selectedInput.id}`] || new Array(timeline.periods).fill(0)
+                        }
+
+                        // Add individual option references (L1.1.1, L1.1.2, etc.)
+                        sg.inputs.forEach((input, inputIdx) => {
+                            const optionRef = `${subgroupRef}.${inputIdx + 1}`
+                            refs[optionRef] = inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
+                        })
+                    })
+                }
             })
 
         return refs
-    }, [inputGlass, inputGlassGroups, inputGlassArrays, autoGeneratedFlags, autoGeneratedIndexations, timeline.periods, forwardFillArray])
+    }, [inputGlass, inputGlassGroups, inputGlassArrays, autoGeneratedFlags, autoGeneratedIndexations, timeline.periods])
+
+    // Calculate module outputs
+    const moduleOutputs = useMemo(() => {
+        const outputs = {}
+        if (!modules || modules.length === 0) return outputs
+
+        modules.forEach((module, moduleIdx) => {
+            // Find the matching MODULE_TEMPLATE for this module
+            const templateId = module.templateId
+            // Map UI template IDs to MODULE_TEMPLATES keys
+            const templateKeyMap = {
+                'debt': 'debt_amortisation',
+                'depreciation': 'depreciation',
+                'gst': null, // Not implemented in MODULE_TEMPLATES
+                'degradation_profile': 'degradation_profile'
+            }
+            const templateKey = templateKeyMap[templateId] || templateId
+
+            if (!MODULE_TEMPLATES[templateKey]) return
+
+            // Build context with referenceMap and timeline for calculations
+            const context = { ...referenceMap, timeline }
+
+            // Create module instance in the format calculateModuleOutputs expects
+            const moduleInstance = {
+                moduleType: templateKey,
+                inputs: module.inputs || {}
+            }
+
+            // Calculate outputs
+            const calculatedOutputs = calculateModuleOutputs(
+                moduleInstance,
+                timeline.periods,
+                context
+            )
+
+            // Add outputs to reference map with M{n}.{outputIndex} format
+            const template = MODULE_TEMPLATES[templateKey]
+            template.outputs.forEach((output, outputIdx) => {
+                const ref = `M${moduleIdx + 1}.${outputIdx + 1}`
+                outputs[ref] = calculatedOutputs[output.key] || new Array(timeline.periods).fill(0)
+            })
+        })
+
+        return outputs
+    }, [modules, referenceMap, timeline])
 
     // Build reference type map (flow vs stock vs flowConverter) for each reference
     // Types: 'flow' (accumulates over time), 'stock' (point-in-time), 'flowConverter' (converts calc to flow)
@@ -595,7 +634,8 @@ export function useDashboardState(viewMode) {
         })
 
         // Lookups are stock (selected values)
-        // Structure: L1.1 (selected), L1.1.1, L1.1.2 (options), L1.2 (selected), etc.
+        // Structure without subgroups: L1.1, L1.2, etc. (direct inputs)
+        // Structure with subgroups: L1.1 (subgroup selected), L1.1.1, L1.1.2 (options), etc.
         let lookupIndex = 0
         inputGlassGroups
             .filter(group => group.entryMode === 'lookup' || group.entryMode === 'lookup2')
@@ -604,32 +644,37 @@ export function useDashboardState(viewMode) {
                 const groupInputs = inputGlass.filter(input => input.groupId === group.id)
                 const lookupRef = `L${lookupIndex}`
 
-                // Group inputs by subgroup
                 const subgroups = group.subgroups || []
-                const subgroupedInputs = []
                 const rootInputs = groupInputs.filter(inp => !inp.subgroupId)
-                if (rootInputs.length > 0 || subgroups.length === 0) {
-                    subgroupedInputs.push({ id: null, inputs: rootInputs })
-                }
-                subgroups.forEach(sg => {
-                    const sgInputs = groupInputs.filter(inp => inp.subgroupId === sg.id)
-                    subgroupedInputs.push({ id: sg.id, inputs: sgInputs })
-                })
+                const hasActualSubgroups = subgroups.length > 0
 
-                // Process each subgroup
-                subgroupedInputs.forEach((sg, sgIdx) => {
-                    if (sg.inputs.length === 0) return
-
-                    const subgroupRef = `${lookupRef}.${sgIdx + 1}`
-
-                    // Subgroup reference type (L1.1)
-                    types[subgroupRef] = 'stock'
-
-                    // Individual option types (L1.1.1, L1.1.2, etc.)
-                    sg.inputs.forEach((_, inputIdx) => {
-                        types[`${subgroupRef}.${inputIdx + 1}`] = 'stock'
+                if (!hasActualSubgroups) {
+                    // No subgroups: L3.1, L3.2, etc.
+                    rootInputs.forEach((_, inputIdx) => {
+                        types[`${lookupRef}.${inputIdx + 1}`] = 'stock'
                     })
-                })
+                } else {
+                    // With subgroups: L3.1 (subgroup), L3.1.1 (input), etc.
+                    const subgroupedInputs = []
+                    if (rootInputs.length > 0) {
+                        subgroupedInputs.push({ id: null, inputs: rootInputs })
+                    }
+                    subgroups.forEach(sg => {
+                        const sgInputs = groupInputs.filter(inp => inp.subgroupId === sg.id)
+                        subgroupedInputs.push({ id: sg.id, inputs: sgInputs })
+                    })
+
+                    subgroupedInputs.forEach((sg, sgIdx) => {
+                        if (sg.inputs.length === 0) return
+
+                        const subgroupRef = `${lookupRef}.${sgIdx + 1}`
+                        types[subgroupRef] = 'stock'
+
+                        sg.inputs.forEach((_, inputIdx) => {
+                            types[`${subgroupRef}.${inputIdx + 1}`] = 'stock'
+                        })
+                    })
+                }
             })
 
         return types
@@ -690,7 +735,8 @@ export function useDashboardState(viewMode) {
         names['T.DiQ'] = 'Days in Quarter'
 
         // Lookup names
-        // Structure: L1.1 (selected), L1.1.1, L1.1.2 (options), L1.2 (selected), etc.
+        // Structure without subgroups: L1.1, L1.2, etc. (direct inputs)
+        // Structure with subgroups: L1.1 (subgroup selected), L1.1.1, L1.1.2 (options), etc.
         let lookupIndex = 0
         inputGlassGroups
             .filter(group => group.entryMode === 'lookup' || group.entryMode === 'lookup2')
@@ -700,42 +746,48 @@ export function useDashboardState(viewMode) {
                 const lookupRef = `L${lookupIndex}`
                 const selectedIndices = group.selectedIndices || {}
 
-                // Group inputs by subgroup
                 const subgroups = group.subgroups || []
-                const subgroupedInputs = []
                 const rootInputs = groupInputs.filter(inp => !inp.subgroupId)
-                if (rootInputs.length > 0 || subgroups.length === 0) {
-                    subgroupedInputs.push({ id: null, name: null, inputs: rootInputs })
-                }
-                subgroups.forEach(sg => {
-                    const sgInputs = groupInputs.filter(inp => inp.subgroupId === sg.id)
-                    subgroupedInputs.push({ id: sg.id, name: sg.name, inputs: sgInputs })
-                })
+                const hasActualSubgroups = subgroups.length > 0
 
                 // Group name (L1)
                 names[lookupRef] = group.name
 
-                // Process each subgroup
-                subgroupedInputs.forEach((sg, sgIdx) => {
-                    if (sg.inputs.length === 0) return
-
-                    const key = sg.id ?? 'root'
-                    const selectedIdx = selectedIndices[key] ?? 0
-                    const selectedInput = sg.inputs[selectedIdx] || sg.inputs[0]
-                    const subgroupRef = `${lookupRef}.${sgIdx + 1}`
-
-                    // Subgroup name (L1.1) - shows selected input
-                    const prefix = sg.name ? `${group.name} - ${sg.name}` : group.name
-                    names[subgroupRef] = selectedInput ? `${prefix} (${selectedInput.name})` : prefix
-
-                    // Individual option names (L1.1.1, L1.1.2, etc.)
-                    sg.inputs.forEach((input, inputIdx) => {
-                        const optionRef = `${subgroupRef}.${inputIdx + 1}`
-                        names[optionRef] = sg.name
-                            ? `${group.name} - ${sg.name} - ${input.name}`
-                            : `${group.name} - ${input.name}`
+                if (!hasActualSubgroups) {
+                    // No subgroups: L3.1, L3.2, etc. are direct input names
+                    rootInputs.forEach((input, inputIdx) => {
+                        names[`${lookupRef}.${inputIdx + 1}`] = `${group.name} - ${input.name}`
                     })
-                })
+                } else {
+                    // With subgroups
+                    const subgroupedInputs = []
+                    if (rootInputs.length > 0) {
+                        subgroupedInputs.push({ id: null, name: null, inputs: rootInputs })
+                    }
+                    subgroups.forEach(sg => {
+                        const sgInputs = groupInputs.filter(inp => inp.subgroupId === sg.id)
+                        subgroupedInputs.push({ id: sg.id, name: sg.name, inputs: sgInputs })
+                    })
+
+                    subgroupedInputs.forEach((sg, sgIdx) => {
+                        if (sg.inputs.length === 0) return
+
+                        const key = sg.id ?? 'root'
+                        const selectedIdx = selectedIndices[key] ?? 0
+                        const selectedInput = sg.inputs[selectedIdx] || sg.inputs[0]
+                        const subgroupRef = `${lookupRef}.${sgIdx + 1}`
+
+                        const prefix = sg.name ? `${group.name} - ${sg.name}` : group.name
+                        names[subgroupRef] = selectedInput ? `${prefix} (${selectedInput.name})` : prefix
+
+                        sg.inputs.forEach((input, inputIdx) => {
+                            const optionRef = `${subgroupRef}.${inputIdx + 1}`
+                            names[optionRef] = sg.name
+                                ? `${group.name} - ${sg.name} - ${input.name}`
+                                : `${group.name} - ${input.name}`
+                        })
+                    })
+                }
             })
 
         if (modules) {
@@ -783,7 +835,7 @@ export function useDashboardState(viewMode) {
         }
 
         try {
-            const allRefs = { ...referenceMap, ...calcResults }
+            const allRefs = { ...referenceMap, ...moduleOutputs, ...calcResults }
             const resultArray = new Array(timeline.periods).fill(0)
 
             // Check for unresolved references before evaluation
@@ -799,14 +851,124 @@ export function useDashboardState(viewMode) {
                 }
             }
 
+            // Pre-process array functions (CUMPROD, CUMPROD_Y, CUMSUM)
+            // These need to be evaluated across all periods first, then substituted
+            let processedFormula = formula
+            const arrayFnResults = {}
+            let arrayFnCounter = 0
+
+            // Helper to evaluate an expression for all periods and get an array
+            const evalExprForAllPeriods = (expr) => {
+                const arr = new Array(timeline.periods).fill(0)
+                const sortedRefs = Object.keys(allRefs).sort((a, b) => b.length - a.length)
+                for (let i = 0; i < timeline.periods; i++) {
+                    let periodExpr = expr
+                    for (const ref of sortedRefs) {
+                        const value = allRefs[ref]?.[i] ?? 0
+                        const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
+                        periodExpr = periodExpr.replace(regex, value.toString())
+                    }
+                    let safeExpr = periodExpr.replace(/[^0-9+\-*/().e\s^]/gi, '')
+                    safeExpr = safeExpr.replace(/\^/g, '**')
+                    if (safeExpr.trim()) {
+                        try {
+                            const evalFn = new Function(`return (${safeExpr})`)
+                            const result = evalFn()
+                            arr[i] = typeof result === 'number' && isFinite(result) ? result : 0
+                        } catch {
+                            arr[i] = 0
+                        }
+                    }
+                }
+                return arr
+            }
+
+            // CUMPROD_Y(expr) - Cumulative product at year boundaries only (for annual rates)
+            // When year changes, applies the PREVIOUS year's value (last value before transition)
+            const cumprodYRegex = /CUMPROD_Y\s*\(([^)]+)\)/gi
+            let match
+            while ((match = cumprodYRegex.exec(processedFormula)) !== null) {
+                const innerExpr = match[1]
+                const innerArray = evalExprForAllPeriods(innerExpr)
+
+                // Compute cumulative product only at year changes
+                const cumprodArray = new Array(timeline.periods).fill(0)
+                let product = 1
+                let lastYear = null
+                let lastYearValue = null
+                for (let i = 0; i < timeline.periods; i++) {
+                    const currentYear = timeline.year?.[i]
+                    // Apply factor only when year changes (not on first period)
+                    // Use the PREVIOUS year's value (stored in lastYearValue)
+                    if (lastYear !== null && currentYear !== lastYear && lastYearValue !== null) {
+                        product *= lastYearValue
+                    }
+                    cumprodArray[i] = product
+                    // Track last year's value (update at end of each period)
+                    if (currentYear !== lastYear) {
+                        lastYearValue = innerArray[i] // First value of new year becomes "last year's value" for next transition
+                    }
+                    lastYear = currentYear
+                }
+
+                const placeholder = `__ARRAYFN${arrayFnCounter++}__`
+                arrayFnResults[placeholder] = cumprodArray
+                processedFormula = processedFormula.replace(match[0], placeholder)
+                cumprodYRegex.lastIndex = 0 // Reset for next search
+            }
+
+            // CUMPROD(expr) - Standard cumulative product (every period)
+            const cumprodRegex = /CUMPROD\s*\(([^)]+)\)/gi
+            while ((match = cumprodRegex.exec(processedFormula)) !== null) {
+                const innerExpr = match[1]
+                const innerArray = evalExprForAllPeriods(innerExpr)
+
+                // Compute cumulative product
+                const cumprodArray = new Array(timeline.periods).fill(0)
+                let product = 1
+                for (let i = 0; i < timeline.periods; i++) {
+                    product *= innerArray[i]
+                    cumprodArray[i] = product
+                }
+
+                const placeholder = `__ARRAYFN${arrayFnCounter++}__`
+                arrayFnResults[placeholder] = cumprodArray
+                processedFormula = processedFormula.replace(match[0], placeholder)
+                cumprodRegex.lastIndex = 0
+            }
+
+            // CUMSUM(expr) - Cumulative sum
+            const cumsumRegex = /CUMSUM\s*\(([^)]+)\)/gi
+            while ((match = cumsumRegex.exec(processedFormula)) !== null) {
+                const innerExpr = match[1]
+                const innerArray = evalExprForAllPeriods(innerExpr)
+
+                const cumsumArray = new Array(timeline.periods).fill(0)
+                let sum = 0
+                for (let i = 0; i < timeline.periods; i++) {
+                    sum += innerArray[i]
+                    cumsumArray[i] = sum
+                }
+
+                const placeholder = `__ARRAYFN${arrayFnCounter++}__`
+                arrayFnResults[placeholder] = cumsumArray
+                processedFormula = processedFormula.replace(match[0], placeholder)
+                cumsumRegex.lastIndex = 0
+            }
+
             for (let i = 0; i < timeline.periods; i++) {
-                let expr = formula
+                let expr = processedFormula
                 const sortedRefs = Object.keys(allRefs).sort((a, b) => b.length - a.length)
 
                 for (const ref of sortedRefs) {
                     const value = allRefs[ref]?.[i] ?? 0
                     const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
                     expr = expr.replace(regex, value.toString())
+                }
+
+                // Substitute array function results
+                for (const [placeholder, arr] of Object.entries(arrayFnResults)) {
+                    expr = expr.replace(placeholder, arr[i].toString())
                 }
 
                 let safeExpr = expr.replace(/[^0-9+\-*/().e\s^]/gi, '')
@@ -827,7 +989,7 @@ export function useDashboardState(viewMode) {
         } catch (e) {
             return { values: new Array(timeline.periods).fill(0), error: e.message }
         }
-    }, [referenceMap, timeline.periods])
+    }, [referenceMap, moduleOutputs, timeline.periods, timeline.year])
 
     // Evaluate all calculations in dependency order
     const { calculationResults, calculationErrors } = useMemo(() => {
@@ -918,10 +1080,15 @@ export function useDashboardState(viewMode) {
         const extractRefs = (formula) => {
             if (!formula) return []
             const refs = []
-            // Match patterns like V1, V1.1, S1, S1.2, C1, T1, F1, I1, R1, M1, M1.1
-            const regex = /\b([VSCFTIMR]\d+(?:\.\d+)?)\b/g
+            // Match patterns like V1, V1.1, S1, C1, L1, L1.1, L1.1.1, T1, F1, I1, R1, M1, M1.1
+            const standardRefRegex = /\b([VSCFLTIMR]\d+(?:\.\d+)*)\b/g
+            // Match time constants like T.DiM, T.MiY, T.HiY, etc.
+            const timeConstantRegex = /\b(T\.[A-Za-z]+)\b/g
             let match
-            while ((match = regex.exec(formula)) !== null) {
+            while ((match = standardRefRegex.exec(formula)) !== null) {
+                refs.push(match[1])
+            }
+            while ((match = timeConstantRegex.exec(formula)) !== null) {
                 refs.push(match[1])
             }
             return [...new Set(refs)]
@@ -968,6 +1135,8 @@ export function useDashboardState(viewMode) {
         config,
         keyPeriods,
         setKeyPeriods,
+        collapsedKeyPeriodGroups,
+        setCollapsedKeyPeriodGroups,
         inputType1,
         setInputType1,
         inputType1Groups,
@@ -1083,6 +1252,7 @@ export function useDashboardState(viewMode) {
         setInputGlassGroups,
         setCollapsedInputType1Groups,
         setCollapsedInputGlassGroups,
+        setCollapsedKeyPeriodGroups,
         setCalculations,
         setCalculationsGroups,
         setCollapsedCalculationsGroups,
@@ -1101,6 +1271,7 @@ export function useDashboardState(viewMode) {
         referenceMap,
         referenceNameMap,
         referenceTypeMap,
+        moduleOutputs,
         calculationResults,
         calculationErrors,
         calculationTypes,
@@ -1111,7 +1282,6 @@ export function useDashboardState(viewMode) {
         autoGeneratedIndexations,
         autoGeneratedFlags,
         inputArrays,
-        forwardFillArray,
         expandFormulaToNames,
         evaluateFormula
     }

@@ -7,19 +7,15 @@ import GroupControls from './shared/GroupControls'
 import ValuesMode from './modes/ValuesMode'
 import SeriesMode from './modes/SeriesMode'
 import ConstantMode from './modes/ConstantMode'
-import LookupMode from './modes/LookupMode'
 import Lookup2Mode from './modes/Lookup2Mode'
 
 // Import utilities
 import {
     getValuesArray,
-    getLookupValuesArray,
     getLookup2ValuesArray,
     spreadValueToMonthly,
-    spreadLookupValueToMonthly,
     spreadLookup2ValueToMonthly,
     generatePeriods,
-    generateLookupPeriods,
     groupInputsBySubgroup
 } from './utils/inputHelpers'
 
@@ -28,6 +24,7 @@ export default function ExcelInputs({
     inputs,
     config,
     keyPeriods = [],
+    viewMode = 'M',
     onUpdateGroup,
     onRemoveGroup,
     onAddInput,
@@ -55,10 +52,9 @@ export default function ExcelInputs({
         const subgroupedInputs = groupInputsBySubgroup(rawGroupInputs, group)
         const groupInputs = subgroupedInputs.flatMap(sg => sg.inputs)
 
-        const isLookupMode = group.entryMode === 'lookup'
-        const isLookup2Mode = group.entryMode === 'lookup2'
+        const isLookupMode = group.entryMode === 'lookup' || group.entryMode === 'lookup2'
         const isConstantMode = group.entryMode === 'constant'
-        const periods = isLookupMode ? generateLookupPeriods(group, config) : generatePeriods(group, config)
+        const periods = generatePeriods(group, config, keyPeriods)
 
         // Build clipboard data
         const rows = []
@@ -93,14 +89,12 @@ export default function ExcelInputs({
                     }
                 }
             } else {
-                // Values, Series, Lookup, or Lookup2 mode
+                // Values, Series, or Lookup mode
                 let values
                 if (isLookupMode) {
-                    values = getLookupValuesArray(input, periods, group.frequency, group, config)
-                } else if (isLookup2Mode) {
                     values = getLookup2ValuesArray(input, periods, group.frequency)
                 } else {
-                    values = getValuesArray(input, periods, group.frequency, group)
+                    values = getValuesArray(input, periods, group.frequency, group, config)
                 }
 
                 for (let c = minCol; c <= maxCol; c++) {
@@ -128,10 +122,9 @@ export default function ExcelInputs({
         if (!group) return
 
         // Determine entry mode
-        const isLookupMode = group.entryMode === 'lookup'
-        const isLookup2Mode = group.entryMode === 'lookup2'
+        const isLookupMode = group.entryMode === 'lookup' || group.entryMode === 'lookup2'
         const isConstantMode = group.entryMode === 'constant'
-        const periods = isLookupMode ? generateLookupPeriods(group, config) : generatePeriods(group, config)
+        const periods = generatePeriods(group, config, keyPeriods)
 
         // Get inputs in display order (grouped by subgroups)
         const rawGroupInputs = inputs.filter(inp => inp.groupId === selection.groupId)
@@ -211,8 +204,6 @@ export default function ExcelInputs({
                         const numVal = typeof val === 'number' ? val : (parseFloat(val) || 0)
                         // Use appropriate spread function based on entry mode
                         if (isLookupMode) {
-                            currentValues = spreadLookupValueToMonthly(currentValues, colIndex, numVal, group.frequency, group, config)
-                        } else if (isLookup2Mode) {
                             currentValues = spreadLookup2ValueToMonthly(currentValues, colIndex, numVal, group.frequency)
                         } else {
                             currentValues = spreadValueToMonthly(currentValues, colIndex, numVal, group.frequency, periods)
@@ -293,7 +284,7 @@ export default function ExcelInputs({
             {groups.map(group => {
                 const isCollapsed = collapsedGroups?.has(group.id)
                 const groupInputs = inputs.filter(inp => inp.groupId === group.id)
-                const periods = generatePeriods(group, config)
+                const periods = generatePeriods(group, config, keyPeriods)
                 const entryMode = group.entryMode || 'values'
 
                 // Shared props for mode components
@@ -302,6 +293,8 @@ export default function ExcelInputs({
                     groupInputs,
                     periods,
                     config,
+                    viewMode,
+                    keyPeriods,
                     isCollapsed,
                     isCellSelected,
                     handleCellSelect,
@@ -342,11 +335,7 @@ export default function ExcelInputs({
                             <ConstantMode {...modeProps} />
                         )}
 
-                        {entryMode === 'lookup' && (
-                            <LookupMode {...modeProps} />
-                        )}
-
-                        {entryMode === 'lookup2' && (
+                        {(entryMode === 'lookup' || entryMode === 'lookup2') && (
                             <Lookup2Mode {...modeProps} />
                         )}
                     </div>

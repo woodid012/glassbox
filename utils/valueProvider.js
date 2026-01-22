@@ -117,8 +117,7 @@ export function getValueAtPeriod(input, t, context) {
     const isValuesMode = entryMode === 'values' || entryMode === 'schedule'
     const isSeriesMode = entryMode === 'series' || entryMode === 'single' || entryMode === 'uniform'
     const isConstantMode = entryMode === 'constant' || entryMode === 'constants'
-    const isLookupMode = entryMode === 'lookup'
-    const isLookup2Mode = entryMode === 'lookup2'
+    const isLookupMode = entryMode === 'lookup' || entryMode === 'lookup2'
 
     const valueFrequency = input.valueFrequency || input.timePeriod || 'Y'
     const timelineFreq = timeline.frequency || 'monthly'
@@ -145,26 +144,8 @@ export function getValueAtPeriod(input, t, context) {
             : (input.value || 0) / periodsPerValueFreq
     }
 
-    // 2. LOOKUP mode: direct monthly lookup with offset from custom lookup range
+    // 2. LOOKUP mode: direct monthly lookup at model timeline (no offset)
     if (isLookupMode && input.values && typeof input.values === 'object') {
-        // Calculate offset from lookup start to model start
-        const modelStartTotal = timeline.year[0] * 12 + timeline.month[0]
-        const lookupStartYear = group.lookupStartYear ?? timeline.year[0]
-        const lookupStartMonth = group.lookupStartMonth ?? timeline.month[0]
-        const lookupStartTotal = lookupStartYear * 12 + lookupStartMonth
-        const monthOffset = lookupStartTotal - modelStartTotal
-
-        // Direct lookup at monthly index with offset
-        const valueIndex = t + monthOffset
-        const value = input.values[valueIndex] ?? input.values[String(valueIndex)]
-        if (value !== undefined && !isNaN(parseFloat(value))) {
-            return parseFloat(value)
-        }
-        return 0
-    }
-
-    // 3. LOOKUP2 mode: direct monthly lookup at model timeline (no offset)
-    if (isLookup2Mode && input.values && typeof input.values === 'object') {
         // Direct lookup at monthly index (values stored at 0, 1, 2... from model start)
         const value = input.values[t] ?? input.values[String(t)]
         if (value !== undefined && !isNaN(parseFloat(value))) {

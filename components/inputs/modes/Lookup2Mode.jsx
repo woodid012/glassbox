@@ -5,7 +5,8 @@ import {
     formatPeriodLabel,
     getLookup2ValuesArray,
     spreadLookup2ValueToMonthly,
-    groupInputsBySubgroup
+    groupInputsBySubgroup,
+    getMonthsPerPeriod
 } from '../utils/inputHelpers'
 
 export default function Lookup2Mode({
@@ -13,6 +14,7 @@ export default function Lookup2Mode({
     groupInputs,
     periods,        // From generatePeriods() - model timeline
     config,
+    viewMode = 'M',
     isCollapsed,
     isCellSelected,
     handleCellSelect,
@@ -288,10 +290,62 @@ export default function Lookup2Mode({
             </table>
         </div>
 
-        {/* Generated Array Preview - same as model timeline since lookup2 uses model periods */}
+        {/* Generated Array Preview - uses viewMode frequency */}
+        {(() => {
+            // Generate preview periods based on viewMode (not group.frequency)
+            const monthsPerPeriod = getMonthsPerPeriod(viewMode)
+            let startYear = group.startYear ?? config.startYear ?? 2024
+            let startMonth = group.startMonth ?? config.startMonth ?? 1
+            if (group.startDate && !group.startYear) {
+                const [y, m] = group.startDate.split('-').map(Number)
+                startYear = y
+                startMonth = m
+            }
+            const totalMonths = group.periods || 12
+
+            // For FY view, align periods to fiscal year boundaries
+            const previewPeriods = []
+            const fyStartMonth = config?.fyStartMonth || 7
+
+            if (viewMode === 'FY') {
+                // Find the fiscal year that contains the start date
+                let fyStartYear = startMonth < fyStartMonth ? startYear - 1 : startYear
+                let fyStart = fyStartMonth
+
+                // Calculate how many fiscal years we need
+                const endYear = startYear + Math.floor((startMonth - 1 + totalMonths) / 12)
+                const endMonth = ((startMonth - 1 + totalMonths) % 12) + 1
+                const fyEndYear = endMonth < fyStartMonth ? endYear - 1 : endYear
+
+                const numFYPeriods = fyEndYear - fyStartYear + 1
+
+                for (let i = 0; i < numFYPeriods; i++) {
+                    previewPeriods.push({
+                        year: fyStartYear + i,
+                        month: fyStart,
+                        index: i,
+                        fyEndYear: fyStartYear + i + 1
+                    })
+                }
+            } else {
+                // Standard period generation for M, Q, Y
+                const numPreviewPeriods = Math.ceil(totalMonths / monthsPerPeriod)
+                let currentYear = startYear
+                let currentMonth = startMonth
+                for (let i = 0; i < numPreviewPeriods; i++) {
+                    previewPeriods.push({ year: currentYear, month: currentMonth, index: i })
+                    currentMonth += monthsPerPeriod
+                    while (currentMonth > 12) {
+                        currentMonth -= 12
+                        currentYear += 1
+                    }
+                }
+            }
+
+            return (
         <div className="mt-4 border-t border-slate-200 pt-3">
             <div className="text-xs font-semibold text-slate-500 uppercase mb-2 px-3">
-                Generated Array Preview
+                Generated Array Preview ({viewMode === 'M' ? 'Monthly' : viewMode === 'Q' ? 'Quarterly' : viewMode === 'Y' ? 'Yearly' : 'Financial Year'})
             </div>
             <div className="overflow-x-auto">
                 <table className="text-sm table-fixed">
@@ -304,9 +358,9 @@ export default function Lookup2Mode({
                             <th className="text-right py-1 px-3 text-xs font-semibold text-slate-500 uppercase w-[96px] min-w-[96px] max-w-[96px] sticky left-[224px] z-10 bg-slate-50 border-r border-slate-300">
                                 Total
                             </th>
-                            {periods.map((p, i) => (
+                            {previewPeriods.map((p, i) => (
                                 <th key={i} className="text-center py-1 px-0 text-[10px] font-medium text-slate-500 min-w-[45px] w-[45px]">
-                                    {formatPeriodLabel(p.year, p.month, group.frequency)}
+                                    {formatPeriodLabel(p.year, p.month, viewMode, config)}
                                 </th>
                             ))}
                         </tr>
@@ -318,7 +372,7 @@ export default function Lookup2Mode({
                                 {subgroupedInputs.map(sg => {
                                     const selectedInput = getSelectedForSubgroup(sg.id, sg.inputs)
                                     if (!selectedInput) return null
-                                    const rawValues = getLookup2ValuesArray(selectedInput, periods, group.frequency)
+                                    const rawValues = getLookup2ValuesArray(selectedInput, previewPeriods, viewMode)
                                     // Fill forward zeros (if enabled)
                                     const filledValues = []
                                     const isFilledFromPrev = []
@@ -346,7 +400,7 @@ export default function Lookup2Mode({
                                                     <td colSpan={2} className="py-1 px-3 text-xs font-semibold text-blue-700 sticky left-[32px] z-20 bg-blue-50">
                                                         {sg.name}
                                                     </td>
-                                                    {periods.map((_, i) => (
+                                                    {previewPeriods.map((_, i) => (
                                                         <td key={i} className="bg-blue-50 border-r border-blue-100"></td>
                                                     ))}
                                                 </tr>
@@ -369,11 +423,11 @@ export default function Lookup2Mode({
                                     )
                                 })}
                                 {(() => {
-                                    const groupPeriodTotals = periods.map((_, periodIdx) => {
+                                    const groupPeriodTotals = previewPeriods.map((_, periodIdx) => {
                                         return subgroupedInputs.reduce((sum, sg) => {
                                             const selectedInput = getSelectedForSubgroup(sg.id, sg.inputs)
                                             if (!selectedInput) return sum
-                                            const rawValues = getLookup2ValuesArray(selectedInput, periods, group.frequency)
+                                            const rawValues = getLookup2ValuesArray(selectedInput, previewPeriods, viewMode)
                                             // Fill forward for totals too (if enabled)
                                             if (prefillEnabled) {
                                                 let lastNonZero = 0
@@ -416,13 +470,13 @@ export default function Lookup2Mode({
                                                 <td colSpan={2} className="py-1 px-3 text-xs font-semibold text-blue-700 sticky left-[32px] z-20 bg-blue-50">
                                                     {sg.name}
                                                 </td>
-                                                {periods.map((_, i) => (
+                                                {previewPeriods.map((_, i) => (
                                                     <td key={i} className="bg-blue-50 border-r border-blue-100"></td>
                                                 ))}
                                             </tr>
                                         )}
                                         {sg.inputs.map(input => {
-                                            const rawValues = getLookup2ValuesArray(input, periods, group.frequency)
+                                            const rawValues = getLookup2ValuesArray(input, previewPeriods, viewMode)
                                             // Fill forward zeros (if enabled)
                                             const filledValues = []
                                             const isFilledFromPrev = []
@@ -467,6 +521,8 @@ export default function Lookup2Mode({
                 </table>
             </div>
         </div>
+            )
+        })()}
         </>
     )
 }

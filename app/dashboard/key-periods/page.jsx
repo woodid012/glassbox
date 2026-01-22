@@ -12,13 +12,18 @@ export default function KeyPeriodsPage() {
         handlers
     } = useDashboard()
 
-    const { config, keyPeriods } = appState
+    const { config, keyPeriods, collapsedKeyPeriodGroups } = appState
     const { setConfig } = setters
     const {
         addKeyPeriod,
         updateKeyPeriod,
         removeKeyPeriod,
-        reorderKeyPeriods
+        reorderKeyPeriods,
+        convertToGroup,
+        ungroupPeriod,
+        addToGroup,
+        removeFromGroup,
+        toggleKeyPeriodGroup
     } = handlers
 
     const handleUpdateConfig = (updates) => {
@@ -39,11 +44,17 @@ export default function KeyPeriodsPage() {
                     <KeyPeriods
                         config={config}
                         keyPeriods={keyPeriods}
+                        collapsedKeyPeriodGroups={collapsedKeyPeriodGroups || new Set()}
                         onAddPeriod={addKeyPeriod}
                         onUpdatePeriod={updateKeyPeriod}
                         onRemovePeriod={removeKeyPeriod}
                         onReorderPeriods={reorderKeyPeriods}
                         onUpdateConfig={handleUpdateConfig}
+                        onConvertToGroup={convertToGroup}
+                        onUngroupPeriod={ungroupPeriod}
+                        onAddToGroup={addToGroup}
+                        onRemoveFromGroup={removeFromGroup}
+                        onToggleKeyPeriodGroup={toggleKeyPeriodGroup}
                         calculateLinkedStartPeriod={(linkedToPeriodId, linkOffset, allPeriods, linkToStart) =>
                             calculateLinkedStartPeriod(linkedToPeriodId, linkOffset, allPeriods, config, linkToStart)
                         }

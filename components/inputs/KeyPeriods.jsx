@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Plus, Trash2, Link2, GripVertical } from 'lucide-react'
+import React, { useState, useMemo } from 'react'
+import { Plus, Trash2, Link2, GripVertical, ChevronRight, ChevronDown, FolderPlus, FolderMinus, LogIn, LogOut } from 'lucide-react'
 import { theme, cn } from './theme'
 import { YearMonthInput } from './InputField'
 
@@ -21,11 +21,17 @@ function OffsetInput({ value, onCommit }) {
 export default function KeyPeriods({
     config,
     keyPeriods,
+    collapsedKeyPeriodGroups = new Set(),
     onAddPeriod,
     onUpdatePeriod,
     onRemovePeriod,
     onReorderPeriods,
     onUpdateConfig,
+    onConvertToGroup,
+    onUngroupPeriod,
+    onAddToGroup,
+    onRemoveFromGroup,
+    onToggleKeyPeriodGroup,
     calculateLinkedStartPeriod,
     calculateLinkedEndPeriod,
     calculateLinkedAllPeriods,
@@ -35,6 +41,58 @@ export default function KeyPeriods({
     const [dragOverIndex, setDragOverIndex] = useState(null)
     const [expandedStartLinks, setExpandedStartLinks] = useState(new Set())
     const [expandedEndLinks, setExpandedEndLinks] = useState(new Set())
+
+    // Organize periods for display: respect original order, inject children after their parent group
+    const { displayPeriods, groupsMap } = useMemo(() => {
+        const groups = keyPeriods.filter(p => p.isGroup)
+        const childPeriods = keyPeriods.filter(p => p.parentGroupId)
+        const childIds = new Set(childPeriods.map(p => p.id))
+
+        // Build a map of group ID to its children (in order from childIds)
+        const gMap = new Map()
+        groups.forEach(g => {
+            const gChildIds = g.childIds || []
+            const orderedChildren = gChildIds
+                .map(id => childPeriods.find(c => c.id === id))
+                .filter(Boolean)
+            gMap.set(g.id, orderedChildren)
+        })
+
+        // Build display order: iterate through keyPeriods in original order
+        // - If it's a group, add it then add its children (if expanded)
+        // - If it's a child, skip (already added after parent)
+        // - If it's standalone, add it
+        const display = []
+        keyPeriods.forEach(p => {
+            if (childIds.has(p.id)) {
+                // Skip children - they're added after their parent group
+                return
+            }
+
+            if (p.isGroup) {
+                display.push({ ...p, displayType: 'group' })
+                if (!collapsedKeyPeriodGroups.has(p.id)) {
+                    const gChildren = gMap.get(p.id) || []
+                    gChildren.forEach((child, idx) => {
+                        display.push({
+                            ...child,
+                            displayType: 'child',
+                            isLastChild: idx === gChildren.length - 1
+                        })
+                    })
+                }
+            } else {
+                display.push({ ...p, displayType: 'standalone' })
+            }
+        })
+
+        return { displayPeriods: display, groupsMap: gMap }
+    }, [keyPeriods, collapsedKeyPeriodGroups])
+
+    // Get available groups for "Add to Group" dropdown
+    const availableGroups = useMemo(() => {
+        return keyPeriods.filter(p => p.isGroup)
+    }, [keyPeriods])
 
     // Helper function to normalize period IDs
     const normalizePeriodId = (periodId) => {
@@ -420,6 +478,9 @@ export default function KeyPeriods({
                             <th className="w-14 px-2 py-2 text-center text-[10px] font-semibold text-slate-500 uppercase">
                                 Offset
                             </th>
+                            <th className="w-20 px-1 py-2 text-center text-[10px] font-semibold text-slate-500 uppercase">
+                                Group
+                            </th>
                             <th className="w-8 px-1 py-2"></th>
                         </tr>
                     </thead>
@@ -473,97 +534,159 @@ export default function KeyPeriods({
                                 <span className="text-[10px] text-slate-400">—</span>
                             </td>
                             <td className="px-1 py-2"></td>
+                            <td className="px-1 py-2"></td>
                         </tr>
 
-                        {/* Custom periods */}
-                        {keyPeriods.map((period, index) => {
+                        {/* Custom periods - organized by groups */}
+                        {displayPeriods.map((period, displayIndex) => {
                             const periodsYears = calculateYears(period.periods || 1, config.minFrequency)
                             const hasStartLink = !!period.startLinkedToPeriodId
                             const hasEndLink = !!period.endLinkedToPeriodId
+                            const isGroup = period.displayType === 'group'
+                            const isChild = period.displayType === 'child'
+                            const isCollapsed = collapsedKeyPeriodGroups.has(period.id)
+                            const childCount = isGroup ? (groupsMap.get(period.id) || []).length : 0
+
+                            // Find the original index for drag/drop
+                            const originalIndex = keyPeriods.findIndex(p => p.id === period.id)
 
                             return (
                                 <React.Fragment key={period.id}>
                                     {/* Main row */}
                                     <tr
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, index)}
-                                        onDragOver={(e) => handleDragOver(e, index)}
+                                        draggable={!isChild}
+                                        onDragStart={(e) => !isChild && handleDragStart(e, originalIndex)}
+                                        onDragOver={(e) => handleDragOver(e, originalIndex)}
                                         onDragLeave={handleDragLeave}
-                                        onDrop={(e) => handleDrop(e, index)}
+                                        onDrop={(e) => handleDrop(e, originalIndex)}
                                         onDragEnd={handleDragEnd}
                                         className={cn(
-                                            "border-b border-slate-100 hover:bg-slate-50 cursor-move",
-                                            (hasStartLink || hasEndLink) && "bg-blue-50/30",
-                                            draggedIndex === index && "opacity-50",
-                                            dragOverIndex === index && "bg-indigo-50 border-t-2 border-indigo-400"
+                                            "border-b border-slate-100 hover:bg-slate-50",
+                                            !isChild && "cursor-move",
+                                            isGroup && "bg-amber-50/50",
+                                            isChild && "bg-slate-50/50",
+                                            (hasStartLink || hasEndLink) && !isGroup && !isChild && "bg-blue-50/30",
+                                            draggedIndex === originalIndex && "opacity-50",
+                                            dragOverIndex === originalIndex && "bg-indigo-50 border-t-2 border-indigo-400"
                                         )}
                                     >
                                         <td className="px-1 py-2">
-                                            <div className="flex items-center justify-center text-slate-300 hover:text-slate-500">
-                                                <GripVertical className="w-3 h-3" />
+                                            <div className="flex items-center justify-center">
+                                                {isGroup ? (
+                                                    <button
+                                                        onClick={() => onToggleKeyPeriodGroup && onToggleKeyPeriodGroup(period.id)}
+                                                        className="text-slate-500 hover:text-slate-700"
+                                                        title={isCollapsed ? 'Expand' : 'Collapse'}
+                                                    >
+                                                        {isCollapsed ? (
+                                                            <ChevronRight className="w-3.5 h-3.5" />
+                                                        ) : (
+                                                            <ChevronDown className="w-3.5 h-3.5" />
+                                                        )}
+                                                    </button>
+                                                ) : isChild ? (
+                                                    <span className="text-slate-300 text-[10px] pl-1">
+                                                        {period.isLastChild ? '└' : '├'}
+                                                    </span>
+                                                ) : (
+                                                    <div className="text-slate-300 hover:text-slate-500">
+                                                        <GripVertical className="w-3 h-3" />
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-2 py-2">
-                                            <input
-                                                type="text"
-                                                value={period.name}
-                                                onChange={(e) => onUpdatePeriod(period.id, { name: e.target.value })}
-                                                className="bg-transparent border-0 text-xs text-slate-900 w-full focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1"
-                                                placeholder="Name"
-                                            />
-                                        </td>
-                                        <td className="px-2 py-2">
-                                            <input
-                                                type="number"
-                                                value={period.periods || 1}
-                                                onChange={(e) => handlePeriodsChange(period.id, e.target.value)}
-                                                min="1"
-                                                disabled={hasEndLink}
-                                                className={cn(
-                                                    "bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] text-slate-900 w-full text-center",
-                                                    "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-                                                    hasEndLink && "bg-slate-100 text-slate-500"
+                                            <div className={cn("flex items-center gap-1", isChild && "pl-3")}>
+                                                <input
+                                                    type="text"
+                                                    value={period.name}
+                                                    onChange={(e) => onUpdatePeriod(period.id, { name: e.target.value })}
+                                                    className={cn(
+                                                        "bg-transparent border-0 text-xs w-full focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1",
+                                                        isGroup ? "font-semibold text-amber-800" : "text-slate-900"
+                                                    )}
+                                                    placeholder="Name"
+                                                />
+                                                {isGroup && childCount > 0 && (
+                                                    <span className="text-[9px] text-amber-600 bg-amber-100 px-1 rounded">
+                                                        {childCount}
+                                                    </span>
                                                 )}
-                                            />
+                                            </div>
+                                        </td>
+                                        <td className="px-2 py-2 text-center">
+                                            {isGroup ? (
+                                                <span className="text-[11px] text-slate-600">{period.periods || 0}</span>
+                                            ) : (
+                                                <input
+                                                    type="number"
+                                                    value={period.periods || 1}
+                                                    onChange={(e) => handlePeriodsChange(period.id, e.target.value)}
+                                                    min="1"
+                                                    disabled={hasEndLink}
+                                                    className={cn(
+                                                        "bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] text-slate-900 w-full text-center",
+                                                        "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                                                        hasEndLink && "bg-slate-100 text-slate-500"
+                                                    )}
+                                                />
+                                            )}
                                         </td>
                                         <td className="px-2 py-2 text-center">
                                             <span className="text-[11px] text-slate-600">{periodsYears.toFixed(1)}</span>
                                         </td>
                                         <td className="px-2 py-2">
-                                            <YearMonthInput
-                                                year={period.startYear}
-                                                month={period.startMonth}
-                                                onChange={({ year, month }) => handleStartDateChange(period.id, year, month)}
-                                                disabled={hasStartLink}
-                                                compact
-                                            />
+                                            {isGroup ? (
+                                                <div className="flex gap-0.5">
+                                                    <div className="bg-white border border-slate-200 rounded px-2 py-0.5 text-[11px] text-slate-900 w-10">
+                                                        {String(period.startMonth).padStart(2, '0')}
+                                                    </div>
+                                                    <div className="bg-white border border-slate-200 rounded px-2 py-0.5 text-[11px] text-slate-900 w-12">
+                                                        {period.startYear}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <YearMonthInput
+                                                    year={period.startYear}
+                                                    month={period.startMonth}
+                                                    onChange={({ year, month }) => handleStartDateChange(period.id, year, month)}
+                                                    disabled={hasStartLink}
+                                                    compact
+                                                />
+                                            )}
                                         </td>
                                         <td className="px-2 py-2">
-                                            <div className="flex items-center gap-1">
-                                                <select
-                                                    value={period.startLinkedToPeriodId
-                                                        ? `${period.startLinkedToPeriodId}:${period.startLinkToEnd ? 'end' : 'start'}`
-                                                        : ''}
-                                                    onChange={(e) => handleStartLinkChange(period.id, e.target.value)}
-                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] text-slate-900"
-                                                >
-                                                    <option value="">—</option>
-                                                    <option value="default:start">Model - Start</option>
-                                                    <option value="default:end">Model - End</option>
-                                                    {keyPeriods.filter(p => p.id !== period.id).map(p => (
-                                                        <React.Fragment key={p.id}>
-                                                            <option value={`${p.id}:start`}>{p.name} - Start</option>
-                                                            <option value={`${p.id}:end`}>{p.name} - End</option>
-                                                        </React.Fragment>
-                                                    ))}
-                                                </select>
-                                                {hasStartLink && (
-                                                    <Link2 className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-                                                )}
-                                            </div>
+                                            {isGroup ? (
+                                                <span className="text-[10px] text-slate-400">—</span>
+                                            ) : (
+                                                <div className="flex items-center gap-1">
+                                                    <select
+                                                        value={period.startLinkedToPeriodId
+                                                            ? `${period.startLinkedToPeriodId}:${period.startLinkToEnd ? 'end' : 'start'}`
+                                                            : ''}
+                                                        onChange={(e) => handleStartLinkChange(period.id, e.target.value)}
+                                                        className="bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] text-slate-900"
+                                                    >
+                                                        <option value="">—</option>
+                                                        <option value="default:start">Model - Start</option>
+                                                        <option value="default:end">Model - End</option>
+                                                        {keyPeriods.filter(p => p.id !== period.id).map(p => (
+                                                            <React.Fragment key={p.id}>
+                                                                <option value={`${p.id}:start`}>{p.name} - Start</option>
+                                                                <option value={`${p.id}:end`}>{p.name} - End</option>
+                                                            </React.Fragment>
+                                                        ))}
+                                                    </select>
+                                                    {hasStartLink && (
+                                                        <Link2 className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+                                                    )}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-2 py-2 text-center">
-                                            {hasStartLink ? (
+                                            {isGroup ? (
+                                                <span className="text-[10px] text-slate-400">—</span>
+                                            ) : hasStartLink ? (
                                                 <OffsetInput
                                                     value={period.startLinkOffset?.value || 0}
                                                     onCommit={(val) => handleStartOffsetChange(period.id, 'value', val)}
@@ -573,40 +696,57 @@ export default function KeyPeriods({
                                             )}
                                         </td>
                                         <td className="px-2 py-2">
-                                            <YearMonthInput
-                                                year={period.endYear}
-                                                month={period.endMonth}
-                                                onChange={({ year, month }) => handleEndDateChange(period.id, year, month)}
-                                                disabled={hasEndLink}
-                                                compact
-                                            />
+                                            {isGroup ? (
+                                                <div className="flex gap-0.5">
+                                                    <div className="bg-white border border-slate-200 rounded px-2 py-0.5 text-[11px] text-slate-900 w-10">
+                                                        {String(period.endMonth).padStart(2, '0')}
+                                                    </div>
+                                                    <div className="bg-white border border-slate-200 rounded px-2 py-0.5 text-[11px] text-slate-900 w-12">
+                                                        {period.endYear}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <YearMonthInput
+                                                    year={period.endYear}
+                                                    month={period.endMonth}
+                                                    onChange={({ year, month }) => handleEndDateChange(period.id, year, month)}
+                                                    disabled={hasEndLink}
+                                                    compact
+                                                />
+                                            )}
                                         </td>
                                         <td className="px-2 py-2">
-                                            <div className="flex items-center gap-1">
-                                                <select
-                                                    value={period.endLinkedToPeriodId
-                                                        ? `${period.endLinkedToPeriodId}:${period.endLinkToEnd ? 'end' : 'start'}`
-                                                        : ''}
-                                                    onChange={(e) => handleEndLinkChange(period.id, e.target.value)}
-                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] text-slate-900"
-                                                >
-                                                    <option value="">—</option>
-                                                    <option value="default:start">Model - Start</option>
-                                                    <option value="default:end">Model - End</option>
-                                                    {keyPeriods.filter(p => p.id !== period.id).map(p => (
-                                                        <React.Fragment key={p.id}>
-                                                            <option value={`${p.id}:start`}>{p.name} - Start</option>
-                                                            <option value={`${p.id}:end`}>{p.name} - End</option>
-                                                        </React.Fragment>
-                                                    ))}
-                                                </select>
-                                                {hasEndLink && (
-                                                    <Link2 className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-                                                )}
-                                            </div>
+                                            {isGroup ? (
+                                                <span className="text-[10px] text-slate-400">—</span>
+                                            ) : (
+                                                <div className="flex items-center gap-1">
+                                                    <select
+                                                        value={period.endLinkedToPeriodId
+                                                            ? `${period.endLinkedToPeriodId}:${period.endLinkToEnd ? 'end' : 'start'}`
+                                                            : ''}
+                                                        onChange={(e) => handleEndLinkChange(period.id, e.target.value)}
+                                                        className="bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] text-slate-900"
+                                                    >
+                                                        <option value="">—</option>
+                                                        <option value="default:start">Model - Start</option>
+                                                        <option value="default:end">Model - End</option>
+                                                        {keyPeriods.filter(p => p.id !== period.id).map(p => (
+                                                            <React.Fragment key={p.id}>
+                                                                <option value={`${p.id}:start`}>{p.name} - Start</option>
+                                                                <option value={`${p.id}:end`}>{p.name} - End</option>
+                                                            </React.Fragment>
+                                                        ))}
+                                                    </select>
+                                                    {hasEndLink && (
+                                                        <Link2 className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+                                                    )}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-2 py-2 text-center">
-                                            {hasEndLink ? (
+                                            {isGroup ? (
+                                                <span className="text-[10px] text-slate-400">—</span>
+                                            ) : hasEndLink ? (
                                                 <OffsetInput
                                                     value={period.endLinkOffset?.value || 0}
                                                     onCommit={(val) => handleEndOffsetChange(period.id, 'value', val)}
@@ -614,6 +754,58 @@ export default function KeyPeriods({
                                             ) : (
                                                 <span className="text-[10px] text-slate-400">—</span>
                                             )}
+                                        </td>
+                                        {/* Group actions column */}
+                                        <td className="px-1 py-2">
+                                            <div className="flex items-center justify-center gap-0.5">
+                                                {isGroup ? (
+                                                    // Ungroup button
+                                                    <button
+                                                        onClick={() => onUngroupPeriod && onUngroupPeriod(period.id)}
+                                                        className="p-0.5 text-amber-500 hover:text-amber-700"
+                                                        title="Ungroup"
+                                                    >
+                                                        <FolderMinus className="w-3.5 h-3.5" />
+                                                    </button>
+                                                ) : isChild ? (
+                                                    // Remove from group button
+                                                    <button
+                                                        onClick={() => onRemoveFromGroup && onRemoveFromGroup(period.id)}
+                                                        className="p-0.5 text-slate-400 hover:text-slate-600"
+                                                        title="Remove from group"
+                                                    >
+                                                        <LogOut className="w-3.5 h-3.5" />
+                                                    </button>
+                                                ) : (
+                                                    // Standalone: Make Group or Add to Group
+                                                    <>
+                                                        <button
+                                                            onClick={() => onConvertToGroup && onConvertToGroup(period.id)}
+                                                            className="p-0.5 text-slate-400 hover:text-amber-600"
+                                                            title="Make this a group"
+                                                        >
+                                                            <FolderPlus className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        {availableGroups.length > 0 && (
+                                                            <select
+                                                                value=""
+                                                                onChange={(e) => {
+                                                                    if (e.target.value && onAddToGroup) {
+                                                                        onAddToGroup(period.id, parseInt(e.target.value), true)
+                                                                    }
+                                                                }}
+                                                                className="bg-transparent border-0 text-[10px] text-slate-400 w-4 cursor-pointer"
+                                                                title="Add to group"
+                                                            >
+                                                                <option value="">+</option>
+                                                                {availableGroups.map(g => (
+                                                                    <option key={g.id} value={g.id}>→ {g.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-1 py-2">
                                             <button

@@ -4,6 +4,11 @@ import React from 'react'
 import { DisplayCell } from '@/components/inputs/Cells'
 import { getAggregatedValueForArray } from '../../../utils/valueAggregation'
 import { useDashboard } from '../context/DashboardContext'
+import {
+    getValuesArray,
+    generatePeriods,
+    getMonthsPerPeriod
+} from '@/components/inputs/utils/inputHelpers'
 
 export default function ArrayViewPage() {
     const {
@@ -18,7 +23,9 @@ export default function ArrayViewPage() {
         inputGlass,
         inputGlassGroups,
         modules,
-        calculations
+        calculations,
+        config,
+        keyPeriods
     } = appState
 
     const { setArrayViewSubTab } = setters
@@ -106,6 +113,8 @@ export default function ArrayViewPage() {
                                     viewHeaders={viewHeaders}
                                     viewMode={viewMode}
                                     referenceTypeMap={referenceTypeMap}
+                                    config={config}
+                                    keyPeriods={keyPeriods}
                                 />
                             )}
 
@@ -145,7 +154,9 @@ function InputsSubTab({
     timeline,
     viewHeaders,
     viewMode,
-    referenceTypeMap
+    referenceTypeMap,
+    config,
+    keyPeriods = []
 }) {
     return (
         <>
@@ -249,13 +260,99 @@ function InputsSubTab({
                     // Get type from referenceTypeMap (defaults to 'flow' if not found)
                     const groupType = referenceTypeMap?.[groupRef] || 'flow'
 
-                    // Calculate group subtotal
-                    const subtotalArray = new Array(timeline.periods).fill(0)
-                    groupInputs.forEach(input => {
-                        const arr = inputGlassArrays[`inputtype3_${input.id}`] || []
-                        for (let i = 0; i < timeline.periods; i++) {
-                            subtotalArray[i] += arr[i] || 0
+                    // Generate periods at viewMode frequency for value lookup
+                    // Resolve linked key period dates if applicable
+                    const groupPeriods = generatePeriods(group, config, keyPeriods)
+                    const viewModeMonthsPerPeriod = getMonthsPerPeriod(viewMode)
+                    const viewModePeriods = []
+                    let startYear, startMonth, totalMonths
+
+                    if (keyPeriods && group.linkedKeyPeriodId) {
+                        const linkedKeyPeriod = keyPeriods.find(kp =>
+                            String(kp.id) === String(group.linkedKeyPeriodId)
+                        )
+                        if (linkedKeyPeriod) {
+                            startYear = linkedKeyPeriod.startYear ?? config.startYear ?? 2024
+                            startMonth = linkedKeyPeriod.startMonth ?? config.startMonth ?? 1
+                            totalMonths = linkedKeyPeriod.periods || 12
+                        } else {
+                            startYear = group.startYear ?? config.startYear ?? 2024
+                            startMonth = group.startMonth ?? config.startMonth ?? 1
+                            totalMonths = group.periods || 12
                         }
+                    } else {
+                        startYear = group.startYear ?? config.startYear ?? 2024
+                        startMonth = group.startMonth ?? config.startMonth ?? 1
+                        if (group.startDate && !group.startYear) {
+                            const [y, m] = group.startDate.split('-').map(Number)
+                            startYear = y
+                            startMonth = m
+                        }
+                        totalMonths = group.periods || 12
+                    }
+
+                    // For FY view, align periods to fiscal year boundaries
+                    const fyStartMonth = config?.fyStartMonth || 7
+
+                    if (viewMode === 'FY') {
+                        // Find the fiscal year that contains the start date
+                        let fyStartYear = startMonth < fyStartMonth ? startYear - 1 : startYear
+                        let fyStart = fyStartMonth
+
+                        // Calculate how many fiscal years we need
+                        const endYear = startYear + Math.floor((startMonth - 1 + totalMonths) / 12)
+                        const endMonth = ((startMonth - 1 + totalMonths) % 12) + 1
+                        const fyEndYear = endMonth < fyStartMonth ? endYear - 1 : endYear
+
+                        const numFYPeriods = fyEndYear - fyStartYear + 1
+
+                        for (let i = 0; i < numFYPeriods; i++) {
+                            viewModePeriods.push({
+                                year: fyStartYear + i,
+                                month: fyStart,
+                                index: i,
+                                fyEndYear: fyStartYear + i + 1
+                            })
+                        }
+                    } else {
+                        // Standard period generation for M, Q, Y
+                        const numViewPeriods = Math.ceil(totalMonths / viewModeMonthsPerPeriod)
+                        let curYear = startYear
+                        let curMonth = startMonth
+                        for (let i = 0; i < numViewPeriods; i++) {
+                            viewModePeriods.push({ year: curYear, month: curMonth, index: i })
+                            curMonth += viewModeMonthsPerPeriod
+                            while (curMonth > 12) {
+                                curMonth -= 12
+                                curYear += 1
+                            }
+                        }
+                    }
+
+                    // Build map from viewHeader index to viewMode period index
+                    const periodMap = new Map()
+                    viewModePeriods.forEach((vp, idx) => {
+                        viewHeaders.forEach((vh, vhIdx) => {
+                            const timelineIdx = vh.index
+                            const year = timeline.year[timelineIdx]
+                            const month = timeline.month[timelineIdx]
+                            if (vp.year === year && vp.month === month) {
+                                periodMap.set(vhIdx, idx)
+                            }
+                        })
+                    })
+
+                    // Get values for each input using getValuesArray at viewMode frequency
+                    const inputValuesArrays = groupInputs.map(input =>
+                        getValuesArray(input, viewModePeriods, viewMode, group, config)
+                    )
+
+                    // Calculate group subtotal at viewMode frequency
+                    const subtotalByPeriod = new Array(viewModePeriods.length).fill(0)
+                    inputValuesArrays.forEach(arr => {
+                        arr.forEach((val, i) => {
+                            subtotalByPeriod[i] += val || 0
+                        })
                     })
 
                     return (
@@ -277,10 +374,9 @@ function InputsSubTab({
                                     </div>
                                 </td>
                                 {viewHeaders.map((header, colIndex) => {
-                                    const isMonthlyView = viewMode === 'M'
-                                    const cellValue = isMonthlyView
-                                        ? (subtotalArray[header.index] ?? 0)
-                                        : getAggregatedValueForArray(subtotalArray, header.indices, groupType)
+                                    // Use the mapped period index to get value at viewMode frequency
+                                    const periodIdx = periodMap.get(colIndex)
+                                    const cellValue = periodIdx !== undefined ? subtotalByPeriod[periodIdx] : 0
                                     return (
                                         <td key={colIndex} className="spreadsheet-cell min-w-[90px] h-[36px] p-0 bg-slate-50">
                                             <DisplayCell value={cellValue} category="value" isTimeline={false} />
@@ -291,8 +387,8 @@ function InputsSubTab({
                             {/* Individual Input Rows */}
                             {groupInputs.map((input, inputIdx) => {
                                 const inputRef = `${groupRef}.${inputIdx + 1}`
-                                const inputType = referenceTypeMap?.[inputRef] || 'flow'
-                                const inputArray = inputGlassArrays[`inputtype3_${input.id}`] || []
+                                // Get values from our pre-computed arrays
+                                const inputValues = inputValuesArrays[inputIdx] || []
                                 return (
                                     <tr key={input.id} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
                                         <td className="frozen-col w-[300px] min-w-[300px] border-r border-slate-200 px-4 py-1.5 pl-8">
@@ -309,10 +405,9 @@ function InputsSubTab({
                                             </div>
                                         </td>
                                         {viewHeaders.map((header, colIndex) => {
-                                            const isMonthlyView = viewMode === 'M'
-                                            const cellValue = isMonthlyView
-                                                ? (inputArray[header.index] ?? 0)
-                                                : getAggregatedValueForArray(inputArray, header.indices, inputType)
+                                            // Use the mapped period index to get value at viewMode frequency
+                                            const periodIdx = periodMap.get(colIndex)
+                                            const cellValue = periodIdx !== undefined ? inputValues[periodIdx] : 0
                                             return (
                                                 <td key={colIndex} className="spreadsheet-cell min-w-[90px] h-[32px] p-0">
                                                     <DisplayCell value={cellValue} category="value" isTimeline={false} />
@@ -383,46 +478,129 @@ function InputsSubTab({
                                         ))}
                                     </tr>
                                     {/* Selected values for each subgroup */}
-                                    {subgroupedInputs.map((sg, sgIdx) => {
-                                        if (sg.inputs.length === 0) return null
+                                    {(() => {
+                                        // Generate periods at viewMode frequency for this lookup group
+                                        // Resolve linked key period dates if applicable
+                                        const lookupViewModeMonths = getMonthsPerPeriod(viewMode)
+                                        const lookupViewModePeriods = []
+                                        let lookupStartYear, lookupStartMonth, lookupTotalMonths
 
-                                        const key = sg.id ?? 'root'
-                                        const selectedIdx = selectedIndices[key] ?? 0
-                                        const selectedInput = sg.inputs[selectedIdx] || sg.inputs[0]
+                                        if (keyPeriods && group.linkedKeyPeriodId) {
+                                            const linkedKeyPeriod = keyPeriods.find(kp =>
+                                                String(kp.id) === String(group.linkedKeyPeriodId)
+                                            )
+                                            if (linkedKeyPeriod) {
+                                                lookupStartYear = linkedKeyPeriod.startYear ?? config.startYear ?? 2024
+                                                lookupStartMonth = linkedKeyPeriod.startMonth ?? config.startMonth ?? 1
+                                                lookupTotalMonths = linkedKeyPeriod.periods || 12
+                                            } else {
+                                                lookupStartYear = group.startYear ?? config.startYear ?? 2024
+                                                lookupStartMonth = group.startMonth ?? config.startMonth ?? 1
+                                                lookupTotalMonths = group.periods || 12
+                                            }
+                                        } else {
+                                            lookupStartYear = group.startYear ?? config.startYear ?? 2024
+                                            lookupStartMonth = group.startMonth ?? config.startMonth ?? 1
+                                            if (group.startDate && !group.startYear) {
+                                                const [y, m] = group.startDate.split('-').map(Number)
+                                                lookupStartYear = y
+                                                lookupStartMonth = m
+                                            }
+                                            lookupTotalMonths = group.periods || 12
+                                        }
 
-                                        if (!selectedInput) return null
+                                        // For FY view, align periods to fiscal year boundaries
+                                        const fyStartMonth = config?.fyStartMonth || 7
 
-                                        const inputArray = inputGlassArrays[`inputtype3_${selectedInput.id}`] || []
-                                        const subgroupRef = `${lookupRef}.${sgIdx + 1}`
+                                        if (viewMode === 'FY') {
+                                            // Find the fiscal year that contains the start date
+                                            let fyStartYear = lookupStartMonth < fyStartMonth ? lookupStartYear - 1 : lookupStartYear
+                                            let fyStart = fyStartMonth
 
-                                        return (
-                                            <tr key={sg.id ?? 'root'} className="bg-amber-50 border-b border-amber-200">
-                                                <td className="frozen-col w-[300px] min-w-[300px] border-r border-amber-200 px-4 py-2 pl-6 bg-amber-50">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded font-medium">
-                                                            {subgroupRef}
-                                                        </span>
-                                                        {sg.name && (
-                                                            <span className="text-xs text-slate-500">{sg.name}:</span>
-                                                        )}
-                                                        <span className="text-sm font-medium text-amber-800">{selectedInput.name}</span>
-                                                        <span className="text-[10px] text-amber-500">● selected</span>
-                                                    </div>
-                                                </td>
-                                                {viewHeaders.map((header, colIndex) => {
-                                                    const isMonthlyView = viewMode === 'M'
-                                                    const cellValue = isMonthlyView
-                                                        ? (inputArray[header.index] ?? 0)
-                                                        : getAggregatedValueForArray(inputArray, header.indices, 'stock')
-                                                    return (
-                                                        <td key={colIndex} className="spreadsheet-cell min-w-[90px] h-[36px] p-0 bg-amber-50">
-                                                            <DisplayCell value={cellValue} category="value" isTimeline={false} />
-                                                        </td>
-                                                    )
-                                                })}
-                                            </tr>
-                                        )
-                                    })}
+                                            // Calculate how many fiscal years we need
+                                            const endYear = lookupStartYear + Math.floor((lookupStartMonth - 1 + lookupTotalMonths) / 12)
+                                            const endMonth = ((lookupStartMonth - 1 + lookupTotalMonths) % 12) + 1
+                                            const fyEndYear = endMonth < fyStartMonth ? endYear - 1 : endYear
+
+                                            const numFYPeriods = fyEndYear - fyStartYear + 1
+
+                                            for (let i = 0; i < numFYPeriods; i++) {
+                                                lookupViewModePeriods.push({
+                                                    year: fyStartYear + i,
+                                                    month: fyStart,
+                                                    index: i,
+                                                    fyEndYear: fyStartYear + i + 1
+                                                })
+                                            }
+                                        } else {
+                                            // Standard period generation for M, Q, Y
+                                            const numLookupPeriods = Math.ceil(lookupTotalMonths / lookupViewModeMonths)
+                                            let curYear = lookupStartYear
+                                            let curMonth = lookupStartMonth
+                                            for (let i = 0; i < numLookupPeriods; i++) {
+                                                lookupViewModePeriods.push({ year: curYear, month: curMonth, index: i })
+                                                curMonth += lookupViewModeMonths
+                                                while (curMonth > 12) {
+                                                    curMonth -= 12
+                                                    curYear += 1
+                                                }
+                                            }
+                                        }
+
+                                        // Build map from viewHeader index to viewMode period index
+                                        const lookupPeriodMap = new Map()
+                                        lookupViewModePeriods.forEach((vp, idx) => {
+                                            viewHeaders.forEach((vh, vhIdx) => {
+                                                const timelineIdx = vh.index
+                                                const year = timeline.year[timelineIdx]
+                                                const month = timeline.month[timelineIdx]
+                                                if (vp.year === year && vp.month === month) {
+                                                    lookupPeriodMap.set(vhIdx, idx)
+                                                }
+                                            })
+                                        })
+
+                                        return subgroupedInputs.map((sg, sgIdx) => {
+                                            if (sg.inputs.length === 0) return null
+
+                                            const key = sg.id ?? 'root'
+                                            const selectedIdx = selectedIndices[key] ?? 0
+                                            const selectedInput = sg.inputs[selectedIdx] || sg.inputs[0]
+
+                                            if (!selectedInput) return null
+
+                                            // Use getValuesArray at viewMode frequency
+                                            const inputValues = getValuesArray(selectedInput, lookupViewModePeriods, viewMode, group, config)
+                                            const subgroupRef = `${lookupRef}.${sgIdx + 1}`
+
+                                            return (
+                                                <tr key={sg.id ?? 'root'} className="bg-amber-50 border-b border-amber-200">
+                                                    <td className="frozen-col w-[300px] min-w-[300px] border-r border-amber-200 px-4 py-2 pl-6 bg-amber-50">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded font-medium">
+                                                                {subgroupRef}
+                                                            </span>
+                                                            {sg.name && (
+                                                                <span className="text-xs text-slate-500">{sg.name}:</span>
+                                                            )}
+                                                            <span className="text-sm font-medium text-amber-800">{selectedInput.name}</span>
+                                                            <span className="text-[10px] text-amber-500">● selected</span>
+                                                        </div>
+                                                    </td>
+                                                    {viewHeaders.map((header, colIndex) => {
+                                                        // Use the mapped period index to get value at viewMode frequency
+                                                        const periodIdx = lookupPeriodMap.get(colIndex)
+                                                        const cellValue = periodIdx !== undefined ? inputValues[periodIdx] : 0
+                                                        return (
+                                                            <td key={colIndex} className="spreadsheet-cell min-w-[90px] h-[36px] p-0 bg-amber-50">
+                                                                <DisplayCell value={cellValue} category="value" isTimeline={false} />
+                                                            </td>
+                                                        )
+                                                    })}
+                                                </tr>
+                                            )
+                                        })
+                                    })()}
                                 </React.Fragment>
                             )
                         })}

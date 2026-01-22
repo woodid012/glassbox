@@ -1,7 +1,7 @@
 import React from 'react'
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react'
 import EditableCell from './EditableCell'
-import { formatPeriodLabel, generateExtendedPeriods } from '../utils/inputHelpers'
+import { formatPeriodLabel } from '../utils/inputHelpers'
 
 export default function GroupControls({
     group,
@@ -101,7 +101,6 @@ export default function GroupControls({
                     <option value="series">Series</option>
                     <option value="formula">Formula</option>
                     <option value="lookup">Lookup</option>
-                    <option value="lookup2">Lookup 2</option>
                 </select>
                 {((group.entryMode || 'values') === 'values' || group.entryMode === 'series' || group.entryMode === 'constant' || group.entryMode === 'lookup' || group.entryMode === 'lookup2') && (
                     <>
@@ -118,7 +117,7 @@ export default function GroupControls({
                         </select>
                     </>
                 )}
-                {group.entryMode === 'lookup2' && (
+                {(group.entryMode === 'lookup' || group.entryMode === 'lookup2') && (
                     <label className="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer">
                         <input
                             type="checkbox"
@@ -129,65 +128,7 @@ export default function GroupControls({
                         Selected
                     </label>
                 )}
-                {group.entryMode === 'lookup' && (() => {
-                    // Calculate these inside the conditional to ensure fresh values
-                    const lookupExtendedPeriods = generateExtendedPeriods(config, group.frequency || 'M')
-                    const lookupFreq = group.frequency || 'M'
-
-                    // Snap month to period boundary based on frequency
-                    // This ensures the value matches one of the dropdown options
-                    const snapToPeriodStart = (month, freq) => {
-                        if (freq === 'Y' || freq === 'FY') return 1
-                        if (freq === 'Q') return Math.floor((month - 1) / 3) * 3 + 1
-                        return month // Monthly - use exact month
-                    }
-
-                    const startMonth = group.lookupStartMonth ?? config.startMonth ?? 1
-                    const endMonth = group.lookupEndMonth ?? config.endMonth ?? 12
-
-                    const startValue = `${group.lookupStartYear ?? config.startYear ?? 2024}-${snapToPeriodStart(startMonth, lookupFreq)}`
-                    const endValue = `${group.lookupEndYear ?? config.endYear ?? (config.startYear ?? 2024) + 1}-${snapToPeriodStart(endMonth, lookupFreq)}`
-
-                    return (
-                        <>
-                            <span className="text-xs text-slate-500">Start:</span>
-                            <select
-                                value={startValue}
-                                onChange={(e) => {
-                                    const [year, month] = e.target.value.split('-').map(Number)
-                                    onUpdateGroup(group.id, 'lookupStartYear', year)
-                                    onUpdateGroup(group.id, 'lookupStartMonth', month)
-                                    onUpdateGroup(group.id, 'linkedKeyPeriodId', 'custom')
-                                }}
-                                className="text-xs bg-white border border-slate-300 rounded px-2 py-1 text-slate-700"
-                            >
-                                {lookupExtendedPeriods.map((p, i) => (
-                                    <option key={`start-${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
-                                        {formatPeriodLabel(p.year, p.month, lookupFreq)}
-                                    </option>
-                                ))}
-                            </select>
-                            <span className="text-xs text-slate-500">End:</span>
-                            <select
-                                value={endValue}
-                                onChange={(e) => {
-                                    const [year, month] = e.target.value.split('-').map(Number)
-                                    onUpdateGroup(group.id, 'lookupEndYear', year)
-                                    onUpdateGroup(group.id, 'lookupEndMonth', month)
-                                    onUpdateGroup(group.id, 'linkedKeyPeriodId', 'custom')
-                                }}
-                                className="text-xs bg-white border border-slate-300 rounded px-2 py-1 text-slate-700"
-                            >
-                                {lookupExtendedPeriods.map((p, i) => (
-                                    <option key={`end-${p.year}-${p.month}`} value={`${p.year}-${p.month}`}>
-                                        {formatPeriodLabel(p.year, p.month, lookupFreq)}
-                                    </option>
-                                ))}
-                            </select>
-                        </>
-                    )
-                })()}
-                {group.entryMode !== 'lookup' && (
+                {group.entryMode !== 'lookup' && group.entryMode !== 'lookup2' && (
                     <span className="text-xs text-slate-500">
                         {periods.length > 0 && (
                             <>
