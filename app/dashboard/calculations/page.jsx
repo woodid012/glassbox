@@ -3,6 +3,7 @@
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 import { getAggregatedValueForArray } from '@/utils/valueAggregation'
+import { groupInputsBySubgroup } from '@/components/inputs/utils/inputHelpers'
 
 export default function CalculationsPage() {
     const {
@@ -225,21 +226,6 @@ export default function CalculationsPage() {
                         {(() => {
                             const lookupGroups = inputGlassGroups.filter(g => g.entryMode === 'lookup' || g.entryMode === 'lookup2')
                             if (lookupGroups.length === 0) return null
-
-                            // Helper to group inputs by subgroup
-                            const groupInputsBySubgroup = (groupInputs, group) => {
-                                const subgroups = group.subgroups || []
-                                const result = []
-                                const rootInputs = groupInputs.filter(inp => !inp.subgroupId)
-                                if (rootInputs.length > 0 || subgroups.length === 0) {
-                                    result.push({ id: null, name: null, inputs: rootInputs })
-                                }
-                                subgroups.forEach(sg => {
-                                    const sgInputs = groupInputs.filter(inp => inp.subgroupId === sg.id)
-                                    result.push({ id: sg.id, name: sg.name, inputs: sgInputs })
-                                })
-                                return result
-                            }
 
                             return (
                                 <div className="mb-3 pt-3 border-t border-slate-200">
