@@ -19,7 +19,12 @@ export function evalExprForAllPeriods(expr, allRefs, periods) {
             const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
             periodExpr = periodExpr.replace(regex, value.toString())
         }
-        let safeExpr = periodExpr.replace(/[^0-9+\-*/().e\s^]/gi, '')
+        // Convert MIN/MAX/ABS to Math functions
+        periodExpr = periodExpr
+            .replace(/\bMIN\s*\(/gi, 'Math.min(')
+            .replace(/\bMAX\s*\(/gi, 'Math.max(')
+            .replace(/\bABS\s*\(/gi, 'Math.abs(')
+        let safeExpr = periodExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,]/gi, '')
         safeExpr = safeExpr.replace(/\^/g, '**')
         if (safeExpr.trim()) {
             try {
@@ -135,6 +140,23 @@ export function cumsumY(innerArray, yearArray, periods) {
 }
 
 /**
+ * SHIFT - Shift array forward by n periods, filling with 0
+ * SHIFT(X, 1) returns [0, X[0], X[1], X[2], ...]
+ * Useful for getting "prior period value" without self-referential formulas
+ * @param {number[]} innerArray - Array of values to shift
+ * @param {number} n - Number of periods to shift forward
+ * @param {number} periods - Total number of periods
+ * @returns {number[]} Shifted array
+ */
+export function shift(innerArray, n, periods) {
+    const result = new Array(periods).fill(0)
+    for (let i = n; i < periods; i++) {
+        result[i] = innerArray[i - n] ?? 0
+    }
+    return result
+}
+
+/**
  * Process array functions in a formula and return the processed formula with placeholders
  * @param {string} formula - The formula string containing array functions
  * @param {Object} allRefs - Map of reference names to their value arrays
@@ -199,6 +221,20 @@ export function processArrayFunctions(formula, allRefs, timeline) {
         cumsumRegex.lastIndex = 0
     }
 
+    // SHIFT(expr, n) - Shift array forward by n periods
+    const shiftRegex = /SHIFT\s*\(\s*([^,]+)\s*,\s*(\d+)\s*\)/gi
+    while ((match = shiftRegex.exec(processedFormula)) !== null) {
+        const innerExpr = match[1]
+        const n = parseInt(match[2]) || 1
+        const innerArray = evalExprForAllPeriods(innerExpr, allRefs, timeline.periods)
+        const resultArray = shift(innerArray, n, timeline.periods)
+
+        const placeholder = `__ARRAYFN${arrayFnCounter++}__`
+        arrayFnResults[placeholder] = resultArray
+        processedFormula = processedFormula.replace(match[0], placeholder)
+        shiftRegex.lastIndex = 0
+    }
+
     return { processedFormula, arrayFnResults }
 }
 
@@ -208,7 +244,14 @@ export function processArrayFunctions(formula, allRefs, timeline) {
  * @returns {number} Evaluated result
  */
 export function evaluateSafeExpression(expr) {
-    let safeExpr = expr.replace(/[^0-9+\-*/().e\s^]/gi, '')
+    // Convert MIN/MAX to Math.min/Math.max before sanitizing
+    let processedExpr = expr
+        .replace(/\bMIN\s*\(/gi, 'Math.min(')
+        .replace(/\bMAX\s*\(/gi, 'Math.max(')
+        .replace(/\bABS\s*\(/gi, 'Math.abs(')
+
+    // Allow Math. in addition to numbers and operators
+    let safeExpr = processedExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,]/gi, '')
     safeExpr = safeExpr.replace(/\^/g, '**')
 
     if (!safeExpr.trim()) return 0

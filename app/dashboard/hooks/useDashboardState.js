@@ -205,48 +205,8 @@ export function useDashboardState(viewMode) {
                 const newCalcs = [...oldCalcs]
                 const [moved] = newCalcs.splice(calcDraggedIndex, 1)
                 newCalcs.splice(dropIndex, 0, moved)
-
-                // Build mapping: old position (1-indexed) -> new position (1-indexed)
-                const oldIdToOldPos = {}
-                oldCalcs.forEach((calc, idx) => {
-                    oldIdToOldPos[calc.id] = idx + 1
-                })
-
-                const idToNewPos = {}
-                newCalcs.forEach((calc, idx) => {
-                    idToNewPos[calc.id] = idx + 1
-                })
-
-                // Map old R position -> new R position
-                const oldPosToNewPos = {}
-                oldCalcs.forEach((calc) => {
-                    const oldPos = oldIdToOldPos[calc.id]
-                    const newPos = idToNewPos[calc.id]
-                    oldPosToNewPos[oldPos] = newPos
-                })
-
-                // Update all formulas to use new R positions
-                const updatedCalcs = newCalcs.map(calc => {
-                    if (!calc.formula) return calc
-                    let newFormula = calc.formula
-                    // Replace R references from highest to lowest to avoid R1 replacing part of R10
-                    const sortedOldPositions = Object.keys(oldPosToNewPos)
-                        .map(Number)
-                        .sort((a, b) => b - a)
-
-                    // Use placeholder to avoid double-replacement
-                    sortedOldPositions.forEach(oldPos => {
-                        const newPos = oldPosToNewPos[oldPos]
-                        const regex = new RegExp(`R${oldPos}(?![0-9])`, 'g')
-                        newFormula = newFormula.replace(regex, `__R_PLACEHOLDER_${newPos}__`)
-                    })
-                    // Replace placeholders with actual R references
-                    newFormula = newFormula.replace(/__R_PLACEHOLDER_(\d+)__/g, 'R$1')
-
-                    return { ...calc, formula: newFormula }
-                })
-
-                return { ...prev, calculations: updatedCalcs }
+                // No formula migration needed - R references use calc IDs, not positions
+                return { ...prev, calculations: newCalcs }
             })
         }
         setCalcDraggedIndex(null)
@@ -514,7 +474,14 @@ export function useDashboardState(viewMode) {
                 'debt': 'debt_amortisation',
                 'depreciation': 'depreciation',
                 'gst': null, // Not implemented in MODULE_TEMPLATES
-                'degradation_profile': 'degradation_profile'
+                'degradation_profile': 'degradation_profile',
+                'gst_capex': 'gst_capex',
+                'mra': 'mra',
+                'dsra': 'dsra',
+                'working_capital': 'working_capital',
+                'tax_loss_carryforward': 'tax_loss_carryforward',
+                'sources_uses': 'sources_uses',
+                'construction_debt': 'construction_debt'
             }
             const templateKey = templateKeyMap[templateId] || templateId
 
@@ -807,8 +774,9 @@ export function useDashboardState(viewMode) {
         }
 
         if (calculations) {
-            calculations.forEach((calc, idx) => {
-                names[`R${idx + 1}`] = calc.name
+            // Use calculation ID instead of array position for stable references
+            calculations.forEach((calc) => {
+                names[`R${calc.id}`] = calc.name
             })
         }
 
@@ -884,60 +852,73 @@ export function useDashboardState(viewMode) {
         }
     }, [referenceMap, moduleOutputs, timeline.periods, timeline.year])
 
-    // Evaluate all calculations in dependency order
+    // Evaluate all calculations in dependency order (using IDs, not positions)
     const { calculationResults, calculationErrors } = useMemo(() => {
         const results = {}
         const errors = {}
         if (!calculations || calculations.length === 0) return { calculationResults: results, calculationErrors: errors }
 
-        const calcCount = calculations.length
+        // Build ID-based lookups for stable references
+        const calcById = new Map()
+        const allIds = new Set()
+        calculations.forEach(calc => {
+            calcById.set(calc.id, calc)
+            allIds.add(calc.id)
+        })
 
         const getDependencies = (formula) => {
             if (!formula) return []
+            // Remove SHIFT(...) patterns - these are lagged dependencies (prior period)
+            // and don't create true cycles in the dependency graph
+            const formulaWithoutShift = formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
             const deps = []
             const regex = /R(\d+)(?![0-9])/g
             let match
-            while ((match = regex.exec(formula)) !== null) {
-                const refNum = parseInt(match[1])
-                if (refNum >= 1 && refNum <= calcCount) {
-                    deps.push(refNum)
+            while ((match = regex.exec(formulaWithoutShift)) !== null) {
+                const refId = parseInt(match[1])
+                // Only include if it's a valid calculation ID
+                if (allIds.has(refId)) {
+                    deps.push(refId)
                 }
             }
             return [...new Set(deps)]
         }
 
+        // Build dependencies using calculation IDs
         const dependencies = {}
-        calculations.forEach((calc, idx) => {
-            const rNum = idx + 1
-            dependencies[rNum] = getDependencies(calc.formula)
+        calculations.forEach(calc => {
+            dependencies[calc.id] = getDependencies(calc.formula)
         })
 
+        // Topological sort using IDs
         const inDegree = {}
         const adjList = {}
-        for (let i = 1; i <= calcCount; i++) {
-            inDegree[i] = 0
-            adjList[i] = []
+        for (const id of allIds) {
+            inDegree[id] = 0
+            adjList[id] = []
         }
 
-        for (let i = 1; i <= calcCount; i++) {
-            for (const dep of dependencies[i]) {
-                adjList[dep].push(i)
-                inDegree[i]++
+        for (const id of allIds) {
+            for (const dep of dependencies[id]) {
+                if (adjList[dep]) {
+                    adjList[dep].push(id)
+                    inDegree[id]++
+                }
             }
         }
 
         const queue = []
-        for (let i = 1; i <= calcCount; i++) {
-            if (inDegree[i] === 0) {
-                queue.push(i)
+        for (const id of allIds) {
+            if (inDegree[id] === 0) {
+                queue.push(id)
             }
         }
 
         const evalOrder = []
         while (queue.length > 0) {
-            const node = queue.shift()
-            evalOrder.push(node)
-            for (const neighbor of adjList[node]) {
+            const id = queue.shift()
+            evalOrder.push(id)
+            for (const neighbor of adjList[id]) {
                 inDegree[neighbor]--
                 if (inDegree[neighbor] === 0) {
                     queue.push(neighbor)
@@ -945,83 +926,52 @@ export function useDashboardState(viewMode) {
             }
         }
 
-        if (evalOrder.length !== calcCount) {
-            calculations.forEach((calc, idx) => {
+        // Evaluate in topological order
+        if (evalOrder.length !== calculations.length) {
+            // Cycle detected - identify which calculations are in the cycle
+            const inCycle = new Set(allIds)
+            evalOrder.forEach(id => inCycle.delete(id))
+            const cycleCalcs = [...inCycle].map(id => `R${id}`).join(', ')
+
+            // Evaluate non-cyclic calculations first
+            for (const id of evalOrder) {
+                const calc = calcById.get(id)
                 const { values, error } = evaluateFormula(calc.formula, results)
-                results[`R${idx + 1}`] = values
-                if (error) errors[`R${idx + 1}`] = error
-            })
+                results[`R${id}`] = values
+                if (error) errors[`R${id}`] = error
+            }
+
+            // Mark cyclic calculations with error
+            for (const id of inCycle) {
+                results[`R${id}`] = new Array(timeline.periods).fill(0)
+                errors[`R${id}`] = `Circular dependency detected: ${cycleCalcs}`
+            }
         } else {
-            for (const rNum of evalOrder) {
-                const calc = calculations[rNum - 1]
+            for (const id of evalOrder) {
+                const calc = calcById.get(id)
                 const { values, error } = evaluateFormula(calc.formula, results)
-                results[`R${rNum}`] = values
-                if (error) errors[`R${rNum}`] = error
+                results[`R${id}`] = values
+                if (error) errors[`R${id}`] = error
             }
         }
 
         return { calculationResults: results, calculationErrors: errors }
-    }, [calculations, evaluateFormula])
+    }, [calculations, evaluateFormula, timeline.periods])
 
-    // Determine flow/stock type for each calculation based on formula references
-    // Rule: If ANY referenced input is a flow OR flowConverter, the calculation result is a flow
+    // Get flow/stock type for each calculation from stored type (default: flow)
     const calculationTypes = useMemo(() => {
         const types = {}
         if (!calculations || calculations.length === 0) return types
 
-        // Helper to extract all references from a formula
-        const extractRefs = (formula) => {
-            if (!formula) return []
-            const refs = []
-            // Match patterns like V1, V1.1, S1, C1, L1, L1.1, L1.1.1, T1, F1, I1, R1, M1, M1.1
-            const standardRefRegex = /\b([VSCFLTIMR]\d+(?:\.\d+)*)\b/g
-            // Match time constants like T.DiM, T.MiY, T.HiY, etc.
-            const timeConstantRegex = /\b(T\.[A-Za-z]+)\b/g
-            let match
-            while ((match = standardRefRegex.exec(formula)) !== null) {
-                refs.push(match[1])
-            }
-            while ((match = timeConstantRegex.exec(formula)) !== null) {
-                refs.push(match[1])
-            }
-            return [...new Set(refs)]
-        }
-
-        // Helper to determine if a calculation is a flow based on its formula
-        const isCalcFlow = (formula, visited = new Set()) => {
-            const refs = extractRefs(formula)
-
-            for (const ref of refs) {
-                // Check direct input references - flow or flowConverter both make result a flow
-                const refType = referenceTypeMap[ref]
-                if (refType === 'flow' || refType === 'flowConverter') {
-                    return true
-                }
-
-                // Check calculation references (R1, R2, etc.)
-                if (ref.startsWith('R')) {
-                    const calcNum = parseInt(ref.slice(1))
-                    const calcIdx = calcNum - 1
-                    if (calcIdx >= 0 && calcIdx < calculations.length && !visited.has(calcIdx)) {
-                        visited.add(calcIdx)
-                        const referencedCalc = calculations[calcIdx]
-                        if (referencedCalc && isCalcFlow(referencedCalc.formula, visited)) {
-                            return true
-                        }
-                    }
-                }
-            }
-
-            return false
-        }
-
-        calculations.forEach((calc, idx) => {
-            const rRef = `R${idx + 1}`
-            types[rRef] = isCalcFlow(calc.formula) ? 'flow' : 'stock'
+        calculations.forEach((calc) => {
+            // Use calculation ID for stable references
+            const rRef = `R${calc.id}`
+            // Use stored type, default to 'flow'
+            types[rRef] = calc.type || 'flow'
         })
 
         return types
-    }, [calculations, referenceTypeMap])
+    }, [calculations])
 
     // Input management hook
     const inputManagement = useInputManagement({

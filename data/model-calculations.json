@@ -1,0 +1,1305 @@
+{
+  "_description": "Model structure - formulas and relationships only",
+  "calculationsTabs": [
+    {
+      "id": 1,
+      "name": "P&L"
+    },
+    {
+      "id": 3,
+      "name": "Cashflow"
+    },
+    {
+      "id": 4,
+      "name": "Valuation"
+    }
+  ],
+  "calculationsGroups": [
+    {
+      "id": 4,
+      "tabId": 1,
+      "name": "Profitability",
+      "startYear": 2028,
+      "startMonth": 10,
+      "endYear": 2053,
+      "endMonth": 9
+    },
+    {
+      "id": 10,
+      "tabId": 3,
+      "name": "Operating CF"
+    },
+    {
+      "id": 11,
+      "tabId": 3,
+      "name": "Investing CF"
+    },
+    {
+      "id": 12,
+      "tabId": 3,
+      "name": "Financing CF"
+    },
+    {
+      "id": 13,
+      "tabId": 3,
+      "name": "Cash Position"
+    },
+    {
+      "id": 14,
+      "tabId": 3,
+      "name": "Construction S&U"
+    },
+    {
+      "id": 17,
+      "tabId": 3,
+      "name": "Construction Debt Facility"
+    },
+    {
+      "id": 15,
+      "tabId": 3,
+      "name": "Operations Debt"
+    },
+    {
+      "id": 16,
+      "tabId": 3,
+      "name": "D&A"
+    },
+    {
+      "id": 18,
+      "tabId": 3,
+      "name": "Working Capital"
+    },
+    {
+      "id": 19,
+      "tabId": 3,
+      "name": "Tax"
+    },
+    {
+      "id": 20,
+      "tabId": 4,
+      "name": "Free Cash Flow"
+    },
+    {
+      "id": 21,
+      "tabId": 4,
+      "name": "Discount Factors"
+    },
+    {
+      "id": 22,
+      "tabId": 4,
+      "name": "NPV"
+    },
+    {
+      "id": 23,
+      "tabId": "all",
+      "name": "Calculations"
+    }
+  ],
+  "calculations": [
+    {
+      "id": 1,
+      "name": "Total EPC",
+      "formula": "V1.1 + V1.2",
+      "description": "Sum of EPC components"
+    },
+    {
+      "id": 2,
+      "name": "Total CAPEX",
+      "formula": "V1",
+      "description": "Full CAPEX group sum"
+    },
+    {
+      "id": 3,
+      "name": "Capex + Cont",
+      "formula": "V1 * (1 + C1.19 / 100)",
+      "description": ""
+    },
+    {
+      "id": 4,
+      "name": "Tolling Revenue",
+      "formula": "C1.6 * C1.1 * 8760 / T.MiY / 10^6 * F7 * I1",
+      "description": ""
+    },
+    {
+      "id": 5,
+      "name": "FCAS Revenue",
+      "formula": "L1.2 * C1.1 / 12 / 10^6 * F8 * I1",
+      "description": ""
+    },
+    {
+      "id": 6,
+      "name": "Arb Revenue",
+      "formula": "L1.1 * C1.1 / 10^6 / 12 * F8 * R12 * I1",
+      "description": "L1.1 is annual, divide by 12 for monthly"
+    },
+    {
+      "id": 7,
+      "name": "Merchant Revenue",
+      "formula": "R5 + R6",
+      "description": ""
+    },
+    {
+      "id": 8,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Total Revenue",
+      "formula": "R4 + R7",
+      "description": "Revenue group sum"
+    },
+    {
+      "id": 9,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Total OPEX (Nominal)",
+      "formula": "-S1 * I1",
+      "description": "OPEX group sum"
+    },
+    {
+      "id": 10,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Gross Margin",
+      "formula": "R8 + R9",
+      "description": "Revenue minus OPEX"
+    },
+    {
+      "id": 11,
+      "name": "Degradation Curve",
+      "formula": "100 - CUMSUM_Y(L3.5)",
+      "description": "",
+      "type": "stock"
+    },
+    {
+      "id": 12,
+      "name": "OperatingAdjustment",
+      "formula": "L3.1 / 100 * L3.2 / 100 * L3.3 / 100 * L3.4 / 100 * R11 / 100",
+      "description": "",
+      "type": "stock"
+    },
+    {
+      "id": 13,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "EBITDA",
+      "formula": "R10",
+      "description": "Earnings before interest, taxes, depreciation, amortization"
+    },
+    {
+      "id": 14,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Depreciation",
+      "formula": "-R82",
+      "description": "Monthly depreciation from D&A"
+    },
+    {
+      "id": 15,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "EBIT",
+      "formula": "R13 + R14",
+      "description": "Earnings before interest and taxes"
+    },
+    {
+      "id": 16,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Interest Expense",
+      "formula": "-R71",
+      "description": "From Operations Debt"
+    },
+    {
+      "id": 17,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "EBT",
+      "formula": "R15 + R16",
+      "description": "Earnings before taxes"
+    },
+    {
+      "id": 18,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Tax Expense",
+      "formula": "-R104",
+      "description": "30% tax on net taxable income"
+    },
+    {
+      "id": 19,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Net Income",
+      "formula": "R17 + R18",
+      "description": "Net profit after tax"
+    },
+    {
+      "id": 20,
+      "tabId": 3,
+      "groupId": 10,
+      "name": "EBITDA",
+      "formula": "R13",
+      "description": ""
+    },
+    {
+      "id": 21,
+      "tabId": 3,
+      "groupId": 10,
+      "name": "WC Movement",
+      "formula": "-R98",
+      "description": "Negative of NWC increase (increase uses cash)"
+    },
+    {
+      "id": 22,
+      "tabId": 3,
+      "groupId": 10,
+      "name": "Operating CF",
+      "formula": "R20 + R21",
+      "description": ""
+    },
+    {
+      "id": 23,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "Capex",
+      "formula": "-V1 * F1",
+      "description": ""
+    },
+    {
+      "id": 24,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "GST Paid on Capex",
+      "formula": "-R3 * C1.11 / 100 * F1",
+      "description": "10% GST outflow on capex during construction"
+    },
+    {
+      "id": 25,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "GST Refund",
+      "formula": "R3 * C1.11 / 100 * F1",
+      "description": "GST refund (same period for simplicity)"
+    },
+    {
+      "id": 26,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "MRA Contribution",
+      "formula": "0",
+      "description": ""
+    },
+    {
+      "id": 27,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "MRA Release",
+      "formula": "0",
+      "description": ""
+    },
+    {
+      "id": 28,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "Investing CF",
+      "formula": "R23 + R24 + R25 + R26 + R27",
+      "description": ""
+    },
+    {
+      "id": 29,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Construction Debt Drawdown",
+      "formula": "R91",
+      "description": "From Construction Debt Facility"
+    },
+    {
+      "id": 30,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Ops Debt Drawdown",
+      "formula": "0",
+      "description": "Operations refinancing"
+    },
+    {
+      "id": 31,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Principal Repayment",
+      "formula": "-R72",
+      "description": "From Operations Debt"
+    },
+    {
+      "id": 32,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Interest Paid",
+      "formula": "-R71",
+      "description": "From Operations Debt"
+    },
+    {
+      "id": 33,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "DSRA Contribution",
+      "formula": "0",
+      "description": ""
+    },
+    {
+      "id": 34,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "DSRA Release",
+      "formula": "0",
+      "description": ""
+    },
+    {
+      "id": 60,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "Capex + Contingency",
+      "formula": "CUMSUM(R3 * F1)",
+      "description": "Cumulative capex with contingency during construction",
+      "type": "stock"
+    },
+    {
+      "id": 61,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "GST Paid",
+      "formula": "R60 * C1.11 / 100",
+      "description": "10% GST on cumulative capex",
+      "type": "stock"
+    },
+    {
+      "id": 63,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "IDC",
+      "formula": "CUMSUM(R92)",
+      "description": "Cumulative capitalized interest from facility",
+      "type": "stock"
+    },
+    {
+      "id": 64,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "Total Uses",
+      "formula": "R60 + R61 + R63",
+      "description": "Cumulative Capex + GST + IDC",
+      "type": "stock"
+    },
+    {
+      "id": 65,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "GST Received",
+      "formula": "R61",
+      "description": "GST refund = GST paid (cumulative)",
+      "type": "stock"
+    },
+    {
+      "id": 66,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "Construction Debt",
+      "formula": "R94",
+      "description": "From Construction Debt Facility closing balance",
+      "type": "stock"
+    },
+    {
+      "id": 67,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "Construction Equity",
+      "formula": "R64 - R65 - R66",
+      "description": "Equity = Uses - GST Received - Debt (balancing)",
+      "type": "stock"
+    },
+    {
+      "id": 68,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "Total Sources",
+      "formula": "R65 + R66 + R67",
+      "description": "Check: should equal Total Uses",
+      "type": "stock"
+    },
+    {
+      "id": 35,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Construction Equity Injection",
+      "formula": "V1 * F1 - R91",
+      "description": "Capex minus Debt Drawdown = Equity needed"
+    },
+    {
+      "id": 39,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Financing CF",
+      "formula": "R29 + R30 + R31 + R32 + R33 + R34 + R35",
+      "description": "Sum of all financing flows"
+    },
+    {
+      "id": 40,
+      "tabId": 3,
+      "groupId": 13,
+      "name": "Net Cashflow",
+      "formula": "R22 + R28 + R39",
+      "description": ""
+    },
+    {
+      "id": 41,
+      "tabId": 3,
+      "groupId": 13,
+      "name": "Opening Cash",
+      "formula": "CUMSUM(R40) - R40",
+      "description": "",
+      "type": "stock_start"
+    },
+    {
+      "id": 42,
+      "tabId": 3,
+      "groupId": 13,
+      "name": "Closing Cash",
+      "formula": "CUMSUM(R40)",
+      "description": "",
+      "type": "stock"
+    },
+    {
+      "id": 43,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "EBITDA",
+      "formula": "R13",
+      "description": ""
+    },
+    {
+      "id": 44,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "Capex (incl GST)",
+      "formula": "R23 + R24 - R25",
+      "description": ""
+    },
+    {
+      "id": 45,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "WC Movement",
+      "formula": "R21",
+      "description": ""
+    },
+    {
+      "id": 46,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "FCFF",
+      "formula": "R43 + R44 + R45",
+      "description": "Free Cash Flow to Firm"
+    },
+    {
+      "id": 47,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "Debt Service",
+      "formula": "R31 + R32",
+      "description": ""
+    },
+    {
+      "id": 48,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "Debt Drawdown",
+      "formula": "R29 + R30",
+      "description": "Construction + Ops debt"
+    },
+    {
+      "id": 49,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "FCFE",
+      "formula": "R46 + R47 + R48",
+      "description": "Free Cash Flow to Equity"
+    },
+    {
+      "id": 50,
+      "tabId": 4,
+      "groupId": 21,
+      "name": "Monthly Discount Rate",
+      "formula": "(1 + C1.8 / 100) ^ (1/12) - 1",
+      "description": "WACC converted to monthly"
+    },
+    {
+      "id": 51,
+      "tabId": 4,
+      "groupId": 21,
+      "name": "Discount Factor",
+      "formula": "CUMPROD(1 / (1 + R50))",
+      "description": ""
+    },
+    {
+      "id": 52,
+      "tabId": 4,
+      "groupId": 22,
+      "name": "PV of FCFF",
+      "formula": "R46 * R51",
+      "description": ""
+    },
+    {
+      "id": 53,
+      "tabId": 4,
+      "groupId": 22,
+      "name": "PV of FCFE",
+      "formula": "R49 * R51",
+      "description": ""
+    },
+    {
+      "id": 54,
+      "tabId": 4,
+      "groupId": 22,
+      "name": "Cumulative NPV (Firm)",
+      "formula": "CUMSUM(R52)",
+      "description": ""
+    },
+    {
+      "id": 55,
+      "tabId": 4,
+      "groupId": 22,
+      "name": "Cumulative NPV (Equity)",
+      "formula": "CUMSUM(R53)",
+      "description": ""
+    },
+    {
+      "id": 90,
+      "tabId": 3,
+      "groupId": 17,
+      "name": "Opening Balance",
+      "formula": "R94 - R91 - R92",
+      "description": "Closing minus this period's drawdown and IDC",
+      "type": "stock_start"
+    },
+    {
+      "id": 91,
+      "tabId": 3,
+      "groupId": 17,
+      "name": "Drawdown",
+      "formula": "V1 * C1.15 / 100 * F1",
+      "description": "70% of capex drawn during construction"
+    },
+    {
+      "id": 92,
+      "tabId": 3,
+      "groupId": 17,
+      "name": "Capitalized Interest (IDC)",
+      "formula": "(CUMSUM(R91) - R91) * C1.16 / 100 / 12 * F1",
+      "description": "Annual rate from C1.16, capitalized during construction"
+    },
+    {
+      "id": 94,
+      "tabId": 3,
+      "groupId": 17,
+      "name": "Closing Balance",
+      "formula": "CUMSUM(R91) + CUMSUM(R92)",
+      "description": "Cumulative drawdowns + cumulative IDC",
+      "type": "stock"
+    },
+    {
+      "id": 70,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Opening Debt Balance",
+      "formula": "(R94 * F2 - CUMSUM(R72) + R72) * F9",
+      "description": "Starts at R94 (cons debt) at COD, then decreases",
+      "type": "stock_start"
+    },
+    {
+      "id": 71,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Interest Expense",
+      "formula": "R70 * C1.17 / 100 / 12",
+      "description": "Annual rate from C1.17 on opening balance"
+    },
+    {
+      "id": 72,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Principal Repayment",
+      "formula": "MIN(R94 * F2 / C1.18, MAX(0, R94 * F2 - CUMSUM(R94 * F2 / C1.18 * F9) + R94 * F2 / C1.18 * F9)) * F9",
+      "description": "Term from C1.18, capped when debt fully repaid"
+    },
+    {
+      "id": 73,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Debt Service",
+      "formula": "R71 + R72",
+      "description": "Total payment (interest + principal)"
+    },
+    {
+      "id": 74,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Closing Debt Balance",
+      "formula": "R70 - R72",
+      "description": "End of period balance",
+      "type": "stock"
+    },
+    {
+      "id": 80,
+      "tabId": 3,
+      "groupId": 16,
+      "name": "Cumulative Capex",
+      "formula": "CUMSUM(V1 * (1 + C1.19 / 100))",
+      "description": "Cumulative Capex + Contingency (10%)",
+      "type": "stock"
+    },
+    {
+      "id": 81,
+      "tabId": 3,
+      "groupId": 16,
+      "name": "Asset Value at COD",
+      "formula": "R80 * F2",
+      "description": "Asset value locked at ops start",
+      "type": "stock"
+    },
+    {
+      "id": 82,
+      "tabId": 3,
+      "groupId": 16,
+      "name": "Monthly Depreciation",
+      "formula": "R81 / C1.20 / 12",
+      "description": "20 year straight line, during ops"
+    },
+    {
+      "id": 83,
+      "tabId": 3,
+      "groupId": 16,
+      "name": "Accumulated Depreciation",
+      "formula": "CUMSUM(R82)",
+      "description": "Running total",
+      "type": "stock"
+    },
+    {
+      "id": 84,
+      "tabId": 3,
+      "groupId": 16,
+      "name": "Book Value",
+      "formula": "MAX(0, R80 - R83)",
+      "description": "Net book value (floored at 0)",
+      "type": "stock"
+    },
+    {
+      "id": 95,
+      "tabId": 3,
+      "groupId": 18,
+      "name": "Receivables",
+      "formula": "R8 * C1.9 / 30",
+      "description": "Revenue * Receivable Days / 30",
+      "type": "stock"
+    },
+    {
+      "id": 96,
+      "tabId": 3,
+      "groupId": 18,
+      "name": "Payables",
+      "formula": "ABS(R9) * C1.10 / 30",
+      "description": "OPEX * Payable Days / 30",
+      "type": "stock"
+    },
+    {
+      "id": 97,
+      "tabId": 3,
+      "groupId": 18,
+      "name": "Net Working Capital",
+      "formula": "R95 - R96",
+      "description": "Receivables minus Payables",
+      "type": "stock"
+    },
+    {
+      "id": 98,
+      "tabId": 3,
+      "groupId": 18,
+      "name": "WC Movement",
+      "formula": "R97 - SHIFT(R97, 1)",
+      "description": "Change in NWC = Closing NWC - Prior NWC"
+    },
+    {
+      "id": 100,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Taxable Income",
+      "formula": "R17",
+      "description": "EBT flows to taxable income"
+    },
+    {
+      "id": 106,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Period Loss",
+      "formula": "MAX(0, -R100)",
+      "description": "Losses generated this period"
+    },
+    {
+      "id": 107,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Period Positive Income",
+      "formula": "MAX(0, R100)",
+      "description": "Positive income this period"
+    },
+    {
+      "id": 108,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Cumulative Utilization",
+      "formula": "MIN(CUMSUM(R106), CUMSUM(R107))",
+      "description": "Total losses utilized to date (FIFO)",
+      "type": "stock"
+    },
+    {
+      "id": 109,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Prior Cumulative Utilization",
+      "formula": "MIN(CUMSUM(R106) - R106, CUMSUM(R107) - R107)",
+      "description": "Utilization through prior period",
+      "type": "stock_start"
+    },
+    {
+      "id": 102,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Losses Utilized",
+      "formula": "R108 - R109",
+      "description": "Losses offset this period"
+    },
+    {
+      "id": 101,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Opening Loss Pool",
+      "formula": "CUMSUM(R106) - R106 - R109",
+      "description": "Losses available at start of period",
+      "type": "stock_start"
+    },
+    {
+      "id": 103,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Taxable Income Net",
+      "formula": "R107 - R102",
+      "description": "Income after loss utilization"
+    },
+    {
+      "id": 104,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Tax Expense",
+      "formula": "R103 * C1.7 / 100",
+      "description": "30% corporate tax rate"
+    },
+    {
+      "id": 105,
+      "tabId": 3,
+      "groupId": 19,
+      "name": "Closing Loss Pool",
+      "formula": "CUMSUM(R106) - R108",
+      "description": "Cumulative losses minus cumulative utilized",
+      "type": "stock"
+    }
+  ],
+  "modules": [
+    {
+      "id": 1,
+      "templateId": "debt",
+      "name": "Senior Debt",
+      "inputs": {
+        "principal": 0,
+        "openingBalanceRef": "M9.5",
+        "annualRate": 6.5,
+        "termMonths": 240,
+        "startPeriodIndex": 18,
+        "loanType": "annuity",
+        "gracePeriods": 0
+      },
+      "outputs": [
+        "opening_balance",
+        "drawdown",
+        "interest_payment",
+        "principal_payment",
+        "closing_balance"
+      ]
+    },
+    {
+      "id": 2,
+      "templateId": "depreciation",
+      "name": "Asset D&A",
+      "inputs": {
+        "assetValue": "V1",
+        "residualValue": 0,
+        "usefulLifeMonths": 300,
+        "startPeriodIndex": 18,
+        "method": "straight_line"
+      },
+      "inputModes": {
+        "assetValue": "reference"
+      },
+      "outputs": [
+        "depreciation_expense",
+        "accumulated_depreciation",
+        "book_value"
+      ]
+    },
+    {
+      "id": 4,
+      "templateId": "tax_loss_carryforward",
+      "name": "Tax",
+      "inputs": {
+        "taxableIncomeRef": "R17",
+        "taxRate": 30,
+        "openingLosses": 0
+      },
+      "outputs": [
+        "taxable_income",
+        "losses_utilised",
+        "taxable_income_net",
+        "tax_expense",
+        "loss_pool"
+      ]
+    },
+    {
+      "id": 5,
+      "templateId": "working_capital",
+      "name": "Working Capital",
+      "inputs": {
+        "revenueRef": "R8",
+        "costRef": "R9",
+        "receivableDays": 30,
+        "payableDays": 30,
+        "inventoryDays": 0
+      },
+      "outputs": [
+        "receivables",
+        "payables",
+        "inventory",
+        "net_working_capital",
+        "wc_movement"
+      ]
+    },
+    {
+      "id": 9,
+      "templateId": "construction_debt",
+      "name": "Construction Facility",
+      "inputs": {
+        "baseUsesRef": "V1",
+        "gearing": 70,
+        "annualRate": 7,
+        "constructionFlagRef": "F1"
+      },
+      "outputs": [
+        "drawdown",
+        "interest_accrued",
+        "capitalized_interest",
+        "opening_balance",
+        "closing_balance",
+        "equity_contribution",
+        "total_equity"
+      ]
+    }
+  ],
+  "moduleTemplates": [
+    {
+      "id": "debt",
+      "name": "Debt Schedule",
+      "description": "Calculates principal, interest, and balance over time",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "principal",
+          "label": "Principal Amount",
+          "type": "number",
+          "default": 0,
+          "modes": [
+            "constant",
+            "reference"
+          ],
+          "description": "Constant value or link to an output"
+        },
+        {
+          "key": "interestRate",
+          "label": "Interest Rate (%)",
+          "type": "number",
+          "default": 5,
+          "modes": [
+            "constant",
+            "reference"
+          ],
+          "description": "Constant rate or link to interest rate series"
+        },
+        {
+          "key": "timePeriod",
+          "label": "Time Period",
+          "type": "period",
+          "default": null,
+          "modes": [
+            "keyPeriod",
+            "duration"
+          ],
+          "description": "Link to Key Period or set duration"
+        },
+        {
+          "key": "duration",
+          "label": "Duration (years)",
+          "type": "number",
+          "default": 10,
+          "showWhen": {
+            "key": "timePeriod",
+            "mode": "duration"
+          },
+          "description": "Loan tenor in years"
+        }
+      ],
+      "outputs": [
+        "opening_balance",
+        "drawdown",
+        "interest_payment",
+        "principal_payment",
+        "closing_balance"
+      ]
+    },
+    {
+      "id": "depreciation",
+      "name": "D&A",
+      "description": "Depreciation & Amortization schedule",
+      "category": "accounting",
+      "inputs": [
+        {
+          "key": "assetValue",
+          "label": "Asset Value",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "usefulLife",
+          "label": "Useful Life (years)",
+          "type": "number",
+          "default": 20
+        },
+        {
+          "key": "residualValue",
+          "label": "Residual Value",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "method",
+          "label": "Method",
+          "type": "select",
+          "options": [
+            "straight-line",
+            "declining-balance"
+          ],
+          "default": "straight-line"
+        }
+      ],
+      "outputs": [
+        "depreciation_expense",
+        "accumulated_depreciation",
+        "book_value"
+      ]
+    },
+    {
+      "id": "tax_loss_carryforward",
+      "name": "Tax with Loss Carryforward",
+      "description": "Corporate tax calculation with loss pool carryforward",
+      "category": "accounting",
+      "inputs": [
+        {
+          "key": "taxableIncomeRef",
+          "label": "Taxable Income Reference",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "taxRate",
+          "label": "Tax Rate (%)",
+          "type": "number",
+          "default": 30
+        },
+        {
+          "key": "openingLosses",
+          "label": "Opening Loss Pool",
+          "type": "number",
+          "default": 0
+        }
+      ],
+      "outputs": [
+        "taxable_income",
+        "losses_utilised",
+        "taxable_income_net",
+        "tax_expense",
+        "loss_pool"
+      ]
+    },
+    {
+      "id": "working_capital",
+      "name": "Working Capital",
+      "description": "Receivables, payables, and inventory cycle",
+      "category": "accounting",
+      "inputs": [
+        {
+          "key": "revenueRef",
+          "label": "Revenue Reference",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "costRef",
+          "label": "Cost Reference",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "receivableDays",
+          "label": "Receivable Days",
+          "type": "number",
+          "default": 30
+        },
+        {
+          "key": "payableDays",
+          "label": "Payable Days",
+          "type": "number",
+          "default": 30
+        },
+        {
+          "key": "inventoryDays",
+          "label": "Inventory Days",
+          "type": "number",
+          "default": 0
+        }
+      ],
+      "outputs": [
+        "receivables",
+        "payables",
+        "inventory",
+        "net_working_capital",
+        "wc_movement"
+      ]
+    },
+    {
+      "id": "construction_debt",
+      "name": "Construction Debt Facility",
+      "description": "Debt facility with capitalized interest during construction",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "baseUsesRef",
+          "label": "Base Uses (Capex)",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "gearing",
+          "label": "Gearing %",
+          "type": "number",
+          "default": 70
+        },
+        {
+          "key": "annualRate",
+          "label": "Construction Interest Rate (%)",
+          "type": "number",
+          "default": 7
+        },
+        {
+          "key": "constructionFlagRef",
+          "label": "Construction Flag",
+          "type": "reference",
+          "default": ""
+        }
+      ],
+      "outputs": [
+        "drawdown",
+        "interest_accrued",
+        "capitalized_interest",
+        "opening_balance",
+        "closing_balance",
+        "equity_contribution",
+        "total_equity"
+      ]
+    },
+    {
+      "id": "gst",
+      "name": "GST",
+      "description": "Goods and Services Tax calculation",
+      "category": "accounting",
+      "inputs": [
+        {
+          "key": "revenueRef",
+          "label": "Revenue Reference",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "expenseRef",
+          "label": "Expense Reference",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "gstRate",
+          "label": "GST Rate (%)",
+          "type": "number",
+          "default": 10
+        }
+      ],
+      "outputs": [
+        "gst_collected",
+        "gst_paid",
+        "gst_payable"
+      ]
+    },
+    {
+      "id": "degradation_profile",
+      "name": "Degradation Profile",
+      "description": "Annual cumulative degradation (e.g., solar panel efficiency)",
+      "category": "operations",
+      "inputs": [
+        {
+          "key": "degradationRateRef",
+          "label": "Degradation Rate (%)",
+          "type": "reference",
+          "default": "",
+          "modes": [
+            "reference"
+          ],
+          "description": "Annual rate as % (e.g., 5 for 5%)"
+        },
+        {
+          "key": "initialValue",
+          "label": "Initial Value",
+          "type": "number",
+          "default": 100,
+          "modes": [
+            "constant",
+            "reference"
+          ],
+          "description": "Starting capacity"
+        }
+      ],
+      "outputs": [
+        "degradation_factor",
+        "period_degradation",
+        "degraded_value"
+      ]
+    },
+    {
+      "id": "gst_capex",
+      "name": "GST on Capex",
+      "description": "GST paid on eligible capex, refunded with delay",
+      "category": "accounting",
+      "inputs": [
+        {
+          "key": "eligibleCapexRef",
+          "label": "Eligible Capex Reference",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "gstRate",
+          "label": "GST Rate (%)",
+          "type": "number",
+          "default": 10
+        },
+        {
+          "key": "refundDelayMonths",
+          "label": "Refund Delay (months)",
+          "type": "number",
+          "default": 1
+        },
+        {
+          "key": "constructionFlagRef",
+          "label": "Construction Flag Reference",
+          "type": "reference",
+          "default": ""
+        }
+      ],
+      "outputs": [
+        "gst_paid",
+        "gst_refund",
+        "gst_balance",
+        "net_gst_cf"
+      ]
+    },
+    {
+      "id": "mra",
+      "name": "Maintenance Reserve Account",
+      "description": "Reserve account funded during operations for major maintenance",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "targetBalance",
+          "label": "Target Balance",
+          "type": "number",
+          "default": 5000000
+        },
+        {
+          "key": "fundingMonths",
+          "label": "Funding Period (months)",
+          "type": "number",
+          "default": 60
+        },
+        {
+          "key": "releaseScheduleRef",
+          "label": "Release Schedule Reference",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "operationsFlagRef",
+          "label": "Operations Flag Reference",
+          "type": "reference",
+          "default": ""
+        }
+      ],
+      "outputs": [
+        "mra_contribution",
+        "mra_release",
+        "mra_balance"
+      ]
+    },
+    {
+      "id": "dsra",
+      "name": "Debt Service Reserve Account",
+      "description": "Reserve = N months debt service. Funded at drawdown, released at maturity.",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "monthsCover",
+          "label": "Months Cover",
+          "type": "number",
+          "default": 6
+        },
+        {
+          "key": "debtServiceRef",
+          "label": "Debt Service Reference",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "debtBalanceRef",
+          "label": "Debt Balance Reference",
+          "type": "reference",
+          "default": ""
+        }
+      ],
+      "outputs": [
+        "dsra_required",
+        "dsra_contribution",
+        "dsra_release",
+        "dsra_balance"
+      ]
+    }
+  ]
+}
