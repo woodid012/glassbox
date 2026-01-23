@@ -316,10 +316,13 @@ export function useDashboardState(viewMode) {
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
+            } else if (group.groupType === 'constants') {
+                // Handle constants groupType explicitly
+                normalizedMode = 'constant'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names
-                if (groupMode === 'constants') normalizedMode = 'constant'
+                // Normalize mode names (handle both singular and plural forms)
+                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
                 else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
                 else normalizedMode = groupMode
             }
@@ -522,24 +525,30 @@ export function useDashboardState(viewMode) {
         const activeGroups = inputGlassGroups.filter(group =>
             inputGlass.some(input => input.groupId === group.id)
         )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0 }
+        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
 
         activeGroups.forEach(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
 
-            // Determine group mode/type - check groupType first, then fall back to input mode
+            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
+            } else if (group.groupType === 'constants') {
+                normalizedMode = 'constant'
             } else {
-                const groupMode = groupInputs[0]?.mode || 'values'
-                normalizedMode = groupMode === 'constants' ? 'constant' : groupMode
+                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
+                // Normalize mode names (handle both singular and plural forms)
+                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
+                else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+                else normalizedMode = groupMode
             }
 
             modeIndices[normalizedMode]++
             const modePrefix = normalizedMode === 'timing' ? 'T' :
                               normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' : 'V'
+                              normalizedMode === 'constant' ? 'C' :
+                              normalizedMode === 'lookup' ? 'L' : 'V'
             const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
 
             // Determine group type - if ANY input is a flow or flowConverter, group inherits that
@@ -659,24 +668,30 @@ export function useDashboardState(viewMode) {
         const activeGroups = inputGlassGroups.filter(group =>
             inputGlass.some(input => input.groupId === group.id)
         )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0 }
+        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
 
         activeGroups.forEach(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
 
-            // Determine group mode/type - check groupType first, then fall back to input mode
+            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
+            } else if (group.groupType === 'constants') {
+                normalizedMode = 'constant'
             } else {
-                const groupMode = groupInputs[0]?.mode || 'values'
-                normalizedMode = groupMode === 'constants' ? 'constant' : groupMode
+                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
+                // Normalize mode names (handle both singular and plural forms)
+                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
+                else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+                else normalizedMode = groupMode
             }
 
             modeIndices[normalizedMode]++
             const modePrefix = normalizedMode === 'timing' ? 'T' :
                               normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' : 'V'
+                              normalizedMode === 'constant' ? 'C' :
+                              normalizedMode === 'lookup' ? 'L' : 'V'
             const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
 
             names[groupRef] = group.name
