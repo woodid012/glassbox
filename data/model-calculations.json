@@ -97,6 +97,41 @@
   ],
   "calculations": [
     {
+      "id": 119,
+      "name": "Model Period",
+      "formula": "CUMSUM(1)",
+      "description": "Period counter (1, 2, 3, ...)",
+      "type": "stock"
+    },
+    {
+      "id": 120,
+      "name": "Ops Period",
+      "formula": "CUMSUM(F2)",
+      "description": "Operations period counter (0 until ops, then 1, 2, 3, ...)",
+      "type": "stock"
+    },
+    {
+      "id": 121,
+      "name": "Quarter End Flag",
+      "formula": "(R119 - 3 * (R119 / 3 - (R119 / 3) % 1)) < 0.001",
+      "description": "1 at end of each quarter (every 3rd month)",
+      "type": "flag"
+    },
+    {
+      "id": 122,
+      "name": "Year End Flag",
+      "formula": "(R119 - 12 * (R119 / 12 - (R119 / 12) % 1)) < 0.001",
+      "description": "1 at end of each year (every 12th month)",
+      "type": "flag"
+    },
+    {
+      "id": 123,
+      "name": "Ops Year",
+      "formula": "1 + (R120 - 1) / 12 - ((R120 - 1) / 12) % 1",
+      "description": "Operations year (1, 1, ..., 2, 2, ...) - for annual aggregation",
+      "type": "stock"
+    },
+    {
       "id": 1,
       "name": "Total EPC",
       "formula": "V1.1 + V1.2",
@@ -113,6 +148,12 @@
       "name": "Capex + Cont",
       "formula": "V1 * (1 + C1.19 / 100)",
       "description": ""
+    },
+    {
+      "id": 112,
+      "name": "Capex to Apply GST",
+      "formula": "V1 - V1.1 - V1.9",
+      "description": "CAPEX minus EPC-BESS (import) minus Land Transaction (stamp duty) - both GST-free"
     },
     {
       "id": 4,
@@ -163,16 +204,23 @@
       "description": "Revenue minus OPEX"
     },
     {
+      "id": 111,
+      "name": "Monthly Decay Factor",
+      "formula": "(1 - L3.5/100) ^ (T.DiM/T.DiY)",
+      "description": "Per-month decay multiplier based on days",
+      "type": "stock"
+    },
+    {
       "id": 11,
-      "name": "Degradation Curve",
-      "formula": "100 - CUMSUM_Y(L3.5)",
-      "description": "",
+      "name": "Degradation Index",
+      "formula": "CUMPROD(1 - F2 + F2 * R111)",
+      "description": "1 before ops, then monthly compounding decay",
       "type": "stock"
     },
     {
       "id": 12,
       "name": "OperatingAdjustment",
-      "formula": "L3.1 / 100 * L3.2 / 100 * L3.3 / 100 * L3.4 / 100 * R11 / 100",
+      "formula": "L3.1 / 100 * L3.2 / 100 * L3.3 / 100 * L3.4 / 100 * R11",
       "description": "",
       "type": "stock"
     },
@@ -269,16 +317,16 @@
       "tabId": 3,
       "groupId": 11,
       "name": "GST Paid on Capex",
-      "formula": "-R3 * C1.11 / 100 * F1",
-      "description": "10% GST outflow on capex during construction"
+      "formula": "-R112 * C1.11 / 100 * F1",
+      "description": "10% GST outflow on eligible capex (excl EPC-BESS)"
     },
     {
       "id": 25,
       "tabId": 3,
       "groupId": 11,
-      "name": "GST Refund",
-      "formula": "R3 * C1.11 / 100 * F1",
-      "description": "GST refund (same period for simplicity)"
+      "name": "GST Received",
+      "formula": "SHIFT(R112 * C1.11 / 100 * F1, 1)",
+      "description": "GST refund received 1 month after payment"
     },
     {
       "id": 26,
@@ -362,12 +410,21 @@
       "type": "stock"
     },
     {
+      "id": 113,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "Capex to Apply GST (Cum)",
+      "formula": "CUMSUM(R112 * F1)",
+      "description": "Cumulative GST-eligible capex (excl EPC-BESS & Land Txn)",
+      "type": "stock"
+    },
+    {
       "id": 61,
       "tabId": 3,
       "groupId": 14,
       "name": "GST Paid",
-      "formula": "R60 * C1.11 / 100",
-      "description": "10% GST on cumulative capex",
+      "formula": "R113 * C1.11 / 100",
+      "description": "10% GST on cumulative eligible capex",
       "type": "stock"
     },
     {
@@ -638,6 +695,46 @@
       "description": "Total payment (interest + principal)"
     },
     {
+      "id": 114,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "CFADS",
+      "formula": "R13 * F2",
+      "description": "Cash Flow Available for Debt Service (simplified = EBITDA during ops)"
+    },
+    {
+      "id": 115,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "DSCR (Monthly)",
+      "formula": "R114 / MAX(R73, 0.0001)",
+      "description": "Monthly DSCR"
+    },
+    {
+      "id": 116,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "CFADS (Quarterly)",
+      "formula": "R114 + SHIFT(R114, 1) + SHIFT(R114, 2)",
+      "description": "Rolling 3-month CFADS"
+    },
+    {
+      "id": 117,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Debt Service (Quarterly)",
+      "formula": "R73 + SHIFT(R73, 1) + SHIFT(R73, 2)",
+      "description": "Rolling 3-month debt service"
+    },
+    {
+      "id": 118,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "DSCR (Quarterly)",
+      "formula": "R116 / MAX(R117, 0.0001)",
+      "description": "Quarterly DSCR - compare with Excel 1.40x target"
+    },
+    {
       "id": 74,
       "tabId": 3,
       "groupId": 15,
@@ -651,8 +748,8 @@
       "tabId": 3,
       "groupId": 16,
       "name": "Cumulative Capex",
-      "formula": "CUMSUM(V1 * (1 + C1.19 / 100))",
-      "description": "Cumulative Capex + Contingency (10%)",
+      "formula": "CUMSUM(V1)",
+      "description": "Cumulative Capex (depreciation base)",
       "type": "stock"
     },
     {
@@ -669,8 +766,8 @@
       "tabId": 3,
       "groupId": 16,
       "name": "Monthly Depreciation",
-      "formula": "R81 / C1.20 / 12",
-      "description": "20 year straight line, during ops"
+      "formula": "(R81 / C1.20 / 12) * (CUMSUM(F2) <= C1.20 * 12)",
+      "description": "Straight line over C1.20 years, stops when fully depreciated"
     },
     {
       "id": 83,

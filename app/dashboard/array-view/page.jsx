@@ -69,11 +69,12 @@ export default function ArrayViewPage() {
         return years
     }, [timeline])
 
-    // Export debug data function
-    const handleExportDebug = useCallback(async () => {
+    // Export debug data function - supports both yearly and monthly
+    const handleExportDebug = useCallback(async (exportMonthly = false) => {
         const yearlyHeaders = buildYearlyHeaders()
         const debugData = {
             exportedAt: new Date().toISOString(),
+            granularity: exportMonthly ? 'monthly' : 'yearly',
             timeline: {
                 startYear: config.startYear,
                 startMonth: config.startMonth,
@@ -95,9 +96,9 @@ export default function ArrayViewPage() {
             debugData.inputs[ref] = {
                 name: flag.name,
                 type: 'flag',
-                yearly: yearlyHeaders.map(h =>
-                    getAggregatedValueForArray(flag.array, h.indices, 'flow', 'flag')
-                )
+                yearly: exportMonthly
+                    ? [...flag.array]
+                    : yearlyHeaders.map(h => getAggregatedValueForArray(flag.array, h.indices, 'flow', 'flag'))
             }
         })
 
@@ -107,9 +108,9 @@ export default function ArrayViewPage() {
             debugData.inputs[ref] = {
                 name: indexation.name,
                 type: 'indexation',
-                yearly: yearlyHeaders.map(h =>
-                    getAggregatedValueForArray(indexation.array, h.indices, 'stock')
-                )
+                yearly: exportMonthly
+                    ? [...indexation.array]
+                    : yearlyHeaders.map(h => getAggregatedValueForArray(indexation.array, h.indices, 'stock'))
             }
         })
 
@@ -138,12 +139,23 @@ export default function ArrayViewPage() {
             const groupType = referenceTypeMap?.[groupRef] || 'flow'
 
             // Group total
-            const groupTotals = yearlyHeaders.map(h => {
-                return groupInputs.reduce((sum, input) => {
-                    const arr = inputGlassArrays[`inputtype3_${input.id}`] || []
-                    return sum + getAggregatedValueForArray(arr, h.indices, groupType)
-                }, 0)
-            })
+            const groupTotals = exportMonthly
+                ? (() => {
+                    const totals = new Array(timeline.periods).fill(0)
+                    groupInputs.forEach(input => {
+                        const arr = inputGlassArrays[`inputtype3_${input.id}`] || []
+                        for (let i = 0; i < timeline.periods; i++) {
+                            totals[i] += arr[i] || 0
+                        }
+                    })
+                    return totals
+                })()
+                : yearlyHeaders.map(h => {
+                    return groupInputs.reduce((sum, input) => {
+                        const arr = inputGlassArrays[`inputtype3_${input.id}`] || []
+                        return sum + getAggregatedValueForArray(arr, h.indices, groupType)
+                    }, 0)
+                })
 
             debugData.inputs[groupRef] = {
                 name: group.name,
@@ -158,9 +170,9 @@ export default function ArrayViewPage() {
                 debugData.inputs[inputRef] = {
                     name: input.name,
                     type: groupType,
-                    yearly: yearlyHeaders.map(h =>
-                        getAggregatedValueForArray(arr, h.indices, groupType)
-                    )
+                    yearly: exportMonthly
+                        ? [...arr]
+                        : yearlyHeaders.map(h => getAggregatedValueForArray(arr, h.indices, groupType))
                 }
             })
         })
@@ -195,9 +207,9 @@ export default function ArrayViewPage() {
                 debugData.inputs[subgroupRef] = {
                     name: `${sg.name ? sg.name + ': ' : ''}${selectedInput.name}`,
                     type: lookupType,
-                    yearly: yearlyHeaders.map(h =>
-                        getAggregatedValueForArray(arr, h.indices, lookupType)
-                    )
+                    yearly: exportMonthly
+                        ? [...arr]
+                        : yearlyHeaders.map(h => getAggregatedValueForArray(arr, h.indices, lookupType))
                 }
             })
         })
@@ -212,22 +224,24 @@ export default function ArrayViewPage() {
                 name: calc.name,
                 formula: calc.formula,
                 type: calcType,
-                yearly: yearlyHeaders.map(h =>
-                    getAggregatedValueForArray(resultArray, h.indices, calcType)
-                )
+                yearly: exportMonthly
+                    ? [...resultArray]
+                    : yearlyHeaders.map(h => getAggregatedValueForArray(resultArray, h.indices, calcType))
             }
         })
 
         // Send to API (compact=true by default for token optimization)
+        const suffix = exportMonthly ? '&monthly=true' : ''
         try {
-            const response = await fetch('/api/debug-export?compact=true', {
+            const response = await fetch(`/api/debug-export?compact=true${suffix}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(debugData)
             })
             const result = await response.json()
             if (result.success) {
-                alert(`Debug data exported to: ${result.filename} (${result.sizeKB} KB${result.compact ? ', compact' : ''})`)
+                const granLabel = exportMonthly ? 'monthly' : 'yearly'
+                alert(`Debug data exported (${granLabel}): ${result.filename} (${result.sizeKB} KB${result.compact ? ', compact' : ''})`)
             } else {
                 alert(`Export failed: ${result.error}`)
             }
@@ -278,15 +292,24 @@ export default function ArrayViewPage() {
                                 ))}
                             </div>
                         </div>
-                        {/* Export Debug Button */}
-                        <button
-                            onClick={handleExportDebug}
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                            title="Export yearly aggregated debug data"
-                        >
-                            <Download className="w-4 h-4" />
-                            Export Debug
-                        </button>
+                        {/* Export Debug Buttons */}
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => handleExportDebug(false)}
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-l-lg transition-colors"
+                                title="Export yearly aggregated debug data"
+                            >
+                                <Download className="w-4 h-4" />
+                                Yearly
+                            </button>
+                            <button
+                                onClick={() => handleExportDebug(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-900 bg-indigo-100 hover:bg-indigo-200 rounded-r-lg transition-colors"
+                                title="Export monthly granular debug data"
+                            >
+                                Monthly
+                            </button>
+                        </div>
                     </div>
                 </div>
 

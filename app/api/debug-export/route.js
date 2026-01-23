@@ -8,11 +8,13 @@ export async function POST(request) {
         const debugData = await request.json()
         const url = new URL(request.url)
         const compact = url.searchParams.get('compact') !== 'false'  // default to compact
+        const monthly = url.searchParams.get('monthly') === 'true'
 
         // Generate timestamp for filename
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-        const suffix = compact ? '-compact' : ''
-        const filename = `debug-${timestamp}${suffix}.json`
+        const granularity = monthly ? '-monthly' : ''
+        const compactSuffix = compact ? '-compact' : ''
+        const filename = `debug-${timestamp}${granularity}${compactSuffix}.json`
         const filePath = path.join(process.cwd(), 'data', filename)
 
         // Optionally compactify the data
