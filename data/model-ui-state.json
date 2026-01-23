@@ -1,0 +1,23 @@
+{
+  "viewMode": "Y",
+  "activeTab": "calculations",
+  "showConfig": true,
+  "showKeyPeriods": true,
+  "showInputs": true,
+  "showIndices": true,
+  "showNominal": true,
+  "showTimeseries": true,
+  "showCalculations": true,
+  "showInputType1": true,
+  "showInputType2": true,
+  "collapsedInputType1Groups": [],
+  "collapsedInputType2Groups": [],
+  "collapsedInputGlassGroups": [],
+  "collapsedKeyPeriodGroups": [
+    1
+  ],
+  "collapsedCalculationsGroups": [
+    21
+  ],
+  "collapsedGroups": []
+}

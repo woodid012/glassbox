@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { splitState, mergeState } from '@/utils/modelStateSplit'
 
 function generateMarkdown(data) {
     const lines = []
@@ -128,37 +129,82 @@ function generateMarkdown(data) {
 export async function POST() {
     try {
         const dataDir = path.join(process.cwd(), 'data')
-        const autosaveFile = path.join(dataDir, 'glass-inputs-autosave.json')
 
-        if (!fs.existsSync(autosaveFile)) {
-            return NextResponse.json({ error: 'No autosave file found' }, { status: 404 })
-        }
+        // File paths for split files
+        const inputsFile = path.join(dataDir, 'model-inputs.json')
+        const calculationsFile = path.join(dataDir, 'model-calculations.json')
+        const uiStateFile = path.join(dataDir, 'model-ui-state.json')
+        const legacyAutosaveFile = path.join(dataDir, 'glass-inputs-autosave.json')
 
         // Create timestamp: YYYY-MM-DD_HHmmss
         const now = new Date()
         const timestamp = now.toISOString().slice(0, 10) + '_' +
             now.toTimeString().slice(0, 8).replace(/:/g, '')
 
-        const snapshotFilename = `${timestamp}_snapshot.json`
-        const snapshotFile = path.join(dataDir, snapshotFilename)
+        // Check if split files exist
+        const splitFilesExist = fs.existsSync(inputsFile) &&
+            fs.existsSync(calculationsFile) &&
+            fs.existsSync(uiStateFile)
 
-        const mdFilename = `${timestamp}_snapshot.md`
-        const mdFile = path.join(dataDir, mdFilename)
+        let jsonData
 
-        // Copy JSON snapshot
-        fs.copyFileSync(autosaveFile, snapshotFile)
+        if (splitFilesExist) {
+            // Load from split files and merge
+            const inputs = JSON.parse(fs.readFileSync(inputsFile, 'utf8'))
+            const calculations = JSON.parse(fs.readFileSync(calculationsFile, 'utf8'))
+            const uiState = JSON.parse(fs.readFileSync(uiStateFile, 'utf8'))
+            jsonData = mergeState(inputs, calculations, uiState)
 
-        // Generate and save markdown
-        const jsonData = JSON.parse(fs.readFileSync(autosaveFile, 'utf8'))
-        const markdown = generateMarkdown(jsonData)
-        fs.writeFileSync(mdFile, markdown, 'utf8')
+            // Create 3 snapshot files
+            const inputsSnapshot = `${timestamp}_inputs.json`
+            const calculationsSnapshot = `${timestamp}_calculations.json`
+            const uiStateSnapshot = `${timestamp}_ui-state.json`
 
-        return NextResponse.json({
-            success: true,
-            filename: snapshotFilename,
-            mdFilename: mdFilename,
-            message: `Snapshot saved: ${snapshotFilename} and ${mdFilename}`
-        })
+            fs.copyFileSync(inputsFile, path.join(dataDir, inputsSnapshot))
+            fs.copyFileSync(calculationsFile, path.join(dataDir, calculationsSnapshot))
+            fs.copyFileSync(uiStateFile, path.join(dataDir, uiStateSnapshot))
+
+            // Also create merged snapshot for markdown generation
+            const snapshotFilename = `${timestamp}_snapshot.json`
+            fs.writeFileSync(path.join(dataDir, snapshotFilename), JSON.stringify(jsonData, null, 2), 'utf8')
+
+            // Generate and save markdown
+            const mdFilename = `${timestamp}_snapshot.md`
+            const markdown = generateMarkdown(jsonData)
+            fs.writeFileSync(path.join(dataDir, mdFilename), markdown, 'utf8')
+
+            return NextResponse.json({
+                success: true,
+                files: {
+                    inputs: inputsSnapshot,
+                    calculations: calculationsSnapshot,
+                    uiState: uiStateSnapshot,
+                    merged: snapshotFilename,
+                    markdown: mdFilename
+                },
+                message: `Snapshot saved: ${inputsSnapshot}, ${calculationsSnapshot}, ${uiStateSnapshot}, ${mdFilename}`
+            })
+        } else if (fs.existsSync(legacyAutosaveFile)) {
+            // Fallback to legacy autosave
+            jsonData = JSON.parse(fs.readFileSync(legacyAutosaveFile, 'utf8'))
+
+            const snapshotFilename = `${timestamp}_snapshot.json`
+            const snapshotFile = path.join(dataDir, snapshotFilename)
+            fs.copyFileSync(legacyAutosaveFile, snapshotFile)
+
+            const mdFilename = `${timestamp}_snapshot.md`
+            const markdown = generateMarkdown(jsonData)
+            fs.writeFileSync(path.join(dataDir, mdFilename), markdown, 'utf8')
+
+            return NextResponse.json({
+                success: true,
+                filename: snapshotFilename,
+                mdFilename: mdFilename,
+                message: `Snapshot saved: ${snapshotFilename} and ${mdFilename}`
+            })
+        } else {
+            return NextResponse.json({ error: 'No model data found' }, { status: 404 })
+        }
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }

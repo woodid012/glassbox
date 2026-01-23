@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
+import { DeferredInput } from '@/components/DeferredInput'
 
 export default function ModulesPage() {
     const {
@@ -44,17 +45,6 @@ export default function ModulesPage() {
         setAppState(prev => ({
             ...prev,
             modules: prev.modules.filter(m => m.id !== moduleId)
-        }))
-    }
-
-    const updateInputMode = (moduleId, inputKey, newMode) => {
-        setAppState(prev => ({
-            ...prev,
-            modules: prev.modules.map(m =>
-                m.id === moduleId
-                    ? { ...m, inputModes: { ...(m.inputModes || {}), [inputKey]: newMode } }
-                    : m
-            )
         }))
     }
 
@@ -146,10 +136,10 @@ export default function ModulesPage() {
                                                     <span className="text-xs px-1.5 py-0.5 rounded font-medium text-orange-600 bg-orange-100">
                                                         M{moduleIndex + 1}
                                                     </span>
-                                                    <input
+                                                    <DeferredInput
                                                         type="text"
                                                         value={module.name}
-                                                        onChange={(e) => updateModuleName(module.id, e.target.value)}
+                                                        onChange={(val) => updateModuleName(module.id, val)}
                                                         className="text-sm font-semibold text-slate-900 bg-slate-100 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                     />
                                                     <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -172,62 +162,33 @@ export default function ModulesPage() {
                                             {template && (
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                                     {template.inputs.map(inputDef => {
-                                                        // Check showWhen condition
-                                                        if (inputDef.showWhen) {
-                                                            const conditionMode = (module.inputModes || {})[inputDef.showWhen.key]
-                                                            if (conditionMode !== inputDef.showWhen.mode) {
-                                                                return null
-                                                            }
-                                                        }
-
-                                                        const inputModes = module.inputModes || {}
-                                                        const currentMode = inputModes[inputDef.key] || (inputDef.modes ? inputDef.modes[0] : 'constant')
-                                                        const availableModes = inputDef.modes || ['constant', 'reference']
-                                                        const hasModeOptions = availableModes.length > 1
-
                                                         return (
                                                             <div key={inputDef.key}>
-                                                                <div className="flex items-center justify-between mb-1">
-                                                                    <label className="text-xs text-slate-500">{inputDef.label}</label>
-                                                                    {hasModeOptions && (
-                                                                        <select
-                                                                            value={currentMode}
-                                                                            onChange={(e) => updateInputMode(module.id, inputDef.key, e.target.value)}
-                                                                            className="text-xs px-1 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600"
-                                                                        >
-                                                                            {availableModes.map(mode => (
-                                                                                <option key={mode} value={mode}>
-                                                                                    {mode === 'constant' ? '#' : mode === 'reference' ? 'Ref' : mode === 'keyPeriod' ? 'Key Period' : 'Duration'}
-                                                                                </option>
-                                                                            ))}
-                                                                        </select>
-                                                                    )}
-                                                                </div>
+                                                                <label className="text-xs text-slate-500 mb-1 block">{inputDef.label}</label>
 
-                                                                {/* Period type - show key period dropdown or duration input */}
+                                                                {/* Period type - show key period dropdown */}
                                                                 {inputDef.type === 'period' ? (
-                                                                    currentMode === 'keyPeriod' ? (
-                                                                        <select
-                                                                            value={module.inputs[inputDef.key] || ''}
-                                                                            onChange={(e) => updateInputValue(module.id, inputDef.key, e.target.value)}
-                                                                            className="w-full text-sm border border-emerald-200 bg-emerald-50 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                                        >
-                                                                            <option value="">Select Key Period...</option>
-                                                                            {keyPeriods.map(kp => (
-                                                                                <option key={kp.id} value={kp.id}>{kp.name}</option>
-                                                                            ))}
-                                                                        </select>
-                                                                    ) : (
-                                                                        <div className="text-xs text-slate-400 italic py-1.5">Set duration below</div>
-                                                                    )
+                                                                    <select
+                                                                        value={module.inputs[inputDef.key] || ''}
+                                                                        onChange={(e) => updateInputValue(module.id, inputDef.key, e.target.value)}
+                                                                        className="w-full text-sm border border-emerald-200 bg-emerald-50 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                                    >
+                                                                        <option value="">Select Key Period...</option>
+                                                                        {keyPeriods.map(kp => (
+                                                                            <option key={kp.id} value={kp.id}>{kp.name}</option>
+                                                                        ))}
+                                                                    </select>
                                                                 ) : inputDef.type === 'select' ? (
                                                                     <select
                                                                         value={module.inputs[inputDef.key] || inputDef.default}
                                                                         onChange={(e) => updateInputValue(module.id, inputDef.key, e.target.value)}
                                                                         className="w-full text-sm border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                                     >
-                                                                        {inputDef.options.map(opt => (
-                                                                            <option key={opt} value={opt}>{opt}</option>
+                                                                        {(Array.isArray(inputDef.options) && typeof inputDef.options[0] === 'object'
+                                                                            ? inputDef.options
+                                                                            : inputDef.options.map(opt => ({ value: opt, label: opt }))
+                                                                        ).map(opt => (
+                                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                                         ))}
                                                                     </select>
                                                                 ) : inputDef.type === 'boolean' ? (
@@ -237,23 +198,21 @@ export default function ModulesPage() {
                                                                         onChange={(e) => updateInputValue(module.id, inputDef.key, e.target.checked)}
                                                                         className="w-4 h-4"
                                                                     />
-                                                                ) : currentMode === 'reference' ? (
+                                                                ) : inputDef.type === 'date' ? (
                                                                     <input
-                                                                        type="text"
-                                                                        value={module.inputs[inputDef.key] || ''}
+                                                                        type="date"
+                                                                        value={module.inputs[inputDef.key] ?? inputDef.default ?? ''}
                                                                         onChange={(e) => updateInputValue(module.id, inputDef.key, e.target.value)}
-                                                                        placeholder="e.g., V1.1, S1, C1.2"
-                                                                        className="w-full text-sm font-mono border border-indigo-200 bg-indigo-50 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                        className="w-full text-sm border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                                     />
                                                                 ) : (
-                                                                    <input
-                                                                        type={inputDef.type === 'date' ? 'date' : 'number'}
+                                                                    /* Unified formula input - accepts numbers, references, or formulas */
+                                                                    <DeferredInput
+                                                                        type="text"
                                                                         value={module.inputs[inputDef.key] ?? inputDef.default ?? ''}
-                                                                        onChange={(e) => {
-                                                                            const val = inputDef.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value
-                                                                            updateInputValue(module.id, inputDef.key, val)
-                                                                        }}
-                                                                        className="w-full text-sm border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                        onChange={(val) => updateInputValue(module.id, inputDef.key, val)}
+                                                                        placeholder="e.g., 1000 or V1.1 or V1 * 0.08"
+                                                                        className="w-full text-sm font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                                     />
                                                                 )}
                                                             </div>
@@ -265,7 +224,7 @@ export default function ModulesPage() {
                                             {/* Module Outputs */}
                                             <div className="pt-3 border-t border-slate-100">
                                                 <span className="text-xs text-slate-400">Outputs: </span>
-                                                {module.outputs.map((output, outputIdx) => (
+                                                {(module.outputs || template?.outputs || []).map((output, outputIdx) => (
                                                     <span key={output} className="text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded mr-1">
                                                         M{moduleIndex + 1}.{outputIdx + 1} <span className="text-orange-400">({output.replace(/_/g, ' ')})</span>
                                                     </span>

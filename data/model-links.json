@@ -1,0 +1,526 @@
+{
+  "_description": "BESS Model Links - Easy to edit calculation formulas and module references",
+  "calculationsTabs": [
+    {
+      "id": 1,
+      "name": "P&L"
+    },
+    {
+      "id": 3,
+      "name": "Cashflow"
+    },
+    {
+      "id": 4,
+      "name": "Valuation"
+    }
+  ],
+  "calculationsGroups": [
+    {
+      "id": 4,
+      "tabId": 1,
+      "name": "Profitability"
+    },
+    {
+      "id": 10,
+      "tabId": 3,
+      "name": "Operating CF"
+    },
+    {
+      "id": 11,
+      "tabId": 3,
+      "name": "Investing CF"
+    },
+    {
+      "id": 12,
+      "tabId": 3,
+      "name": "Financing CF"
+    },
+    {
+      "id": 13,
+      "tabId": 3,
+      "name": "Cash Position"
+    },
+    {
+      "id": 20,
+      "tabId": 4,
+      "name": "Free Cash Flow"
+    },
+    {
+      "id": 21,
+      "tabId": 4,
+      "name": "Discount Factors"
+    },
+    {
+      "id": 22,
+      "tabId": 4,
+      "name": "NPV"
+    }
+  ],
+  "calculations": [
+    {
+      "id": 1,
+      "name": "Total EPC",
+      "formula": "V1.1 + V1.2",
+      "description": "Sum of EPC components"
+    },
+    {
+      "id": 2,
+      "name": "Total CAPEX",
+      "formula": "V1",
+      "description": "Full CAPEX group sum"
+    },
+    {
+      "id": 1768996587325,
+      "name": "Capex + Cont",
+      "formula": "V1 * 1.1",
+      "description": ""
+    },
+    {
+      "id": 1768996914295,
+      "name": "Tolling Revenue",
+      "formula": "C1.6 * C1.1 * 8760 / T.MiY / 10^6 * F7 *I1",
+      "description": ""
+    },
+    {
+      "id": 1768996913935,
+      "name": "FCAS Revenue",
+      "formula": "L1.2 * C1.1 / T.MiY / 10^6 * F8 * I1",
+      "description": ""
+    },
+    {
+      "id": 1769036835971,
+      "name": "Arb Revenue",
+      "formula": "L1.1 * C1.1 / T.MiY / 10^6 * F8 * R12 * I1",
+      "description": ""
+    },
+    {
+      "id": 1769037050155,
+      "name": "Merchant Revenue",
+      "formula": "R5+R6",
+      "description": ""
+    },
+    {
+      "id": 3,
+      "name": "Total Revenue",
+      "formula": "R4+R7",
+      "description": "Revenue group sum"
+    },
+    {
+      "id": 4,
+      "name": "Total OPEX",
+      "formula": "S1 * I1",
+      "description": "OPEX group sum"
+    },
+    {
+      "id": 5,
+      "name": "Gross Margin",
+      "formula": "R8 - R9",
+      "description": "Revenue minus OPEX"
+    },
+    {
+      "id": 1769039047257,
+      "name": "Degradation Curve",
+      "formula": "=100 * CUMSUM_Y(L3.5)",
+      "description": ""
+    },
+    {
+      "id": 1769043049881,
+      "name": "OperatingAdjustment",
+      "formula": "L3.1 /100 * L3.2 /100* L3.3 /100*L3.4 /100* R11/100",
+      "description": ""
+    },
+    {
+      "id": 13,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "EBITDA",
+      "formula": "R10",
+      "description": "Earnings before interest, taxes, depreciation, amortization"
+    },
+    {
+      "id": 14,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Depreciation",
+      "formula": "M2.1",
+      "description": "From D&A module"
+    },
+    {
+      "id": 15,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "EBIT",
+      "formula": "R13 - R14",
+      "description": "Earnings before interest and taxes"
+    },
+    {
+      "id": 16,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Interest Expense",
+      "formula": "M1.3",
+      "description": "From Debt module"
+    },
+    {
+      "id": 17,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "EBT",
+      "formula": "R15 - R16",
+      "description": "Earnings before taxes"
+    },
+    {
+      "id": 18,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Tax Expense",
+      "formula": "M4.4",
+      "description": "From Tax module"
+    },
+    {
+      "id": 19,
+      "tabId": 1,
+      "groupId": 4,
+      "name": "Net Income",
+      "formula": "R17 - R18",
+      "description": "Net profit after tax"
+    },
+    {
+      "id": 20,
+      "tabId": 3,
+      "groupId": 10,
+      "name": "EBITDA",
+      "formula": "R13",
+      "description": ""
+    },
+    {
+      "id": 21,
+      "tabId": 3,
+      "groupId": 10,
+      "name": "WC Movement",
+      "formula": "M5.5",
+      "description": "From Working Capital module"
+    },
+    {
+      "id": 22,
+      "tabId": 3,
+      "groupId": 10,
+      "name": "Operating CF",
+      "formula": "R20 - R21",
+      "description": ""
+    },
+    {
+      "id": 23,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "Capex",
+      "formula": "V1 * F1",
+      "description": ""
+    },
+    {
+      "id": 24,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "GST Paid on Capex",
+      "formula": "M3.1",
+      "description": ""
+    },
+    {
+      "id": 25,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "GST Refund",
+      "formula": "M3.2",
+      "description": ""
+    },
+    {
+      "id": 26,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "MRA Contribution",
+      "formula": "M6.1",
+      "description": ""
+    },
+    {
+      "id": 27,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "MRA Release",
+      "formula": "M6.2",
+      "description": ""
+    },
+    {
+      "id": 28,
+      "tabId": 3,
+      "groupId": 11,
+      "name": "Investing CF",
+      "formula": "0 - R23 - R24 + R25 - R26 + R27",
+      "description": ""
+    },
+    {
+      "id": 29,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Debt Drawdown",
+      "formula": "M1.2",
+      "description": ""
+    },
+    {
+      "id": 30,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Principal Repayment",
+      "formula": "M1.4",
+      "description": ""
+    },
+    {
+      "id": 31,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Interest Paid",
+      "formula": "R16",
+      "description": ""
+    },
+    {
+      "id": 32,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "DSRA Contribution",
+      "formula": "M7.2",
+      "description": ""
+    },
+    {
+      "id": 33,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "DSRA Release",
+      "formula": "M7.3",
+      "description": ""
+    },
+    {
+      "id": 34,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Equity Injection",
+      "formula": "MAX(R23 + R24 - R29, 0) * F1",
+      "description": ""
+    },
+    {
+      "id": 35,
+      "tabId": 3,
+      "groupId": 12,
+      "name": "Financing CF",
+      "formula": "R29 - R30 - R31 - R32 + R33 + R34",
+      "description": ""
+    },
+    {
+      "id": 36,
+      "tabId": 3,
+      "groupId": 13,
+      "name": "Net Cashflow",
+      "formula": "R22 + R28 + R35",
+      "description": ""
+    },
+    {
+      "id": 37,
+      "tabId": 3,
+      "groupId": 13,
+      "name": "Opening Cash",
+      "formula": "CUMSUM(R36) - R36",
+      "description": ""
+    },
+    {
+      "id": 38,
+      "tabId": 3,
+      "groupId": 13,
+      "name": "Closing Cash",
+      "formula": "CUMSUM(R36)",
+      "description": ""
+    },
+    {
+      "id": 39,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "EBITDA",
+      "formula": "R13",
+      "description": ""
+    },
+    {
+      "id": 40,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "Capex (incl GST)",
+      "formula": "R23 + R24 - R25",
+      "description": ""
+    },
+    {
+      "id": 41,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "WC Movement",
+      "formula": "R21",
+      "description": ""
+    },
+    {
+      "id": 42,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "FCFF",
+      "formula": "R39 - R40 - R41",
+      "description": "Free Cash Flow to Firm"
+    },
+    {
+      "id": 43,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "Debt Service",
+      "formula": "R30 + R31",
+      "description": ""
+    },
+    {
+      "id": 44,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "Debt Drawdown",
+      "formula": "R29",
+      "description": ""
+    },
+    {
+      "id": 45,
+      "tabId": 4,
+      "groupId": 20,
+      "name": "FCFE",
+      "formula": "R42 - R43 + R44",
+      "description": "Free Cash Flow to Equity"
+    },
+    {
+      "id": 46,
+      "tabId": 4,
+      "groupId": 21,
+      "name": "Monthly Discount Rate",
+      "formula": "(1 + C1.11/100) ^ (1/12) - 1",
+      "description": "WACC converted to monthly"
+    },
+    {
+      "id": 47,
+      "tabId": 4,
+      "groupId": 21,
+      "name": "Discount Factor",
+      "formula": "CUMPROD(1 / (1 + R46))",
+      "description": ""
+    },
+    {
+      "id": 48,
+      "tabId": 4,
+      "groupId": 22,
+      "name": "PV of FCFF",
+      "formula": "R42 * R47",
+      "description": ""
+    },
+    {
+      "id": 49,
+      "tabId": 4,
+      "groupId": 22,
+      "name": "PV of FCFE",
+      "formula": "R45 * R47",
+      "description": ""
+    },
+    {
+      "id": 50,
+      "tabId": 4,
+      "groupId": 22,
+      "name": "Cumulative NPV (Firm)",
+      "formula": "CUMSUM(R48)",
+      "description": ""
+    },
+    {
+      "id": 51,
+      "tabId": 4,
+      "groupId": 22,
+      "name": "Cumulative NPV (Equity)",
+      "formula": "CUMSUM(R49)",
+      "description": ""
+    }
+  ],
+  "modules": [
+    {
+      "id": 1,
+      "templateId": "debt",
+      "name": "Senior Debt",
+      "inputs": {
+        "principal": 80000000,
+        "annualRate": 6.5,
+        "termMonths": 240,
+        "startPeriodIndex": 18,
+        "loanType": "annuity",
+        "gracePeriods": 0
+      }
+    },
+    {
+      "id": 2,
+      "templateId": "depreciation",
+      "name": "Asset D&A",
+      "inputs": {
+        "assetValue": 120000000,
+        "residualValue": 0,
+        "usefulLifeMonths": 300,
+        "startPeriodIndex": 18,
+        "method": "straight_line"
+      }
+    },
+    {
+      "id": 3,
+      "templateId": "gst_capex",
+      "name": "GST",
+      "inputs": {
+        "eligibleCapexRef": "R2",
+        "gstRate": 10,
+        "refundDelayMonths": 1,
+        "constructionFlagRef": "F1"
+      }
+    },
+    {
+      "id": 4,
+      "templateId": "tax_loss_carryforward",
+      "name": "Tax",
+      "inputs": {
+        "taxableIncomeRef": "R17",
+        "taxRate": 30,
+        "openingLosses": 0
+      }
+    },
+    {
+      "id": 5,
+      "templateId": "working_capital",
+      "name": "Working Capital",
+      "inputs": {
+        "revenueRef": "R8",
+        "costRef": "R9",
+        "receivableDays": 30,
+        "payableDays": 30,
+        "inventoryDays": 0
+      }
+    },
+    {
+      "id": 6,
+      "templateId": "mra",
+      "name": "MRA",
+      "inputs": {
+        "targetBalance": 5000000,
+        "fundingMonths": 60,
+        "releaseScheduleRef": null,
+        "operationsFlagRef": "F2"
+      }
+    },
+    {
+      "id": 7,
+      "templateId": "dsra",
+      "name": "DSRA",
+      "inputs": {
+        "monthsCover": 6,
+        "debtServiceRef": "R43",
+        "debtBalanceRef": "M1.6"
+      }
+    }
+  ]
+}

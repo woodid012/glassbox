@@ -24,7 +24,8 @@ export const MODULE_TEMPLATES = {
         name: 'Debt Amortisation',
         description: 'Loan schedule with interest and principal components',
         inputs: [
-            { key: 'principal', label: 'Principal Amount', type: 'number', required: true },
+            { key: 'principal', label: 'Principal Amount', type: 'number', required: false },
+            { key: 'openingBalanceRef', label: 'Opening Balance Reference', type: 'reference', refType: 'any', required: false },
             { key: 'annualRate', label: 'Annual Interest Rate (%)', type: 'percentage', required: true },
             { key: 'termMonths', label: 'Term (months)', type: 'number', required: true },
             { key: 'startPeriodIndex', label: 'Drawdown Period', type: 'period', required: true },
@@ -180,6 +181,105 @@ export const MODULE_TEMPLATES = {
             { key: 'period_degradation', label: 'Period Degradation Rate', type: 'flow' },
             { key: 'degraded_value', label: 'Degraded Value', type: 'stock' }
         ]
+    },
+
+    gst_capex: {
+        type: 'gst_capex',
+        name: 'GST on Capex',
+        description: 'GST paid on eligible capex, refunded with delay. Final refund extends into operations.',
+        inputs: [
+            { key: 'eligibleCapexRef', label: 'Eligible Capex Reference', type: 'reference', refType: 'any', required: true },
+            { key: 'gstRate', label: 'GST Rate (%)', type: 'percentage', required: true, default: 10 },
+            { key: 'refundDelayMonths', label: 'Refund Delay (months)', type: 'number', required: false, default: 1 },
+            { key: 'constructionFlagRef', label: 'Construction Flag Reference', type: 'reference', refType: 'flag', required: false }
+        ],
+        outputs: [
+            { key: 'gst_paid', label: 'GST Paid', type: 'flow' },
+            { key: 'gst_refund', label: 'GST Refund', type: 'flow' },
+            { key: 'gst_balance', label: 'GST Balance', type: 'stock' },
+            { key: 'net_gst_cf', label: 'Net GST Cashflow', type: 'flow' }
+        ]
+    },
+
+    mra: {
+        type: 'mra',
+        name: 'Maintenance Reserve Account',
+        description: 'Reserve account funded during operations, releases for major maintenance events',
+        inputs: [
+            { key: 'targetBalance', label: 'Target Balance', type: 'number', required: true, default: 5000000 },
+            { key: 'fundingMonths', label: 'Funding Period (months)', type: 'number', required: true, default: 60 },
+            { key: 'releaseScheduleRef', label: 'Release Schedule Reference', type: 'reference', refType: 'any', required: false },
+            { key: 'operationsFlagRef', label: 'Operations Flag Reference', type: 'reference', refType: 'flag', required: false }
+        ],
+        outputs: [
+            { key: 'mra_contribution', label: 'MRA Contribution', type: 'flow' },
+            { key: 'mra_release', label: 'MRA Release', type: 'flow' },
+            { key: 'mra_balance', label: 'MRA Balance', type: 'stock' }
+        ]
+    },
+
+    dsra: {
+        type: 'dsra',
+        name: 'Debt Service Reserve Account',
+        description: 'Reserve = N months debt service. Funded at drawdown, released at maturity.',
+        inputs: [
+            { key: 'monthsCover', label: 'Months Cover', type: 'number', required: true, default: 6 },
+            { key: 'debtServiceRef', label: 'Debt Service Reference', type: 'reference', refType: 'any', required: true },
+            { key: 'debtBalanceRef', label: 'Debt Balance Reference', type: 'reference', refType: 'any', required: false }
+        ],
+        outputs: [
+            { key: 'dsra_required', label: 'DSRA Required', type: 'stock' },
+            { key: 'dsra_contribution', label: 'DSRA Contribution', type: 'flow' },
+            { key: 'dsra_release', label: 'DSRA Release', type: 'flow' },
+            { key: 'dsra_balance', label: 'DSRA Balance', type: 'stock' }
+        ]
+    },
+
+    sources_uses: {
+        type: 'sources_uses',
+        name: 'Sources = Uses (Funding)',
+        description: 'Balances funding sources (equity, debt) against uses (capex, fees, reserves). Sources always equal Uses.',
+        inputs: [
+            { key: 'usesRef', label: 'Total Uses Reference (e.g. Capex)', type: 'reference', refType: 'any', required: true },
+            { key: 'gearing', label: 'Target Gearing / Debt %', type: 'percentage', required: true, default: 70 },
+            { key: 'debtDrawdownFlagRef', label: 'Debt Drawdown Flag', type: 'reference', refType: 'flag', required: false },
+            { key: 'equityFirst', label: 'Equity Drawn First', type: 'select', options: [
+                { value: 'yes', label: 'Yes - Equity first, then Debt' },
+                { value: 'no', label: 'No - Pro-rata drawdown' }
+            ], required: false },
+            { key: 'reservesRef', label: 'Reserves Funding (DSRA etc)', type: 'reference', refType: 'any', required: false }
+        ],
+        outputs: [
+            { key: 'total_uses', label: 'Total Uses', type: 'flow' },
+            { key: 'cumulative_uses', label: 'Cumulative Uses', type: 'stock' },
+            { key: 'debt_drawdown', label: 'Debt Drawdown', type: 'flow' },
+            { key: 'equity_drawdown', label: 'Equity Drawdown', type: 'flow' },
+            { key: 'cumulative_debt', label: 'Cumulative Debt Drawn', type: 'stock' },
+            { key: 'cumulative_equity', label: 'Cumulative Equity Drawn', type: 'stock' },
+            { key: 'total_sources', label: 'Total Sources', type: 'flow' },
+            { key: 'sources_less_uses', label: 'Sources - Uses (should be 0)', type: 'flow' }
+        ]
+    },
+
+    construction_debt: {
+        type: 'construction_debt',
+        name: 'Construction Debt Facility',
+        description: 'Debt facility with capitalized interest during construction',
+        inputs: [
+            { key: 'baseUsesRef', label: 'Base Uses (Capex)', type: 'reference', refType: 'any', required: true },
+            { key: 'gearing', label: 'Gearing %', type: 'percentage', default: 70 },
+            { key: 'annualRate', label: 'Construction Interest Rate (%)', type: 'percentage', required: true },
+            { key: 'constructionFlagRef', label: 'Construction Flag', type: 'reference', refType: 'flag', required: true }
+        ],
+        outputs: [
+            { key: 'drawdown', label: 'Debt Drawdown', type: 'flow' },
+            { key: 'interest_accrued', label: 'Interest Accrued', type: 'flow' },
+            { key: 'capitalized_interest', label: 'Capitalized Interest', type: 'flow' },
+            { key: 'opening_balance', label: 'Opening Balance', type: 'stock' },
+            { key: 'closing_balance', label: 'Closing Balance', type: 'stock' },
+            { key: 'equity_contribution', label: 'Equity Contribution', type: 'flow' },
+            { key: 'total_equity', label: 'Cumulative Equity', type: 'stock' }
+        ]
     }
 }
 
@@ -211,6 +311,16 @@ export function calculateModuleOutputs(moduleInstance, arrayLength, context) {
             return calculateCapexSchedule(inputs, arrayLength)
         case 'degradation_profile':
             return calculateDegradationProfile(inputs, arrayLength, context)
+        case 'gst_capex':
+            return calculateGstCapex(inputs, arrayLength, context)
+        case 'mra':
+            return calculateMra(inputs, arrayLength, context)
+        case 'dsra':
+            return calculateDsra(inputs, arrayLength, context)
+        case 'sources_uses':
+            return calculateSourcesUses(inputs, arrayLength, context)
+        case 'construction_debt':
+            return calculateConstructionDebt(inputs, arrayLength, context)
         default:
             return outputs
     }
@@ -223,9 +333,10 @@ function calculateDebtAmortisation(inputs, arrayLength, context) {
         termMonths = 0,
         startPeriodIndex = 0,
         loanType = 'annuity',
-        gracePeriods = 0
+        gracePeriods = 0,
+        openingBalanceRef = null
     } = inputs
-    
+
     const outputs = {
         drawdown: new Array(arrayLength).fill(0),
         interest: new Array(arrayLength).fill(0),
@@ -234,61 +345,72 @@ function calculateDebtAmortisation(inputs, arrayLength, context) {
         balance_opening: new Array(arrayLength).fill(0),
         balance_closing: new Array(arrayLength).fill(0)
     }
-    
-    if (principal <= 0 || termMonths <= 0 || startPeriodIndex >= arrayLength) {
+
+    // Determine effective principal - either fixed or from reference (construction debt closing balance)
+    let effectivePrincipal = principal
+    if (openingBalanceRef && context[openingBalanceRef]) {
+        // Get the balance at startPeriodIndex - 1 (last period before refinancing)
+        const refArray = context[openingBalanceRef]
+        const refPeriod = Math.max(0, startPeriodIndex - 1)
+        effectivePrincipal = refArray[refPeriod] || 0
+    }
+
+    if (effectivePrincipal <= 0 || termMonths <= 0 || startPeriodIndex >= arrayLength) {
         return outputs
     }
     
     const monthlyRate = annualRate / 100 / 12
     const repaymentStart = startPeriodIndex + gracePeriods
     const repaymentPeriods = Math.max(0, termMonths - gracePeriods)
-    
-    // Drawdown
-    outputs.drawdown[startPeriodIndex] = principal
-    
+
+    // Drawdown - only show if not refinancing from a reference
+    if (!openingBalanceRef) {
+        outputs.drawdown[startPeriodIndex] = effectivePrincipal
+    }
+
     let balance = 0
-    
+
     for (let i = 0; i < arrayLength; i++) {
         // Opening balance
         if (i === startPeriodIndex) {
             outputs.balance_opening[i] = 0
-            balance = principal
+            balance = effectivePrincipal
         } else if (i > startPeriodIndex) {
             outputs.balance_opening[i] = balance
         }
-        
+
         if (balance <= 0) continue
-        
+
         // Interest
         const interestPayment = balance * monthlyRate
         outputs.interest[i] = interestPayment
-        
+
         // Principal repayment
         let principalPayment = 0
-        
+
         if (i >= repaymentStart && i < repaymentStart + repaymentPeriods) {
             const periodsRemaining = repaymentStart + repaymentPeriods - i
-            
+
             if (loanType === 'annuity' && monthlyRate > 0) {
                 // PMT calculation
-                const pmt = balance * (monthlyRate * Math.pow(1 + monthlyRate, periodsRemaining)) / 
+                const pmt = balance * (monthlyRate * Math.pow(1 + monthlyRate, periodsRemaining)) /
                            (Math.pow(1 + monthlyRate, periodsRemaining) - 1)
                 principalPayment = Math.min(balance, pmt - interestPayment)
             } else if (loanType === 'linear') {
-                principalPayment = principal / repaymentPeriods
+                principalPayment = effectivePrincipal / repaymentPeriods
             } else if (loanType === 'bullet' && i === repaymentStart + repaymentPeriods - 1) {
                 principalPayment = balance
             }
         }
-        
+
         outputs.principal_repayment[i] = principalPayment
         outputs.total_repayment[i] = interestPayment + principalPayment
-        
+
         // Update balance
         balance -= principalPayment
         outputs.balance_closing[i] = Math.max(0, balance)
     }
-    
+
     return outputs
 }
 
@@ -602,6 +724,197 @@ function calculateDegradationProfile(inputs, arrayLength, context) {
             outputs.degradation_factor[i] = Math.max(0, cumulativeFactor)
             outputs.degraded_value[i] = initialValue * outputs.degradation_factor[i]
         }
+    }
+
+    return outputs
+}
+
+function calculateGstCapex(inputs, arrayLength, context) {
+    // Placeholder - returns zeros until properly implemented
+    return {
+        gst_paid: new Array(arrayLength).fill(0),
+        gst_refund: new Array(arrayLength).fill(0),
+        gst_balance: new Array(arrayLength).fill(0),
+        net_gst_cf: new Array(arrayLength).fill(0)
+    }
+}
+
+function calculateMra(inputs, arrayLength, context) {
+    // Placeholder - returns zeros until properly implemented
+    return {
+        mra_contribution: new Array(arrayLength).fill(0),
+        mra_release: new Array(arrayLength).fill(0),
+        mra_balance: new Array(arrayLength).fill(0)
+    }
+}
+
+function calculateDsra(inputs, arrayLength, context) {
+    // Placeholder - returns zeros until properly implemented
+    return {
+        dsra_required: new Array(arrayLength).fill(0),
+        dsra_contribution: new Array(arrayLength).fill(0),
+        dsra_release: new Array(arrayLength).fill(0),
+        dsra_balance: new Array(arrayLength).fill(0)
+    }
+}
+
+function calculateSourcesUses(inputs, arrayLength, context) {
+    const {
+        usesRef = null,
+        gearing = 70,
+        debtDrawdownFlagRef = null,
+        equityFirst = 'no',
+        reservesRef = null
+    } = inputs
+
+    const outputs = {
+        total_uses: new Array(arrayLength).fill(0),
+        cumulative_uses: new Array(arrayLength).fill(0),
+        debt_drawdown: new Array(arrayLength).fill(0),
+        equity_drawdown: new Array(arrayLength).fill(0),
+        cumulative_debt: new Array(arrayLength).fill(0),
+        cumulative_equity: new Array(arrayLength).fill(0),
+        total_sources: new Array(arrayLength).fill(0),
+        sources_less_uses: new Array(arrayLength).fill(0)
+    }
+
+    // Get uses array (e.g., capex spend)
+    const usesArray = usesRef && context[usesRef] ? context[usesRef] : new Array(arrayLength).fill(0)
+    const reservesArray = reservesRef && context[reservesRef] ? context[reservesRef] : new Array(arrayLength).fill(0)
+    const debtFlagArray = debtDrawdownFlagRef && context[debtDrawdownFlagRef] ? context[debtDrawdownFlagRef] : null
+
+    // Calculate total uses first to determine total funding needed
+    let totalUsesAmount = 0
+    for (let i = 0; i < arrayLength; i++) {
+        const periodUses = Math.abs(usesArray[i] || 0) + Math.abs(reservesArray[i] || 0)
+        totalUsesAmount += periodUses
+    }
+
+    // Target debt and equity amounts
+    const targetDebt = totalUsesAmount * (gearing / 100)
+    const targetEquity = totalUsesAmount - targetDebt
+
+    let cumulativeUses = 0
+    let cumulativeDebt = 0
+    let cumulativeEquity = 0
+
+    for (let i = 0; i < arrayLength; i++) {
+        const periodUses = Math.abs(usesArray[i] || 0) + Math.abs(reservesArray[i] || 0)
+        outputs.total_uses[i] = periodUses
+        cumulativeUses += periodUses
+        outputs.cumulative_uses[i] = cumulativeUses
+
+        if (periodUses === 0) {
+            outputs.cumulative_debt[i] = cumulativeDebt
+            outputs.cumulative_equity[i] = cumulativeEquity
+            continue
+        }
+
+        // Check if debt can be drawn this period
+        const canDrawDebt = !debtFlagArray || debtFlagArray[i] === 1
+
+        let debtDraw = 0
+        let equityDraw = 0
+
+        if (equityFirst === 'yes') {
+            // Draw equity first until target reached, then debt
+            const equityRemaining = targetEquity - cumulativeEquity
+            if (equityRemaining > 0) {
+                equityDraw = Math.min(periodUses, equityRemaining)
+                debtDraw = canDrawDebt ? periodUses - equityDraw : 0
+                // If can't draw debt, equity covers the rest
+                if (!canDrawDebt) {
+                    equityDraw = periodUses
+                }
+            } else {
+                debtDraw = canDrawDebt ? periodUses : 0
+                equityDraw = canDrawDebt ? 0 : periodUses
+            }
+        } else {
+            // Pro-rata drawdown
+            if (canDrawDebt && totalUsesAmount > 0) {
+                debtDraw = periodUses * (gearing / 100)
+                equityDraw = periodUses - debtDraw
+            } else {
+                // If debt can't be drawn, equity covers all
+                equityDraw = periodUses
+                debtDraw = 0
+            }
+        }
+
+        outputs.debt_drawdown[i] = debtDraw
+        outputs.equity_drawdown[i] = equityDraw
+        cumulativeDebt += debtDraw
+        cumulativeEquity += equityDraw
+        outputs.cumulative_debt[i] = cumulativeDebt
+        outputs.cumulative_equity[i] = cumulativeEquity
+
+        outputs.total_sources[i] = debtDraw + equityDraw
+        outputs.sources_less_uses[i] = outputs.total_sources[i] - periodUses
+    }
+
+    return outputs
+}
+
+function calculateConstructionDebt(inputs, arrayLength, context) {
+    const { baseUsesRef, gearing = 70, annualRate = 0, constructionFlagRef } = inputs
+
+    const outputs = {
+        drawdown: new Array(arrayLength).fill(0),
+        interest_accrued: new Array(arrayLength).fill(0),
+        capitalized_interest: new Array(arrayLength).fill(0),
+        opening_balance: new Array(arrayLength).fill(0),
+        closing_balance: new Array(arrayLength).fill(0),
+        equity_contribution: new Array(arrayLength).fill(0),
+        total_equity: new Array(arrayLength).fill(0)
+    }
+
+    // Get base uses array (e.g., V1 for capex)
+    const baseUsesArray = baseUsesRef && context[baseUsesRef]
+        ? context[baseUsesRef]
+        : new Array(arrayLength).fill(0)
+
+    // Get construction flag array
+    const flagArray = constructionFlagRef && context[constructionFlagRef]
+        ? context[constructionFlagRef]
+        : new Array(arrayLength).fill(0)
+    const monthlyRate = annualRate / 100 / 12
+
+    let balance = 0
+    let totalEquity = 0
+
+    for (let i = 0; i < arrayLength; i++) {
+        const isConstruction = flagArray[i] === 1
+        // Uses = base uses * flag (only spend during construction)
+        const periodUses = Math.abs((baseUsesArray[i] || 0) * (flagArray[i] || 0))
+
+        outputs.opening_balance[i] = balance
+
+        if (isConstruction && periodUses > 0) {
+            // Debt drawdown = gearing % of uses
+            const debtDraw = periodUses * (gearing / 100)
+            const equityDraw = periodUses - debtDraw
+
+            outputs.drawdown[i] = debtDraw
+            outputs.equity_contribution[i] = equityDraw
+            totalEquity += equityDraw
+
+            balance += debtDraw
+        }
+
+        // Interest accrues on balance (capitalize during construction)
+        if (balance > 0) {
+            const interest = balance * monthlyRate
+            outputs.interest_accrued[i] = interest
+
+            if (isConstruction) {
+                outputs.capitalized_interest[i] = interest
+                balance += interest  // Capitalize
+            }
+        }
+
+        outputs.closing_balance[i] = balance
+        outputs.total_equity[i] = totalEquity
     }
 
     return outputs

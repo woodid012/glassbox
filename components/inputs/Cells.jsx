@@ -219,11 +219,11 @@ export const InlineCell = forwardRef(function InlineCell({ value, onChange, onNa
 // Read-only display cell for aggregated views
 export function DisplayCell({ value, category, isTimeline = false }) {
     return (
-        <div className={`cell-display text-right tabular-nums text-slate-900 px-2 py-1 bg-slate-200/60 ${category === 'flag' ? 'flex items-center justify-center' : ''}`}>
+        <div className={`cell-display text-right tabular-nums text-slate-900 text-[11px] px-1 py-0.5 bg-slate-200/60 ${category === 'flag' ? 'flex items-center justify-center' : ''}`}>
             {category === 'flag' ? (
                 <span className="text-slate-700">{value === 1 ? '1' : '0'}</span>
             ) : (
-                typeof value === 'number' ? value.toLocaleString('en-US', { maximumFractionDigits: 2 }) : value
+                typeof value === 'number' ? value.toLocaleString('en-US', { maximumFractionDigits: 1 }) : value
             )}
         </div>
     )

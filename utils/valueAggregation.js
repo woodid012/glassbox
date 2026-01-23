@@ -11,23 +11,26 @@
  * @returns {number} The aggregated value
  */
 export function getAggregatedValue(input, inputArray, indices) {
-    if (!input || !inputArray) return 0
-
-    const values = indices.map(idx => inputArray[idx] || 0)
-    const sum = values.reduce((acc, v) => acc + v, 0)
+    if (!input || !inputArray || indices.length === 0) return 0
 
     // For flags, use boolean OR: 1 if ANY period has flag=1, else 0
     if (input.category === 'flag') {
+        const values = indices.map(idx => inputArray[idx] || 0)
         return values.some(v => v === 1 || v === '1') ? 1 : 0
     }
 
-    if (input.type === 'stock') {
-        // Lookup (stock): average the values (point-in-time measure)
-        const nonZeroCount = values.filter(v => v !== 0).length
-        return nonZeroCount > 0 ? sum / nonZeroCount : 0
+    // Stock: point-in-time value
+    if (input.type === 'stock' || input.type === 'stock_end') {
+        // End of period: last index
+        return inputArray[indices[indices.length - 1]] || 0
     }
-    // Spread (flow): sum the values (period measure)
-    return sum
+    if (input.type === 'stock_start') {
+        // Start of period: first index
+        return inputArray[indices[0]] || 0
+    }
+
+    // Flow: sum all values (period measure)
+    return indices.reduce((sum, idx) => sum + (inputArray[idx] || 0), 0)
 }
 
 /**
@@ -39,20 +42,26 @@ export function getAggregatedValue(input, inputArray, indices) {
  * @returns {number} The aggregated value
  */
 export function getAggregatedValueForArray(arr, indices, type = 'flow', category = 'value') {
-    if (!arr) return 0
-    const values = indices.map(idx => arr[idx] || 0)
-    const sum = values.reduce((acc, v) => acc + v, 0)
+    if (!arr || indices.length === 0) return 0
 
     // For flags, use boolean OR: 1 if ANY period has flag=1, else 0
     if (category === 'flag') {
+        const values = indices.map(idx => arr[idx] || 0)
         return values.some(v => v === 1 || v === '1') ? 1 : 0
     }
 
-    if (type === 'stock') {
-        const nonZeroCount = values.filter(v => v !== 0).length
-        return nonZeroCount > 0 ? sum / nonZeroCount : 0
+    // Stock: point-in-time value
+    if (type === 'stock' || type === 'stock_end') {
+        // End of period: last index
+        return arr[indices[indices.length - 1]] || 0
     }
-    return sum
+    if (type === 'stock_start') {
+        // Start of period: first index
+        return arr[indices[0]] || 0
+    }
+
+    // Flow: sum all values
+    return indices.reduce((sum, idx) => sum + (arr[idx] || 0), 0)
 }
 
 /**
@@ -67,4 +76,41 @@ export function formatValue(val, compact = false) {
         return (val / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 }) + 'k'
     }
     return val.toLocaleString('en-US', { maximumFractionDigits: 2 })
+}
+
+/**
+ * Calculate period values from a result array based on view headers and mode
+ * @param {Array} resultArray - The raw monthly result array
+ * @param {Array} viewHeaders - Array of view header objects with index/indices
+ * @param {string} viewMode - 'M', 'Q', 'Y', or 'FY'
+ * @param {string} calcType - 'flow', 'stock', or 'stock_start'
+ * @returns {Array<number>} Aggregated values per period
+ */
+export function calculatePeriodValues(resultArray, viewHeaders, viewMode, calcType = 'flow') {
+    return viewHeaders.map((header) => {
+        if (viewMode === 'M') {
+            return resultArray[header.index] ?? 0
+        } else {
+            return getAggregatedValueForArray(resultArray, header.indices || [header.index], calcType)
+        }
+    })
+}
+
+/**
+ * Calculate total from period values based on calculation type
+ * @param {Array<number>} periodValues - Array of period values
+ * @param {string} calcType - 'flow', 'stock', or 'stock_start'
+ * @returns {number} The total value
+ */
+export function calculateTotal(periodValues, calcType = 'flow') {
+    if (calcType === 'stock' || calcType === 'stock_end') {
+        // Stock: use last period value
+        return periodValues[periodValues.length - 1] || 0
+    }
+    if (calcType === 'stock_start') {
+        // Stock start: use first period value
+        return periodValues[0] || 0
+    }
+    // Flow: sum all values
+    return periodValues.reduce((sum, v) => sum + v, 0)
 }

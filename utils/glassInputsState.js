@@ -185,6 +185,83 @@ export function getDefaultState() {
                     { key: 'initialValue', label: 'Initial Value', type: 'number', default: 100, modes: ['constant', 'reference'], description: 'Starting capacity' }
                 ],
                 outputs: ['degradation_factor', 'period_degradation', 'degraded_value']
+            },
+            {
+                id: 'gst_capex',
+                name: 'GST on Capex',
+                description: 'GST paid on eligible capex, refunded with delay',
+                category: 'accounting',
+                inputs: [
+                    { key: 'eligibleCapexRef', label: 'Eligible Capex Reference', type: 'reference', default: '' },
+                    { key: 'gstRate', label: 'GST Rate (%)', type: 'number', default: 10 },
+                    { key: 'refundDelayMonths', label: 'Refund Delay (months)', type: 'number', default: 1 },
+                    { key: 'constructionFlagRef', label: 'Construction Flag Reference', type: 'reference', default: '' }
+                ],
+                outputs: ['gst_paid', 'gst_refund', 'gst_balance', 'net_gst_cf']
+            },
+            {
+                id: 'mra',
+                name: 'Maintenance Reserve Account',
+                description: 'Reserve account funded during operations for major maintenance',
+                category: 'financing',
+                inputs: [
+                    { key: 'targetBalance', label: 'Target Balance', type: 'number', default: 5000000 },
+                    { key: 'fundingMonths', label: 'Funding Period (months)', type: 'number', default: 60 },
+                    { key: 'releaseScheduleRef', label: 'Release Schedule Reference', type: 'reference', default: '' },
+                    { key: 'operationsFlagRef', label: 'Operations Flag Reference', type: 'reference', default: '' }
+                ],
+                outputs: ['mra_contribution', 'mra_release', 'mra_balance']
+            },
+            {
+                id: 'dsra',
+                name: 'Debt Service Reserve Account',
+                description: 'Reserve = N months debt service. Funded at drawdown, released at maturity.',
+                category: 'financing',
+                inputs: [
+                    { key: 'monthsCover', label: 'Months Cover', type: 'number', default: 6 },
+                    { key: 'debtServiceRef', label: 'Debt Service Reference', type: 'reference', default: '' },
+                    { key: 'debtBalanceRef', label: 'Debt Balance Reference', type: 'reference', default: '' }
+                ],
+                outputs: ['dsra_required', 'dsra_contribution', 'dsra_release', 'dsra_balance']
+            },
+            {
+                id: 'construction_debt',
+                name: 'Construction Debt Facility',
+                description: 'Debt facility with capitalized interest during construction',
+                category: 'financing',
+                inputs: [
+                    { key: 'baseUsesRef', label: 'Base Uses (Capex)', type: 'reference', default: '' },
+                    { key: 'gearing', label: 'Gearing %', type: 'number', default: 70 },
+                    { key: 'annualRate', label: 'Construction Interest Rate (%)', type: 'number', default: 7 },
+                    { key: 'constructionFlagRef', label: 'Construction Flag', type: 'reference', default: '' }
+                ],
+                outputs: ['drawdown', 'interest_accrued', 'capitalized_interest', 'opening_balance', 'closing_balance', 'equity_contribution', 'total_equity']
+            },
+            {
+                id: 'tax_loss_carryforward',
+                name: 'Tax with Loss Carryforward',
+                description: 'Corporate tax calculation with loss pool carryforward',
+                category: 'accounting',
+                inputs: [
+                    { key: 'taxableIncomeRef', label: 'Taxable Income Reference', type: 'reference', default: '' },
+                    { key: 'taxRate', label: 'Tax Rate (%)', type: 'number', default: 30 },
+                    { key: 'openingLosses', label: 'Opening Loss Pool', type: 'number', default: 0 }
+                ],
+                outputs: ['taxable_income', 'losses_utilised', 'taxable_income_net', 'tax_expense', 'loss_pool']
+            },
+            {
+                id: 'working_capital',
+                name: 'Working Capital',
+                description: 'Receivables, payables, and inventory cycle',
+                category: 'accounting',
+                inputs: [
+                    { key: 'revenueRef', label: 'Revenue Reference', type: 'reference', default: '' },
+                    { key: 'costRef', label: 'Cost Reference', type: 'reference', default: '' },
+                    { key: 'receivableDays', label: 'Receivable Days', type: 'number', default: 30 },
+                    { key: 'payableDays', label: 'Payable Days', type: 'number', default: 30 },
+                    { key: 'inventoryDays', label: 'Inventory Days', type: 'number', default: 0 }
+                ],
+                outputs: ['receivables', 'payables', 'inventory', 'net_working_capital', 'wc_movement']
             }
         ],
         calculations: [
@@ -571,6 +648,19 @@ export function deserializeState(savedState) {
         const savedTemplateIds = new Set(savedState.moduleTemplates.map(t => t.id))
         const newTemplates = defaultState.moduleTemplates.filter(t => !savedTemplateIds.has(t.id))
         loaded.moduleTemplates = [...savedState.moduleTemplates, ...newTemplates]
+    }
+
+    // Ensure modules have outputs populated from their templates
+    if (loaded.modules && loaded.moduleTemplates) {
+        loaded.modules = loaded.modules.map(module => {
+            if (!module.outputs) {
+                const template = loaded.moduleTemplates.find(t => t.id === module.templateId)
+                if (template && template.outputs) {
+                    return { ...module, outputs: template.outputs }
+                }
+            }
+            return module
+        })
     }
 
     // Migration: Convert old date format to new period format

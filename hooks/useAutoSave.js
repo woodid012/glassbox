@@ -26,13 +26,35 @@ export function useAutoSave(appState, setAppState) {
     // Ref to track debounce timer
     const saveTimerRef = useRef(null)
 
-    // Auto-load on mount - priority: autosave file → original file → defaults
+    // Auto-load on mount - priority: split files → legacy autosave → original → defaults
     useEffect(() => {
         let mounted = true
 
         const loadState = async () => {
             try {
-                // Try autosave file first
+                // Try split model-state files first (merges model-inputs, model-calculations, model-ui-state)
+                const modelStateResponse = await fetch('/api/model-state')
+                if (modelStateResponse.ok) {
+                    const modelState = await modelStateResponse.json()
+                    if (mounted) {
+                        const deserialized = deserializeState(modelState)
+                        setAppState(deserialized)
+                        setHasLoadedFromStorage(true)
+                        // Sync localStorage
+                        try {
+                            localStorage.setItem('glass-inputs-state-local', JSON.stringify(serializeState(deserialized)))
+                        } catch (e) {
+                            console.error('Error syncing localStorage:', e)
+                        }
+                        return
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading from model-state:', e)
+            }
+
+            try {
+                // Fallback: try legacy autosave file
                 const autosaveResponse = await fetch('/api/glass-inputs-autosave')
                 if (autosaveResponse.ok) {
                     const autosaveState = await autosaveResponse.json()
@@ -40,7 +62,6 @@ export function useAutoSave(appState, setAppState) {
                         const deserialized = deserializeState(autosaveState)
                         setAppState(deserialized)
                         setHasLoadedFromStorage(true)
-                        // Sync localStorage with autosave state
                         try {
                             localStorage.setItem('glass-inputs-state-local', JSON.stringify(serializeState(deserialized)))
                         } catch (e) {
@@ -126,12 +147,12 @@ export function useAutoSave(appState, setAppState) {
             console.error('Error saving to localStorage:', e)
         }
 
-        // Debounced save to server
+        // Debounced save to server (split into 3 files)
         saveTimerRef.current = setTimeout(async () => {
             setIsAutoSaving(true)
             try {
                 const serialized = serializeState(appState)
-                const response = await fetch('/api/glass-inputs-autosave', {
+                const response = await fetch('/api/model-state', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(serialized)
@@ -169,7 +190,9 @@ export function useAutoSave(appState, setAppState) {
         }
 
         try {
-            // Delete autosave file
+            // Delete split model-state files
+            await fetch('/api/model-state', { method: 'DELETE' })
+            // Also delete legacy autosave for clean slate
             await fetch('/api/glass-inputs-autosave', { method: 'DELETE' })
 
             // Clear localStorage

@@ -137,8 +137,9 @@ export function useInputArrays({
                 return
             }
 
-            // Generate group's monthly periods
-            const groupPeriods = generatePeriods(group, config, keyPeriods)
+            // Generate group's periods at MONTHLY frequency for model timeline mapping
+            // Always use 'M' regardless of group.frequency to ensure proper month-by-month mapping
+            const groupPeriods = generatePeriods(group, config, keyPeriods, 'M')
 
             // Get values at monthly frequency using the same logic as Inputs preview
             const groupValues = getValuesArray(input, groupPeriods, 'M', group, config)
