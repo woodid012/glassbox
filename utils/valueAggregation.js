@@ -65,16 +65,38 @@ export function getAggregatedValueForArray(arr, indices, type = 'flow', category
 }
 
 /**
- * Format a numeric value for display
+ * Format a numeric value for display with smart rounding:
+ * - Large numbers (>=1000): whole numbers, no decimals
+ * - Small decimals (<1): 2 significant figures (e.g., 0.00456 → 0.0046)
+ * - Medium numbers (1-999): up to 2 decimal places
  * @param {number} val - The value to format
  * @param {boolean} compact - Whether to use compact notation (e.g., 1.5k)
  * @returns {string} Formatted string representation
  */
 export function formatValue(val, compact = false) {
     if (typeof val !== 'number' || isNaN(val)) return '–'
-    if (compact && Math.abs(val) >= 1000) {
+    const absVal = Math.abs(val)
+
+    if (compact && absVal >= 1000) {
         return (val / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 }) + 'k'
     }
+
+    // Large numbers: no decimals
+    if (absVal >= 1000) {
+        return Math.round(val).toLocaleString('en-US')
+    }
+
+    // Small decimals: 2 significant figures
+    if (absVal > 0 && absVal < 1) {
+        const magnitude = Math.floor(Math.log10(absVal))
+        const sigFigDecimals = Math.max(0, -magnitude + 1)
+        return val.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: sigFigDecimals
+        })
+    }
+
+    // Medium numbers: up to 2 decimals
     return val.toLocaleString('en-US', { maximumFractionDigits: 2 })
 }
 

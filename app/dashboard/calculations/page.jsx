@@ -8,11 +8,29 @@ import { groupInputsBySubgroup } from '@/components/inputs/utils/inputHelpers'
 import { DeferredInput } from '@/components/DeferredInput'
 import { getModeColorClasses, getCalcTypeColorClasses, getCalcTypeDisplayClasses, getModePrefix, getTabItems, getViewModeLabel } from '@/utils/styleHelpers'
 
-// Format number in accounting style: (1,234.56) for negatives, no negative sign
+// Format number in accounting style with smart rounding:
+// - Large numbers (>=1000): whole numbers
+// - Small decimals (<1): 2 significant figures
+// - Medium numbers: up to 2 decimals
 function formatAccounting(value, decimals = 2) {
     if (value === 0 || value === null || value === undefined) return ''
-    const absValue = Math.abs(value).toLocaleString('en-US', { maximumFractionDigits: decimals })
-    return value < 0 ? `(${absValue})` : absValue
+    const absVal = Math.abs(value)
+    let formatted
+
+    if (absVal >= 1000) {
+        // Large numbers: no decimals
+        formatted = Math.round(absVal).toLocaleString('en-US')
+    } else if (absVal > 0 && absVal < 1) {
+        // Small decimals: 2 significant figures
+        const magnitude = Math.floor(Math.log10(absVal))
+        const sigFigDecimals = Math.max(0, -magnitude + 1)
+        formatted = absVal.toLocaleString('en-US', { maximumFractionDigits: sigFigDecimals })
+    } else {
+        // Medium numbers: up to 2 decimals
+        formatted = absVal.toLocaleString('en-US', { maximumFractionDigits: decimals })
+    }
+
+    return value < 0 ? `(${formatted})` : formatted
 }
 
 // Calculation row with live formula preview - memoized to prevent unnecessary re-renders
