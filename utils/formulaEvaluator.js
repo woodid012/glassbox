@@ -1,6 +1,55 @@
 // Formula Evaluator Utility
 // Handles formula parsing and evaluation including array functions (CUMSUM, CUMPROD, etc.)
 
+// Cache for compiled expression functions - avoids repeated new Function() calls
+const expressionCache = new Map()
+const MAX_CACHE_SIZE = 1000
+
+// Cache for compiled regex patterns - avoids repeated regex compilation
+const regexCache = new Map()
+
+/**
+ * Get or create a cached regex for a reference
+ * @param {string} ref - Reference name to create regex for
+ * @returns {RegExp} Cached or newly created regex
+ */
+function getCachedRegex(ref) {
+    if (!regexCache.has(ref)) {
+        regexCache.set(ref, new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g'))
+    }
+    return regexCache.get(ref)
+}
+
+/**
+ * Evaluate a safe expression using cached compiled functions
+ * @param {string} safeExpr - Sanitized expression to evaluate
+ * @returns {number} Evaluated result
+ */
+function evaluateCachedExpression(safeExpr) {
+    if (!safeExpr.trim()) return 0
+
+    let evalFn = expressionCache.get(safeExpr)
+    if (!evalFn) {
+        // Clear cache if it gets too large
+        if (expressionCache.size >= MAX_CACHE_SIZE) {
+            expressionCache.clear()
+        }
+        try {
+            evalFn = new Function(`return (${safeExpr})`)
+            expressionCache.set(safeExpr, evalFn)
+        } catch {
+            return 0
+        }
+    }
+
+    try {
+        const result = evalFn()
+        return typeof result === 'number' && isFinite(result) ? result : 0
+    } catch {
+        return 0
+    }
+}
+
 /**
  * Evaluate an expression for all periods and return an array of results
  * @param {string} expr - The expression to evaluate
@@ -10,31 +59,41 @@
  */
 export function evalExprForAllPeriods(expr, allRefs, periods) {
     const arr = new Array(periods).fill(0)
+
+    // Sort refs once (longer refs first to avoid partial replacements)
     const sortedRefs = Object.keys(allRefs).sort((a, b) => b.length - a.length)
+
+    // Pre-compile all regex patterns for refs used in this expression
+    const compiledRefs = sortedRefs
+        .filter(ref => expr.includes(ref.split('.')[0])) // Quick filter to skip irrelevant refs
+        .map(ref => ({
+            ref,
+            regex: getCachedRegex(ref),
+            values: allRefs[ref]
+        }))
 
     for (let i = 0; i < periods; i++) {
         let periodExpr = expr
-        for (const ref of sortedRefs) {
-            const value = allRefs[ref]?.[i] ?? 0
-            const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
+
+        // Substitute all refs with their period values using pre-compiled regex
+        for (const { ref, regex, values } of compiledRefs) {
+            const value = values?.[i] ?? 0
+            regex.lastIndex = 0 // Reset regex state for global patterns
             periodExpr = periodExpr.replace(regex, value.toString())
         }
+
         // Convert MIN/MAX/ABS to Math functions
         periodExpr = periodExpr
             .replace(/\bMIN\s*\(/gi, 'Math.min(')
             .replace(/\bMAX\s*\(/gi, 'Math.max(')
             .replace(/\bABS\s*\(/gi, 'Math.abs(')
+
+        // Sanitize and convert power operator
         let safeExpr = periodExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,]/gi, '')
         safeExpr = safeExpr.replace(/\^/g, '**')
-        if (safeExpr.trim()) {
-            try {
-                const evalFn = new Function(`return (${safeExpr})`)
-                const result = evalFn()
-                arr[i] = typeof result === 'number' && isFinite(result) ? result : 0
-            } catch {
-                arr[i] = 0
-            }
-        }
+
+        // Evaluate using cached function
+        arr[i] = evaluateCachedExpression(safeExpr)
     }
     return arr
 }
@@ -254,13 +313,6 @@ export function evaluateSafeExpression(expr) {
     let safeExpr = processedExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,]/gi, '')
     safeExpr = safeExpr.replace(/\^/g, '**')
 
-    if (!safeExpr.trim()) return 0
-
-    try {
-        const evalFn = new Function(`return (${safeExpr})`)
-        const result = evalFn()
-        return typeof result === 'number' && isFinite(result) ? result : 0
-    } catch {
-        return 0
-    }
+    // Use cached expression evaluation
+    return evaluateCachedExpression(safeExpr)
 }

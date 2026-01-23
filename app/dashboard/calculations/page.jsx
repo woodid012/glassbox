@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, memo, useCallback } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronRight, FolderPlus, Pencil } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 import { getAggregatedValueForArray, calculatePeriodValues, calculateTotal } from '@/utils/valueAggregation'
@@ -15,8 +15,8 @@ function formatAccounting(value, decimals = 2) {
     return value < 0 ? `(${absValue})` : absValue
 }
 
-// Calculation row with live formula preview
-function CalcRow({
+// Calculation row with live formula preview - memoized to prevent unnecessary re-renders
+const CalcRow = memo(function CalcRow({
     calc,
     calcIndex,
     calcRef,
@@ -141,7 +141,7 @@ function CalcRow({
             </div>
         </div>
     )
-}
+})
 
 export default function CalculationsPage() {
     const {
@@ -1042,7 +1042,8 @@ export default function CalculationsPage() {
     )
 }
 
-function CalculationPreview({ calc, timeline, viewHeaders, viewMode, referenceMap, calculationResults, evaluateFormula, error }) {
+// Memoized to prevent re-renders when parent state changes but props are same
+const CalculationPreview = memo(function CalculationPreview({ calc, timeline, viewHeaders, viewMode, referenceMap, calculationResults, evaluateFormula, error }) {
     // Evaluate the formula live for real-time preview as user types
     const liveResult = evaluateFormula ? evaluateFormula(calc.formula, calculationResults) : null
     // Use calc.id for stable reference (not array position)
@@ -1143,9 +1144,10 @@ function CalculationPreview({ calc, timeline, viewHeaders, viewMode, referenceMa
             </div>
         </div>
     )
-}
+})
 
-function CalculationsTimeSeriesPreview({ calculations, calculationsGroups, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap }) {
+// Memoized time series preview table
+const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPreview({ calculations, calculationsGroups, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap }) {
     const viewModeLabel = getViewModeLabel(viewMode)
 
     // Calculate grand total across all calculations (only sum flows, not stocks)
@@ -1308,4 +1310,4 @@ function CalculationsTimeSeriesPreview({ calculations, calculationsGroups, calcu
             </div>
         </div>
     )
-}
+})
