@@ -172,20 +172,6 @@ export function formatPeriod(year, month, format = 'short') {
     return `${monthName} ${year}`
 }
 
-// Legacy support: formatDate still works with Date objects or year/month
-export function formatDate(dateOrYear, monthOrFormat = 'short') {
-    // If first arg is a number, treat as year/month
-    if (typeof dateOrYear === 'number') {
-        return formatPeriod(dateOrYear, monthOrFormat, 'short')
-    }
-    // Legacy Date object support
-    const d = new Date(dateOrYear)
-    if (monthOrFormat === 'short') {
-        return formatPeriod(d.getFullYear(), d.getMonth() + 1, 'short')
-    }
-    return formatPeriod(d.getFullYear(), d.getMonth() + 1, 'long')
-}
-
 export function formatNumber(val, decimals = 2) {
     if (val === null || val === undefined || isNaN(val)) return '-'
     return val.toLocaleString('en-US', { 

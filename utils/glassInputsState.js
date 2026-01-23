@@ -416,106 +416,6 @@ export function serializeState(state) {
 }
 
 /**
- * Parse YYYY-MM-DD date string to year/month
- * @param {string} dateStr - Date string in YYYY-MM-DD format
- * @returns {Object} { year, month }
- */
-function parseDateString(dateStr) {
-    if (!dateStr) return null
-    const parts = dateStr.split('-')
-    return {
-        year: parseInt(parts[0], 10),
-        month: parseInt(parts[1], 10)
-    }
-}
-
-/**
- * Migrate an object from old date format to new period format
- * @param {Object} obj - Object with startDate/endDate
- * @returns {Object} Object with startYear/startMonth/endYear/endMonth
- */
-function migrateObjectDates(obj) {
-    if (!obj) return obj
-
-    const result = { ...obj }
-
-    // Migrate startDate/endDate to startYear/startMonth/endYear/endMonth
-    if (obj.startDate && obj.startYear === undefined) {
-        const start = parseDateString(obj.startDate)
-        if (start) {
-            result.startYear = start.year
-            result.startMonth = start.month
-        }
-        delete result.startDate
-    }
-
-    if (obj.endDate && obj.endYear === undefined) {
-        const end = parseDateString(obj.endDate)
-        if (end) {
-            result.endYear = end.year
-            result.endMonth = end.month
-        }
-        delete result.endDate
-    }
-
-    // Migrate indexationStartDate
-    if (obj.indexationStartDate && obj.indexationStartYear === undefined) {
-        const start = parseDateString(obj.indexationStartDate)
-        if (start) {
-            result.indexationStartYear = start.year
-            result.indexationStartMonth = start.month
-        }
-        delete result.indexationStartDate
-    }
-
-    return result
-}
-
-/**
- * Migrate state from old date-based format to new period-based format
- * @param {Object} state - State to migrate
- * @returns {Object} Migrated state
- */
-function migrateToPeriodsSystem(state) {
-    // Migrate config
-    if (state.config?.startDate && state.config.startYear === undefined) {
-        state.config = migrateObjectDates(state.config)
-    }
-
-    // Migrate keyPeriods
-    if (state.keyPeriods) {
-        state.keyPeriods = state.keyPeriods.map(migrateObjectDates)
-    }
-
-    // Migrate indices
-    if (state.indices) {
-        state.indices = state.indices.map(migrateObjectDates)
-    }
-
-    // Migrate inputType1Groups
-    if (state.inputType1Groups) {
-        state.inputType1Groups = state.inputType1Groups.map(migrateObjectDates)
-    }
-
-    // Migrate inputGlassGroups
-    if (state.inputGlassGroups) {
-        state.inputGlassGroups = state.inputGlassGroups.map(migrateObjectDates)
-    }
-
-    // Migrate calculationsGroups
-    if (state.calculationsGroups) {
-        state.calculationsGroups = state.calculationsGroups.map(migrateObjectDates)
-    }
-
-    // Migrate inputs
-    if (state.inputs) {
-        state.inputs = state.inputs.map(migrateObjectDates)
-    }
-
-    return state
-}
-
-/**
  * Recalculate linked key period dates based on their link configurations
  * Uses the new format fields: startLinkedToPeriodId, startLinkOffset, startLinkToEnd, etc.
  * @param {Array} keyPeriods - Array of key period objects
@@ -635,9 +535,9 @@ function recalculateKeyPeriodDates(keyPeriods, config) {
 }
 
 /**
- * Deserializes saved state (converts Arrays back to Sets, applies migrations)
+ * Deserializes saved state (converts Arrays back to Sets)
  * @param {Object} savedState - Saved state from storage
- * @returns {Object} Hydrated state with Sets and migrations applied
+ * @returns {Object} Hydrated state with Sets
  */
 export function deserializeState(savedState) {
     const defaultState = getDefaultState()
@@ -662,9 +562,6 @@ export function deserializeState(savedState) {
             return module
         })
     }
-
-    // Migration: Convert old date format to new period format
-    loaded = migrateToPeriodsSystem(loaded)
 
     // Convert arrays back to Sets
     if (Array.isArray(loaded.collapsedInputType1Groups)) {
