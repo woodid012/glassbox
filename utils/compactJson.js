@@ -2,6 +2,9 @@
  * Compact JSON utilities for token-optimized exports
  */
 
+// Compression threshold - use RLE only if output is at least 30% smaller
+const RLE_COMPRESSION_THRESHOLD = 0.7
+
 /**
  * Round a number to specified decimal places
  */
@@ -122,7 +125,7 @@ function compactEncode(arr, type = 'flow', decimals = 2) {
         return sum + 4
     }, 0)
 
-    if (rleTokens < rawTokens * 0.7) {
+    if (rleTokens < rawTokens * RLE_COMPRESSION_THRESHOLD) {
         return { encoding: 'rle', data: rle }
     }
 

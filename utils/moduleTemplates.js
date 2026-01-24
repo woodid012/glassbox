@@ -1,6 +1,9 @@
 // Preset Modules for Financial Modeling
 // Each module takes inputs and generates multiple output time series
 
+// Time Constants - explicit for Glass Box transparency
+const MONTHS_IN_YEAR = 12
+
 /**
  * Module Template Structure:
  * {
@@ -359,7 +362,7 @@ function calculateDebtAmortisation(inputs, arrayLength, context) {
         return outputs
     }
     
-    const monthlyRate = annualRate / 100 / 12
+    const monthlyRate = annualRate / 100 / MONTHS_IN_YEAR
     const repaymentStart = startPeriodIndex + gracePeriods
     const repaymentPeriods = Math.max(0, termMonths - gracePeriods)
 
@@ -457,7 +460,7 @@ function calculateDepreciation(inputs, arrayLength) {
         if (method === 'straight_line') {
             depExpense = depreciableAmount / usefulLifeMonths
         } else if (method === 'declining_balance') {
-            const rate = (decliningRate / 100) / 12
+            const rate = (decliningRate / 100) / MONTHS_IN_YEAR
             depExpense = Math.min(bookValueStart * rate, bookValueStart - residualValue)
         } else if (method === 'sum_of_years') {
             const sumOfYears = (usefulLifeMonths * (usefulLifeMonths + 1)) / 2
@@ -493,8 +496,8 @@ function calculateRevenueEscalation(inputs, arrayLength, context) {
         revenue: new Array(arrayLength).fill(0)
     }
     
-    const monthlyPriceGrowth = Math.pow(1 + priceEscalation / 100, 1/12)
-    const monthlyVolumeGrowth = Math.pow(1 + volumeGrowth / 100, 1/12)
+    const monthlyPriceGrowth = Math.pow(1 + priceEscalation / 100, 1/MONTHS_IN_YEAR)
+    const monthlyVolumeGrowth = Math.pow(1 + volumeGrowth / 100, 1/MONTHS_IN_YEAR)
     
     // Get flag array if referenced
     let flagArray = null
@@ -878,7 +881,7 @@ function calculateConstructionDebt(inputs, arrayLength, context) {
     const flagArray = constructionFlagRef && context[constructionFlagRef]
         ? context[constructionFlagRef]
         : new Array(arrayLength).fill(0)
-    const monthlyRate = annualRate / 100 / 12
+    const monthlyRate = annualRate / 100 / MONTHS_IN_YEAR
 
     let balance = 0
     let totalEquity = 0

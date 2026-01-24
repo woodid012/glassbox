@@ -508,7 +508,7 @@ export function useInputManagement({
             formulas: {},
             value: 0,
             valueFrequency: 'Y',
-            spreadMethod: null // Will be auto-detected from name if not set
+            spreadMethod: 'spread' // Explicit default - no hidden auto-detection
         }])
     }, [inputGlass, setInputGlass])
 

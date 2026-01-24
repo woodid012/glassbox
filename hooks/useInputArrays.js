@@ -6,6 +6,9 @@ import { useMemo } from 'react'
 import { evaluateSimpleFormula } from '@/utils/simpleFormulaEvaluator'
 import { getValuesArray, generatePeriods } from '@/components/inputs/utils/inputHelpers'
 
+// Time Constants - explicit for Glass Box transparency
+const MONTHS_IN_YEAR = 12
+
 /**
  * Hook for computing input arrays from input definitions
  */
@@ -100,7 +103,7 @@ export function useInputArrays({
                         if (index.indexationPeriod === 'monthly') {
                             // Monthly compounding: count months from indexation start
                             const monthsElapsed = periodTotal - indexStartTotal
-                            arr[i] = Math.pow(1 + rate / 12, monthsElapsed)
+                            arr[i] = Math.pow(1 + rate / MONTHS_IN_YEAR, monthsElapsed)
                         } else {
                             // Annual compounding: count calendar years from indexation start
                             const yearsElapsed = periodYear - indexStartYear
@@ -302,7 +305,7 @@ export function useInputArrays({
                         let indexationFactor
                         if (indexationPeriod === 'monthly') {
                             const monthsElapsed = periodTotal - inputStartTotal
-                            indexationFactor = Math.pow(1 + rate / 12, monthsElapsed)
+                            indexationFactor = Math.pow(1 + rate / MONTHS_IN_YEAR, monthsElapsed)
                         } else {
                             const yearsElapsed = periodYear - inputStartYear
                             indexationFactor = Math.pow(1 + rate, yearsElapsed)

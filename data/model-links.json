@@ -398,7 +398,7 @@
       "tabId": 4,
       "groupId": 21,
       "name": "Monthly Discount Rate",
-      "formula": "(1 + C1.11/100) ^ (1/12) - 1",
+      "formula": "(1 + C1.11/100) ^ (1/T.MiY) - 1",
       "description": "WACC converted to monthly"
     },
     {
