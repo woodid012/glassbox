@@ -64,6 +64,19 @@ Example: A calculation with `"id": 60` is always referenced as `R60`, regardless
 2. Use that ID in formulas (e.g., `R60 + R61`)
 3. Array position only affects display order, not formula resolution
 
+## Number Formatting
+
+Smart number formatting is used throughout the application:
+
+- **Large numbers (≥1000):** Whole numbers, no decimals (e.g., 12345 → "12,345")
+- **Small decimals (<1):** 2 significant figures (e.g., 0.00456 → "0.0046")
+- **Medium numbers (1-999):** Up to 2 decimal places (e.g., 230.5 → "230.5", 1.43 → "1.43")
+
+Key formatting functions:
+- `formatNumber()` in `utils/timeArrayHelpers.js`
+- `formatValue()` in `utils/valueAggregation.js`
+- `formatAccounting()` in `app/dashboard/calculations/page.jsx`
+
 ## Notes
 
 - Some glassinputs components are placeholder stubs - replace with full implementations if available

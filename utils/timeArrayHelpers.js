@@ -172,11 +172,38 @@ export function formatPeriod(year, month, format = 'short') {
     return `${monthName} ${year}`
 }
 
+/**
+ * Smart number formatting:
+ * - Large numbers (>=1000): whole numbers, no decimals
+ * - Small decimals (<1): 2 significant figures (e.g., 0.00456 → 0.0046)
+ * - Medium numbers (1-999): up to 2 decimal places
+ */
 export function formatNumber(val, decimals = 2) {
     if (val === null || val === undefined || isNaN(val)) return '-'
-    return val.toLocaleString('en-US', { 
+
+    const absVal = Math.abs(val)
+
+    // Large numbers: no decimals
+    if (absVal >= 1000) {
+        return Math.round(val).toLocaleString('en-US')
+    }
+
+    // Small decimals: 2 significant figures
+    if (absVal > 0 && absVal < 1) {
+        // Find number of leading zeros after decimal point
+        const magnitude = Math.floor(Math.log10(absVal))
+        // For 0.00456, magnitude is -3, we want 4 decimal places to show "0.0046"
+        const sigFigDecimals = Math.max(0, -magnitude + 1)
+        return val.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: sigFigDecimals
+        })
+    }
+
+    // Medium numbers (1-999): up to 2 decimals
+    return val.toLocaleString('en-US', {
         minimumFractionDigits: 0,
-        maximumFractionDigits: decimals 
+        maximumFractionDigits: decimals
     })
 }
 
@@ -186,5 +213,11 @@ export function formatCompact(val) {
     if (absVal >= 1e9) return (val / 1e9).toFixed(1) + 'B'
     if (absVal >= 1e6) return (val / 1e6).toFixed(1) + 'M'
     if (absVal >= 1e3) return (val / 1e3).toFixed(1) + 'k'
+    // Small decimals: 2 significant figures
+    if (absVal > 0 && absVal < 1) {
+        const magnitude = Math.floor(Math.log10(absVal))
+        const sigFigDecimals = Math.max(0, -magnitude + 1)
+        return val.toFixed(sigFigDecimals)
+    }
     return val.toFixed(2)
 }
