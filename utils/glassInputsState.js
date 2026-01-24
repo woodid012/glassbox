@@ -110,158 +110,28 @@ export function getDefaultState() {
         // Available module templates (pre-built)
         moduleTemplates: [
             {
-                id: 'debt',
-                name: 'Debt Schedule',
-                description: 'Calculates principal, interest, and balance over time',
+                id: 'iterative_debt_sizing',
+                name: 'Iterative Debt Sizing (DSCR Sculpted)',
+                description: 'Binary search to find optimal debt with DSCR-sculpted repayments',
                 category: 'financing',
                 inputs: [
-                    {
-                        key: 'principal',
-                        label: 'Principal Amount',
-                        type: 'number',
-                        default: 0,
-                        modes: ['constant', 'reference'],
-                        description: 'Constant value or link to an output'
-                    },
-                    {
-                        key: 'interestRate',
-                        label: 'Interest Rate (%)',
-                        type: 'number',
-                        default: 5,
-                        modes: ['constant', 'reference'],
-                        description: 'Constant rate or link to interest rate series'
-                    },
-                    {
-                        key: 'timePeriod',
-                        label: 'Time Period',
-                        type: 'period',
-                        default: null,
-                        modes: ['keyPeriod', 'duration'],
-                        description: 'Link to Key Period or set duration'
-                    },
-                    {
-                        key: 'duration',
-                        label: 'Duration (years)',
-                        type: 'number',
-                        default: 10,
-                        showWhen: { key: 'timePeriod', mode: 'duration' },
-                        description: 'Loan tenor in years'
-                    }
+                    { key: 'cfadsRef', label: 'CFADS Reference', type: 'reference', default: '' },
+                    { key: 'debtFlagRef', label: 'Debt Service Flag', type: 'reference', default: '' },
+                    { key: 'totalCapex', label: 'Total Capex ($M)', type: 'number', default: 100 },
+                    { key: 'maxGearingPct', label: 'Max Gearing (%)', type: 'number', default: 65 },
+                    { key: 'interestRatePct', label: 'Interest Rate (%)', type: 'number', default: 5 },
+                    { key: 'tenorYears', label: 'Debt Tenor (years)', type: 'number', default: 18 },
+                    { key: 'targetDSCR', label: 'Target DSCR', type: 'number', default: 1.4 },
+                    { key: 'debtPeriod', label: 'Debt Service Period', type: 'select', options: [
+                        { value: 'M', label: 'Monthly' },
+                        { value: 'Q', label: 'Quarterly' },
+                        { value: 'Y', label: 'Yearly' }
+                    ], default: 'Q' },
+                    { key: 'idcRef', label: 'IDC Reference (optional)', type: 'reference', default: '' },
+                    { key: 'tolerance', label: 'Tolerance ($M)', type: 'number', default: 0.1 },
+                    { key: 'maxIterations', label: 'Max Iterations', type: 'number', default: 50 }
                 ],
-                outputs: ['opening_balance', 'drawdown', 'interest_payment', 'principal_payment', 'closing_balance']
-            },
-            {
-                id: 'gst',
-                name: 'GST',
-                description: 'Goods and Services Tax calculation',
-                category: 'accounting',
-                inputs: [
-                    { key: 'revenueRef', label: 'Revenue Reference', type: 'reference', default: '' },
-                    { key: 'expenseRef', label: 'Expense Reference', type: 'reference', default: '' },
-                    { key: 'gstRate', label: 'GST Rate (%)', type: 'number', default: 10 }
-                ],
-                outputs: ['gst_collected', 'gst_paid', 'gst_payable']
-            },
-            {
-                id: 'depreciation',
-                name: 'D&A',
-                description: 'Depreciation & Amortization schedule',
-                category: 'accounting',
-                inputs: [
-                    { key: 'assetValue', label: 'Asset Value', type: 'number', default: 0 },
-                    { key: 'usefulLife', label: 'Useful Life (years)', type: 'number', default: 20 },
-                    { key: 'residualValue', label: 'Residual Value', type: 'number', default: 0 },
-                    { key: 'method', label: 'Method', type: 'select', options: ['straight-line', 'declining-balance'], default: 'straight-line' }
-                ],
-                outputs: ['depreciation_expense', 'accumulated_depreciation', 'book_value']
-            },
-            {
-                id: 'degradation_profile',
-                name: 'Degradation Profile',
-                description: 'Annual cumulative degradation (e.g., solar panel efficiency)',
-                category: 'operations',
-                inputs: [
-                    { key: 'degradationRateRef', label: 'Degradation Rate (%)', type: 'reference', default: '', modes: ['reference'], description: 'Annual rate as % (e.g., 5 for 5%)' },
-                    { key: 'initialValue', label: 'Initial Value', type: 'number', default: 100, modes: ['constant', 'reference'], description: 'Starting capacity' }
-                ],
-                outputs: ['degradation_factor', 'period_degradation', 'degraded_value']
-            },
-            {
-                id: 'gst_capex',
-                name: 'GST on Capex',
-                description: 'GST paid on eligible capex, refunded with delay',
-                category: 'accounting',
-                inputs: [
-                    { key: 'eligibleCapexRef', label: 'Eligible Capex Reference', type: 'reference', default: '' },
-                    { key: 'gstRate', label: 'GST Rate (%)', type: 'number', default: 10 },
-                    { key: 'refundDelayMonths', label: 'Refund Delay (months)', type: 'number', default: 1 },
-                    { key: 'constructionFlagRef', label: 'Construction Flag Reference', type: 'reference', default: '' }
-                ],
-                outputs: ['gst_paid', 'gst_refund', 'gst_balance', 'net_gst_cf']
-            },
-            {
-                id: 'mra',
-                name: 'Maintenance Reserve Account',
-                description: 'Reserve account funded during operations for major maintenance',
-                category: 'financing',
-                inputs: [
-                    { key: 'targetBalance', label: 'Target Balance', type: 'number', default: 5000000 },
-                    { key: 'fundingMonths', label: 'Funding Period (months)', type: 'number', default: 60 },
-                    { key: 'releaseScheduleRef', label: 'Release Schedule Reference', type: 'reference', default: '' },
-                    { key: 'operationsFlagRef', label: 'Operations Flag Reference', type: 'reference', default: '' }
-                ],
-                outputs: ['mra_contribution', 'mra_release', 'mra_balance']
-            },
-            {
-                id: 'dsra',
-                name: 'Debt Service Reserve Account',
-                description: 'Reserve = N months debt service. Funded at drawdown, released at maturity.',
-                category: 'financing',
-                inputs: [
-                    { key: 'monthsCover', label: 'Months Cover', type: 'number', default: 6 },
-                    { key: 'debtServiceRef', label: 'Debt Service Reference', type: 'reference', default: '' },
-                    { key: 'debtBalanceRef', label: 'Debt Balance Reference', type: 'reference', default: '' }
-                ],
-                outputs: ['dsra_required', 'dsra_contribution', 'dsra_release', 'dsra_balance']
-            },
-            {
-                id: 'construction_debt',
-                name: 'Construction Debt Facility',
-                description: 'Debt facility with capitalized interest during construction',
-                category: 'financing',
-                inputs: [
-                    { key: 'baseUsesRef', label: 'Base Uses (Capex)', type: 'reference', default: '' },
-                    { key: 'gearing', label: 'Gearing %', type: 'number', default: 70 },
-                    { key: 'annualRate', label: 'Construction Interest Rate (%)', type: 'number', default: 7 },
-                    { key: 'constructionFlagRef', label: 'Construction Flag', type: 'reference', default: '' }
-                ],
-                outputs: ['drawdown', 'interest_accrued', 'capitalized_interest', 'opening_balance', 'closing_balance', 'equity_contribution', 'total_equity']
-            },
-            {
-                id: 'tax_loss_carryforward',
-                name: 'Tax with Loss Carryforward',
-                description: 'Corporate tax calculation with loss pool carryforward',
-                category: 'accounting',
-                inputs: [
-                    { key: 'taxableIncomeRef', label: 'Taxable Income Reference', type: 'reference', default: '' },
-                    { key: 'taxRate', label: 'Tax Rate (%)', type: 'number', default: 30 },
-                    { key: 'openingLosses', label: 'Opening Loss Pool', type: 'number', default: 0 }
-                ],
-                outputs: ['taxable_income', 'losses_utilised', 'taxable_income_net', 'tax_expense', 'loss_pool']
-            },
-            {
-                id: 'working_capital',
-                name: 'Working Capital',
-                description: 'Receivables, payables, and inventory cycle',
-                category: 'accounting',
-                inputs: [
-                    { key: 'revenueRef', label: 'Revenue Reference', type: 'reference', default: '' },
-                    { key: 'costRef', label: 'Cost Reference', type: 'reference', default: '' },
-                    { key: 'receivableDays', label: 'Receivable Days', type: 'number', default: 30 },
-                    { key: 'payableDays', label: 'Payable Days', type: 'number', default: 30 },
-                    { key: 'inventoryDays', label: 'Inventory Days', type: 'number', default: 0 }
-                ],
-                outputs: ['receivables', 'payables', 'inventory', 'net_working_capital', 'wc_movement']
+                outputs: ['sized_debt', 'opening_balance', 'interest_payment', 'principal_payment', 'debt_service', 'closing_balance', 'period_dscr', 'cumulative_principal']
             }
         ],
         calculations: [
@@ -543,12 +413,8 @@ export function deserializeState(savedState) {
     const defaultState = getDefaultState()
     let loaded = { ...defaultState, ...savedState }
 
-    // Merge moduleTemplates: ensure new default templates are always included
-    if (defaultState.moduleTemplates && savedState.moduleTemplates) {
-        const savedTemplateIds = new Set(savedState.moduleTemplates.map(t => t.id))
-        const newTemplates = defaultState.moduleTemplates.filter(t => !savedTemplateIds.has(t.id))
-        loaded.moduleTemplates = [...savedState.moduleTemplates, ...newTemplates]
-    }
+    // Always use default moduleTemplates (don't preserve old saved templates)
+    loaded.moduleTemplates = defaultState.moduleTemplates
 
     // Ensure modules have outputs populated from their templates
     if (loaded.modules && loaded.moduleTemplates) {
