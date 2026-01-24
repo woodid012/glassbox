@@ -164,13 +164,13 @@
     {
       "id": 5,
       "name": "FCAS Revenue",
-      "formula": "L1.2 * C1.1 / 12 / 10^6 * F8 * I1",
+      "formula": "L1.2 * C1.1 / T.MiY / 10^6 * F8 * I1",
       "description": ""
     },
     {
       "id": 6,
       "name": "Arb Revenue",
-      "formula": "L1.1 * C1.1 / 10^6 / 12 * F8 * R12 * I1",
+      "formula": "L1.1 * C1.1 / 10^6 / T.MiY * F8 * R12 * I1",
       "description": "L1.1 is annual, divide by 12 for monthly"
     },
     {
@@ -584,7 +584,7 @@
       "tabId": 4,
       "groupId": 21,
       "name": "Monthly Discount Rate",
-      "formula": "(1 + C1.8 / 100) ^ (1/12) - 1",
+      "formula": "(1 + C1.8 / 100) ^ (1/T.MiY) - 1",
       "description": "WACC converted to monthly"
     },
     {
@@ -649,7 +649,7 @@
       "tabId": 3,
       "groupId": 17,
       "name": "Capitalized Interest (IDC)",
-      "formula": "(CUMSUM(R91) - R91) * C1.16 / 100 / 12 * F1",
+      "formula": "(CUMSUM(R91) - R91) * C1.16 / 100 / T.MiY * F1",
       "description": "Annual rate from C1.16, capitalized during construction"
     },
     {
@@ -666,8 +666,8 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Opening Debt Balance",
-      "formula": "(R94 * F2 - CUMSUM(R72) + R72) * F9",
-      "description": "Starts at R94 (cons debt) at COD, then decreases",
+      "formula": "(R94 * F2 - CUMSUM(R72) + R72) * F8",
+      "description": "Starts at R94 (cons debt) at COD, then decreases. F8=Ops Debt flag.",
       "type": "stock_start"
     },
     {
@@ -675,7 +675,7 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Interest Expense",
-      "formula": "R70 * C1.17 / 100 / 12",
+      "formula": "R70 * C1.17 / 100 / T.MiY",
       "description": "Annual rate from C1.17 on opening balance"
     },
     {
@@ -683,8 +683,8 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Principal Repayment",
-      "formula": "MIN(R94 * F2 / C1.18, MAX(0, R94 * F2 - CUMSUM(R94 * F2 / C1.18 * F9) + R94 * F2 / C1.18 * F9)) * F9",
-      "description": "Term from C1.18, capped when debt fully repaid"
+      "formula": "MIN(R127, MAX(0, R70)) * F8",
+      "description": "DSCR-sculpted quarterly principal, capped by balance. F8=Ops Debt flag."
     },
     {
       "id": 73,
@@ -735,6 +735,38 @@
       "description": "Quarterly DSCR - compare with Excel 1.40x target"
     },
     {
+      "id": 124,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Target DSCR (Blended)",
+      "formula": "F6 * C1.21 + (1 - F6) * F2 * C1.22",
+      "description": "1.4x during offtake (F6=1), 1.9x during merchant. C1.21=contracted, C1.22=uncontracted"
+    },
+    {
+      "id": 125,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Max Debt Service (Quarterly)",
+      "formula": "R116 / MAX(R124, 0.0001) * R121",
+      "description": "CFADS / DSCR at quarter end"
+    },
+    {
+      "id": 126,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Quarterly Interest",
+      "formula": "(R71 + SHIFT(R71, 1) + SHIFT(R71, 2)) * R121",
+      "description": "Rolling 3-month interest at quarter end"
+    },
+    {
+      "id": 127,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Max Principal (DSCR)",
+      "formula": "MAX(0, R125 - R126)",
+      "description": "Max principal that maintains target DSCR"
+    },
+    {
       "id": 74,
       "tabId": 3,
       "groupId": 15,
@@ -766,8 +798,8 @@
       "tabId": 3,
       "groupId": 16,
       "name": "Monthly Depreciation",
-      "formula": "(R81 / C1.20 / 12) * (CUMSUM(F2) <= C1.20 * 12)",
-      "description": "Straight line over C1.20 years, stops when fully depreciated"
+      "formula": "(R81 / C1.20 / 12) * (R120 > 0) * (R120 <= C1.20 * 12)",
+      "description": "Straight line over C1.20 years, stops when fully depreciated. R120=Ops Period counter."
     },
     {
       "id": 83,

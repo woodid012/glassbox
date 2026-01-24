@@ -3400,7 +3400,7 @@
       "entryMode": "values",
       "values": {},
       "formulas": {},
-      "value": 70,
+      "value": 65,
       "valueFrequency": "Y",
       "spreadMethod": null
     },
@@ -3461,6 +3461,42 @@
       "values": {},
       "formulas": {},
       "value": 15,
+      "valueFrequency": "Y",
+      "spreadMethod": null
+    },
+    {
+      "id": 124,
+      "groupId": 100,
+      "subgroupId": null,
+      "name": "Contracted DSCR Target",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 1.4,
+      "valueFrequency": "Y",
+      "spreadMethod": null
+    },
+    {
+      "id": 125,
+      "groupId": 100,
+      "subgroupId": null,
+      "name": "Uncontracted DSCR Target",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 1.9,
+      "valueFrequency": "Y",
+      "spreadMethod": null
+    },
+    {
+      "id": 126,
+      "groupId": 100,
+      "subgroupId": null,
+      "name": "Debt Tenor (Years)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 18,
       "valueFrequency": "Y",
       "spreadMethod": null
     }
