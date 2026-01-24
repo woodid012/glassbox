@@ -122,10 +122,10 @@ Example: A calculation with `"id": 60` is always referenced as `R60`, regardless
 3. Array position only affects display order, not formula resolution
 
 **Handling constants in formulas:**
-- **Never hardcode constants directly in calculations** - avoid formulas like `R5 * 0.15`
+- **Never hardcode business constants directly in calculations** - avoid formulas like `R5 * 0.15`
 - Before adding a constant, check if it already exists in the constants group
 - If the constant doesn't exist, add it to the constants list first
-- Reference the constant in your formula (e.g., `R5 * V10` where V10 is the tax rate)
+- Reference the constant in your formula (e.g., `R5 * C1.7` where C1.7 is the tax rate)
 - This ensures all assumptions are visible, auditable, and easy to update
 
 **Time constants (use instead of hardcoded values):**
@@ -135,8 +135,32 @@ Example: A calculation with `"id": 60` is always referenced as `R60`, regardless
 - `T.QiY` - Quarters in Year (4)
 - `T.HiD` - Hours in Day (24)
 - `T.HiY` - Hours in Year (8760/8784)
+- `T.MiQ` - Months in Quarter (3)
+- `T.DiQ` - Days in Quarter (varies: ~90-92)
+
+**Time flags (1 at period end, 0 otherwise):**
+- `T.QE` - Quarter End (1 at months 3, 6, 9, 12)
+- `T.CYE` - Calendar Year End (1 at December)
+- `T.FYE` - Financial Year End (1 at June - Australian FY)
 
 Example: `R70 * C1.17 / 100 / T.MiY` instead of `R70 * C1.17 / 100 / 12`
+
+**Acceptable hardcoded numbers (structural/technical):**
+- `CUMSUM(1)` - incrementing counters
+- `10^6` - unit conversion as power expression (e.g., converting to millions)
+- `/100` - percentage-to-decimal conversion (standard notation)
+- `0.0001` - small number to prevent division by zero (technical safeguard)
+- `0` - placeholder formulas for future implementation
+- `1, 2, 3` in SHIFT functions - period offsets for lagging values
+- `/30` in working capital - standard 30-day month assumption (financial convention)
+
+**Numbers that MUST use constants or time constants:**
+- Interest rates, tax rates, DSCR targets → use C1.xx constants
+- Hours per year (8760) → use `T.HiY`
+- Months per year (12) → use `T.MiY`
+- Days per year (365) → use `T.DiY`
+- Depreciation life, debt term → use C1.xx constants
+- Any business assumption that an analyst might want to change
 
 ## Number Formatting
 

@@ -3429,18 +3429,6 @@
       "spreadMethod": null
     },
     {
-      "id": 121,
-      "groupId": 100,
-      "subgroupId": null,
-      "name": "Debt Term (Months)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 120,
-      "valueFrequency": "Y",
-      "spreadMethod": null
-    },
-    {
       "id": 122,
       "groupId": 100,
       "subgroupId": null,

@@ -1,5 +1,5 @@
 # Model Summary (Auto-generated)
-Generated: 2026-01-24T02:51:48.426Z
+Generated: 2026-01-24T10:13:21.217Z
 
 ## Key Periods (Flags)
 | Flag | Name | Periods | Start | End |
@@ -36,7 +36,6 @@ Generated: 2026-01-24T02:51:48.426Z
 | C1.19 | Max Gearing (%) | 65 |
 | C1.20 | Construction Interest Rate (%) | 7 |
 | C1.21 | Operations Interest Rate (%) | 5 |
-| C1.22 | Debt Term (Months) | 120 |
 | C1.23 | Contingency (%) | 10 |
 | C1.24 | Depreciation Life (Years) | 15 |
 | C1.25 | Contracted DSCR Target | 1.4 |
@@ -48,14 +47,9 @@ Generated: 2026-01-24T02:51:48.426Z
 |-----|------|---------|
 | R119 | Model Period | `CUMSUM(1)` |
 | R120 | Ops Period | `CUMSUM(F2)` |
-| R121 | Quarter End Flag | `(R119 - 3 * (R119 / 3 - (R119 / 3) % 1)) < 0.001` |
-| R122 | Year End Flag | `(R119 - 12 * (R119 / 12 - (R119 / 12) % 1)) < 0...` |
-| R123 | Ops Year | `1 + (R120 - 1) / 12 - ((R120 - 1) / 12) % 1` |
-| R1 | Total EPC | `V1.1 + V1.2` |
-| R2 | Total CAPEX | `V1` |
-| R3 | Capex + Cont | `V1 * (1 + C1.19 / 100)` |
+| R3 | Capex + Cont | `V1 * (1 + C1.18 / 100)` |
 | R112 | Capex to Apply GST | `V1 - V1.1 - V1.9` |
-| R4 | Tolling Revenue | `C1.6 * C1.1 * 8760 / T.MiY / 10^6 * F7 * I1` |
+| R4 | Tolling Revenue | `C1.6 * C1.1 * T.HiY / T.MiY / 10^6 * F7 * I1` |
 | R5 | FCAS Revenue | `L1.2 * C1.1 / T.MiY / 10^6 * F8 * I1` |
 | R6 | Arb Revenue | `L1.1 * C1.1 / 10^6 / T.MiY * F8 * R12 * I1` |
 | R7 | Merchant Revenue | `R5 + R6` |
@@ -96,4 +90,9 @@ Generated: 2026-01-24T02:51:48.426Z
 | R66 | Construction Debt | `R94` |
 | R67 | Construction Equity | `R64 - R65 - R66` |
 | R68 | Total Sources | `R65 + R66 + R67` |
-| ... | (56 more) | ... |
+| R35 | Construction Equity Injection | `V1 * F1 - R91` |
+| R39 | Financing CF | `R29 + R30 + R31 + R32 + R33 + R34 + R35` |
+| R40 | Net Cashflow | `R22 + R28 + R39` |
+| R41 | Opening Cash | `CUMSUM(R40) - R40` |
+| R42 | Closing Cash | `CUMSUM(R40)` |
+| ... | (39 more) | ... |

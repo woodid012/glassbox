@@ -55,6 +55,11 @@
       "name": "Construction Debt Facility"
     },
     {
+      "id": 24,
+      "tabId": 3,
+      "name": "Covenants"
+    },
+    {
       "id": 15,
       "tabId": 3,
       "name": "Operations Debt"
@@ -111,42 +116,9 @@
       "type": "stock"
     },
     {
-      "id": 121,
-      "name": "Quarter End Flag",
-      "formula": "(R119 - 3 * (R119 / 3 - (R119 / 3) % 1)) < 0.001",
-      "description": "1 at end of each quarter (every 3rd month)",
-      "type": "flag"
-    },
-    {
-      "id": 122,
-      "name": "Year End Flag",
-      "formula": "(R119 - 12 * (R119 / 12 - (R119 / 12) % 1)) < 0.001",
-      "description": "1 at end of each year (every 12th month)",
-      "type": "flag"
-    },
-    {
-      "id": 123,
-      "name": "Ops Year",
-      "formula": "1 + (R120 - 1) / 12 - ((R120 - 1) / 12) % 1",
-      "description": "Operations year (1, 1, ..., 2, 2, ...) - for annual aggregation",
-      "type": "stock"
-    },
-    {
-      "id": 1,
-      "name": "Total EPC",
-      "formula": "V1.1 + V1.2",
-      "description": "Sum of EPC components"
-    },
-    {
-      "id": 2,
-      "name": "Total CAPEX",
-      "formula": "V1",
-      "description": "Full CAPEX group sum"
-    },
-    {
       "id": 3,
       "name": "Capex + Cont",
-      "formula": "V1 * (1 + C1.19 / 100)",
+      "formula": "V1 * (1 + C1.18 / 100)",
       "description": ""
     },
     {
@@ -158,7 +130,7 @@
     {
       "id": 4,
       "name": "Tolling Revenue",
-      "formula": "C1.6 * C1.1 * 8760 / T.MiY / 10^6 * F7 * I1",
+      "formula": "C1.6 * C1.1 * T.HiY / T.MiY / 10^6 * F7 * I1",
       "description": ""
     },
     {
@@ -635,7 +607,7 @@
       "groupId": 17,
       "name": "Opening Balance",
       "formula": "R94 - R91 - R92",
-      "description": "Closing minus this period's drawdown and IDC",
+      "description": "Prior closing balance",
       "type": "stock_start"
     },
     {
@@ -644,15 +616,15 @@
       "groupId": 17,
       "name": "Drawdown",
       "formula": "V1 * C1.15 / 100 * F1",
-      "description": "70% of capex drawn during construction"
+      "description": "Gearing % of capex"
     },
     {
       "id": 92,
       "tabId": 3,
       "groupId": 17,
-      "name": "Capitalized Interest (IDC)",
+      "name": "Interest - Capitalised",
       "formula": "(CUMSUM(R91) - R91) * C1.16 / 100 / T.MiY * F1",
-      "description": "Annual rate from C1.16, capitalized during construction"
+      "description": "IDC on opening balance"
     },
     {
       "id": 94,
@@ -660,134 +632,83 @@
       "groupId": 17,
       "name": "Closing Balance",
       "formula": "CUMSUM(R91) + CUMSUM(R92)",
-      "description": "Cumulative drawdowns + cumulative IDC",
+      "description": "Cumulative drawdowns + IDC",
+      "type": "stock"
+    },
+    {
+      "id": 114,
+      "tabId": 3,
+      "groupId": 24,
+      "name": "CFADS",
+      "formula": "R13 * F2",
+      "description": "Cash Flow Available for Debt Service"
+    },
+    {
+      "id": 73,
+      "tabId": 3,
+      "groupId": 24,
+      "name": "Debt Service",
+      "formula": "R71 + R72",
+      "description": "Interest + Principal"
+    },
+    {
+      "id": 118,
+      "tabId": 3,
+      "groupId": 24,
+      "name": "DSCR",
+      "formula": "R114 / MAX(R73, 0.0001)",
+      "description": "Debt Service Coverage Ratio",
       "type": "stock"
     },
     {
       "id": 70,
       "tabId": 3,
       "groupId": 15,
-      "name": "Opening Debt Balance",
+      "name": "Opening Balance",
       "formula": "SHIFT(R74, 1) + R94 * (F2 - SHIFT(F2, 1)) + 0 * R74",
-      "description": "Prior closing balance, plus initial debt at first ops period. 0*R74 ensures correct calc order.",
+      "description": "Prior closing + initial debt at ops start",
       "type": "stock_start"
-    },
-    {
-      "id": 71,
-      "tabId": 3,
-      "groupId": 15,
-      "name": "Interest Expense",
-      "formula": "R70 * C1.17 / 100 / T.MiY",
-      "description": "Annual rate from C1.17 on opening balance"
     },
     {
       "id": 131,
       "tabId": 3,
       "groupId": 15,
       "name": "Cumulative Principal",
-      "formula": "MIN(CUMSUM((R94 * F2 / (C1.20 * T.MiY)) * F11), R94 * F2)",
-      "description": "Cumulative principal paid, capped at initial debt",
+      "formula": "MIN(CUMSUM(R94 / (C1.27 * T.MiY) * F11), R94 * F2)",
+      "description": "Level principal over C1.27 years, capped at initial debt",
       "type": "stock"
     },
     {
       "id": 72,
       "tabId": 3,
       "groupId": 15,
-      "name": "Principal Repayment",
+      "name": "Principal",
       "formula": "R131 - SHIFT(R131, 1)",
-      "description": "Period principal = change in cumulative (stops when debt paid off)"
+      "description": "Period principal payment"
     },
     {
-      "id": 73,
+      "id": 71,
       "tabId": 3,
       "groupId": 15,
-      "name": "Debt Service",
-      "formula": "R71 + R72",
-      "description": "Total payment (interest + principal)"
+      "name": "Interest - Paid",
+      "formula": "R70 * C1.17 / 100 / T.MiY * F2",
+      "description": "Interest paid during operations"
     },
     {
-      "id": 114,
+      "id": 129,
       "tabId": 3,
       "groupId": 15,
-      "name": "CFADS",
-      "formula": "R13 * F2",
-      "description": "Cash Flow Available for Debt Service (simplified = EBITDA during ops)"
-    },
-    {
-      "id": 115,
-      "tabId": 3,
-      "groupId": 15,
-      "name": "DSCR (Monthly)",
-      "formula": "R114 / MAX(R73, 0.0001)",
-      "description": "Monthly DSCR",
-      "type": "stock"
-    },
-    {
-      "id": 116,
-      "tabId": 3,
-      "groupId": 15,
-      "name": "CFADS (Quarterly)",
-      "formula": "R114 + SHIFT(R114, 1) + SHIFT(R114, 2)",
-      "description": "Rolling 3-month CFADS"
-    },
-    {
-      "id": 117,
-      "tabId": 3,
-      "groupId": 15,
-      "name": "Debt Service (Quarterly)",
-      "formula": "R73 + SHIFT(R73, 1) + SHIFT(R73, 2)",
-      "description": "Rolling 3-month debt service"
-    },
-    {
-      "id": 118,
-      "tabId": 3,
-      "groupId": 15,
-      "name": "DSCR (Quarterly)",
-      "formula": "R116 / MAX(R117, 0.0001)",
-      "description": "Quarterly DSCR - compare with Excel 1.40x target",
-      "type": "stock"
-    },
-    {
-      "id": 124,
-      "tabId": 3,
-      "groupId": 15,
-      "name": "Target DSCR (Blended)",
-      "formula": "F6 * C1.21 + (1 - F6) * F2 * C1.22",
-      "description": "1.4x during offtake (F6=1), 1.9x during merchant. C1.21=contracted, C1.22=uncontracted",
-      "type": "stock"
-    },
-    {
-      "id": 125,
-      "tabId": 3,
-      "groupId": 15,
-      "name": "Max Debt Service (Quarterly)",
-      "formula": "R116 / MAX(R124, 0.0001) * R121",
-      "description": "CFADS / DSCR at quarter end",
-      "type": "flow"
-    },
-    {
-      "id": 126,
-      "tabId": 3,
-      "groupId": 15,
-      "name": "Quarterly Interest (Est)",
-      "formula": "(SHIFT(R71, 1) + SHIFT(R71, 2) + SHIFT(R71, 3)) * R121",
-      "description": "Prior 3 months interest estimate for DSCR sculpting (breaks circular dep)"
-    },
-    {
-      "id": 127,
-      "tabId": 3,
-      "groupId": 15,
-      "name": "Max Principal (DSCR)",
-      "formula": "MAX(0, R125 - R126)",
-      "description": "Max principal that maintains target DSCR"
+      "name": "Interest - Capitalised",
+      "formula": "R92",
+      "description": "IDC capitalised during construction"
     },
     {
       "id": 74,
       "tabId": 3,
       "groupId": 15,
-      "name": "Closing Debt Balance",
+      "name": "Closing Balance",
       "formula": "(R94 * F2 - R131) * F11",
-      "description": "Initial debt minus cumulative principal paid",
+      "description": "Initial debt minus cumulative principal",
       "type": "stock"
     },
     {
@@ -813,8 +734,8 @@
       "tabId": 3,
       "groupId": 16,
       "name": "Monthly Depreciation",
-      "formula": "(R81 / C1.20 / T.MiY) * (R120 > 0) * (R120 <= C1.20 * T.MiY)",
-      "description": "Straight line over C1.20 years, stops when fully depreciated. R120=Ops Period counter."
+      "formula": "(R81 / C1.24 / T.MiY) * (R120 > 0) * (R120 <= C1.24 * T.MiY)",
+      "description": "Straight line over C1.24 years (15yr), stops when fully depreciated. R120=Ops Period counter."
     },
     {
       "id": 83,
@@ -839,8 +760,8 @@
       "tabId": 3,
       "groupId": 18,
       "name": "Receivables",
-      "formula": "R8 * C1.9 / 30",
-      "description": "Revenue * Receivable Days / 30",
+      "formula": "R8 * C1.13 / 30",
+      "description": "Revenue * Receivable Days / Days Per Month",
       "type": "stock"
     },
     {
@@ -848,8 +769,8 @@
       "tabId": 3,
       "groupId": 18,
       "name": "Payables",
-      "formula": "ABS(R9) * C1.10 / 30",
-      "description": "OPEX * Payable Days / 30",
+      "formula": "ABS(R9) * C1.14 / 30",
+      "description": "OPEX * Payable Days / Days Per Month",
       "type": "stock"
     },
     {
@@ -873,85 +794,35 @@
       "id": 100,
       "tabId": 3,
       "groupId": 19,
-      "name": "Taxable Income",
+      "name": "EBT",
       "formula": "R17",
-      "description": "EBT flows to taxable income"
+      "description": "Earnings before tax"
     },
     {
       "id": 106,
       "tabId": 3,
       "groupId": 19,
-      "name": "Period Loss",
-      "formula": "MAX(0, -R100)",
-      "description": "Losses generated this period"
-    },
-    {
-      "id": 107,
-      "tabId": 3,
-      "groupId": 19,
-      "name": "Period Positive Income",
-      "formula": "MAX(0, R100)",
-      "description": "Positive income this period"
-    },
-    {
-      "id": 108,
-      "tabId": 3,
-      "groupId": 19,
-      "name": "Cumulative Utilization",
-      "formula": "MIN(CUMSUM(R106), CUMSUM(R107))",
-      "description": "Total losses utilized to date (FIFO)",
+      "name": "Cumulative EBT",
+      "formula": "CUMSUM(R100)",
+      "description": "Net position (negative = accumulated losses)",
       "type": "stock"
     },
     {
-      "id": 109,
+      "id": 105,
       "tabId": 3,
       "groupId": 19,
-      "name": "Prior Cumulative Utilization",
-      "formula": "MIN(CUMSUM(R106) - R106, CUMSUM(R107) - R107)",
-      "description": "Utilization through prior period",
-      "type": "stock_start"
-    },
-    {
-      "id": 102,
-      "tabId": 3,
-      "groupId": 19,
-      "name": "Losses Utilized",
-      "formula": "R108 - R109",
-      "description": "Losses offset this period"
-    },
-    {
-      "id": 101,
-      "tabId": 3,
-      "groupId": 19,
-      "name": "Opening Loss Pool",
-      "formula": "CUMSUM(R106) - R106 - R109",
-      "description": "Losses available at start of period",
-      "type": "stock_start"
-    },
-    {
-      "id": 103,
-      "tabId": 3,
-      "groupId": 19,
-      "name": "Taxable Income Net",
-      "formula": "R107 - R102",
-      "description": "Income after loss utilization"
+      "name": "Loss Pool",
+      "formula": "MAX(0, -R106)",
+      "description": "Accumulated tax losses remaining",
+      "type": "stock"
     },
     {
       "id": 104,
       "tabId": 3,
       "groupId": 19,
       "name": "Tax Expense",
-      "formula": "R103 * C1.7 / 100",
-      "description": "30% corporate tax rate"
-    },
-    {
-      "id": 105,
-      "tabId": 3,
-      "groupId": 19,
-      "name": "Closing Loss Pool",
-      "formula": "CUMSUM(R106) - R108",
-      "description": "Cumulative losses minus cumulative utilized",
-      "type": "stock"
+      "formula": "MAX(0, R106 - SHIFT(MAX(0, R106), 1)) * C1.7 / 100",
+      "description": "Tax on incremental positive cumulative EBT"
     }
   ],
   "modules": [

@@ -430,6 +430,20 @@ export function useDashboardState(viewMode) {
             return getDaysInMonth(year, startMonth) + getDaysInMonth(year, startMonth + 1) + getDaysInMonth(year, startMonth + 2)
         })
 
+        // Time-based flags (1 at period end, 0 otherwise)
+        // QE - Quarter End (1 at months 3, 6, 9, 12)
+        refs['T.QE'] = new Array(timeline.periods).fill(0).map((_, i) =>
+            [3, 6, 9, 12].includes(timeline.month[i]) ? 1 : 0
+        )
+        // CYE - Calendar Year End (1 at December)
+        refs['T.CYE'] = new Array(timeline.periods).fill(0).map((_, i) =>
+            timeline.month[i] === 12 ? 1 : 0
+        )
+        // FYE - Financial Year End (1 at June - Australian FY)
+        refs['T.FYE'] = new Array(timeline.periods).fill(0).map((_, i) =>
+            timeline.month[i] === 6 ? 1 : 0
+        )
+
         return refs
     }, [timeline.periods, timeline.year, timeline.month])
 
@@ -648,7 +662,7 @@ export function useDashboardState(viewMode) {
         })
 
         // Time conversion constants are flowConverters
-        const timeConstants = ['T.DiM', 'T.DiY', 'T.MiY', 'T.QiY', 'T.WiY', 'T.HiD', 'T.HiM', 'T.HiY', 'T.MiQ', 'T.DiQ']
+        const timeConstants = ['T.DiM', 'T.DiY', 'T.MiY', 'T.QiY', 'T.WiY', 'T.HiD', 'T.HiM', 'T.HiY', 'T.MiQ', 'T.DiQ', 'T.QE', 'T.CYE', 'T.FYE']
         timeConstants.forEach(tc => {
             types[tc] = 'flowConverter'
         })
@@ -759,6 +773,9 @@ export function useDashboardState(viewMode) {
         names['T.HiY'] = 'Hours in Year'
         names['T.MiQ'] = 'Months in Quarter'
         names['T.DiQ'] = 'Days in Quarter'
+        names['T.QE'] = 'Quarter End'
+        names['T.CYE'] = 'Calendar Year End'
+        names['T.FYE'] = 'Financial Year End'
 
         // Lookup names
         // Structure without subgroups: L1.1, L1.2, etc. (direct inputs)
@@ -866,9 +883,12 @@ export function useDashboardState(viewMode) {
             const resultArray = new Array(timeline.periods).fill(0)
 
             // Check for unresolved references before evaluation
+            // Remove SHIFT(...) patterns first - these are lagged dependencies that may not be computed yet
+            // and will be resolved correctly during evaluation (using prior period values)
+            const formulaWithoutShift = formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
             // Match patterns like V1, V1.1, S1, C1, T1, F1, I1, L1, L1.1, L1.1.1, R1, M1, M1.1, T.DiM, etc.
             const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*|T\.[A-Za-z]+)\b/g
-            const refsInFormula = [...formula.matchAll(refPattern)].map(m => m[1])
+            const refsInFormula = [...formulaWithoutShift.matchAll(refPattern)].map(m => m[1])
             const missingRefs = refsInFormula.filter(ref => !allRefs[ref])
 
             if (missingRefs.length > 0) {
