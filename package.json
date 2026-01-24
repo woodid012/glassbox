@@ -7,17 +7,27 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "snapshot": "node scripts/snapshot.js"
+    "snapshot": "node scripts/snapshot.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run tests/formulaEvaluator.test.js",
+    "test:model": "vitest run tests/modelSnapshot.test.js",
+    "validate": "npm run lint && npm run test && npm run build",
+    "validate:model": "node scripts/validate-model.js",
+    "precommit": "npm run validate:model && npm run test",
+    "setup:hooks": "cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit && echo 'Pre-commit hook installed!'"
   },
   "dependencies": {
+    "lucide-react": "^0.263.1",
     "next": "14.2.3",
     "react": "^18",
-    "react-dom": "^18",
-    "lucide-react": "^0.263.1"
+    "react-dom": "^18"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3"
+    "tailwindcss": "^3.4.3",
+    "vitest": "^4.0.18"
   }
 }
