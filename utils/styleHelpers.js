@@ -10,9 +10,7 @@
  * @returns {string} Tailwind color classes
  */
 export function getModeColorClasses(mode, background = true) {
-    const normalizedMode = mode === 'constants' ? 'constant'
-        : (mode === 'lookup' || mode === 'lookup2') ? 'lookup'
-        : mode
+    const normalizedMode = (mode === 'lookup' || mode === 'lookup2') ? 'lookup' : mode
 
     if (background) {
         // Badge style (darker background)
@@ -92,9 +90,7 @@ export const MODE_PREFIX_MAP = {
  * @returns {string} Single letter prefix
  */
 export function getModePrefix(mode) {
-    const normalizedMode = mode === 'constants' ? 'constant'
-        : (mode === 'lookup' || mode === 'lookup2') ? 'lookup'
-        : mode
+    const normalizedMode = (mode === 'lookup' || mode === 'lookup2') ? 'lookup' : mode
     return MODE_PREFIX_MAP[normalizedMode] || MODE_PREFIX_MAP.default
 }
 

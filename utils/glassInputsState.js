@@ -452,7 +452,7 @@ export function deserializeState(savedState) {
     if (loaded.inputType1Groups) {
         loaded.inputType1Groups = loaded.inputType1Groups.map(group => ({
             ...group,
-            groupType: group.groupType || 'constants'
+            groupType: group.groupType || 'constant'
         }))
     }
     if (loaded.inputGlassGroups) {

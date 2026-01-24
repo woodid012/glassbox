@@ -16,7 +16,7 @@ One unified input system with 3 modes controlled by `groupType`:
 |------|-------------|----------|
 | **Values** | `'values'` | User sets value per period (sparse `values` object) |
 | **Series** | `'series'` | User sets one `value` + `timePeriod`, generates array across timeline |
-| **Constants** | `'constants'` | Single constant value applied to all periods |
+| **Constant** | `'constant'` | Single constant value applied to all periods |
 
 ### Rename: InputType3 -> InputGlass
 

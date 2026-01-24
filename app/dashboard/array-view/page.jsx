@@ -128,7 +128,7 @@ export default function ArrayViewPage() {
                 normalizedMode = 'timing'
             } else {
                 const groupMode = groupInputs[0]?.mode || 'values'
-                normalizedMode = groupMode === 'constants' ? 'constant' : groupMode
+                normalizedMode = groupMode
             }
 
             modeIndices[normalizedMode]++
@@ -482,7 +482,7 @@ function InputsSubTab({
                         normalizedMode = 'timing'
                     } else {
                         const groupMode = groupInputs[0]?.mode || 'values'
-                        normalizedMode = groupMode === 'constants' ? 'constant' : groupMode
+                        normalizedMode = groupMode
                     }
 
                     modeIndices[normalizedMode]++

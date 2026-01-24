@@ -192,7 +192,7 @@ Model frequency: Monthly
 ### Detecting Entry Mode
 ```javascript
 const entryMode = input.entryMode || input.mode || 'values'
-const isConstantMode = entryMode === 'constant' || entryMode === 'constants'
+const isConstantMode = entryMode === 'constant'
 const isValuesMode = entryMode === 'values' || entryMode === 'schedule'
 const isSeriesMode = entryMode === 'series' || entryMode === 'single' || entryMode === 'uniform'
 ```

@@ -421,9 +421,7 @@ export default function CalculationsPage() {
                 normalizedMode = 'timing'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names
-                if (groupMode === 'constants') normalizedMode = 'constant'
-                else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
                 else normalizedMode = groupMode
             }
 
