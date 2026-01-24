@@ -80,11 +80,28 @@ Exports (full audit trail available)
 
 ## Data Files
 
-**Use these files for model state (NOT glass-inputs-autosave.json):**
-- `data/model-inputs.json` - Input values and groups
-- `data/model-calculations.json` - Formulas and calculation structure
+### For LLM Reading (Use These First)
+**Tokenized files are 70% smaller - always read these first:**
+- `data/model-calculations.tok.json` - Compact calculations (11 KB vs 33 KB)
+- `data/model-inputs.tok.json` - Compact inputs (31 KB vs 117 KB)
+- `data/model-summary.md` - Human-readable summary of all refs
+
+### For Full Details (Only When Needed)
+- `data/model-inputs.json` - Full input values and groups
+- `data/model-calculations.json` - Full formulas and structure
 - `data/model-ui-state.json` - UI preferences
 - `data/model-links.json` - References between items
+
+### Tokenized Format
+The `.tok.json` files use short keys for compactness:
+- `i` = id, `n` = name, `f` = formula, `d` = description, `t` = type, `g` = groupId
+- `v` = value, `vs` = values (non-zero only), `u` = unit
+
+### Re-tokenize After Edits
+After editing model-calculations.json or model-inputs.json:
+```bash
+node scripts/tokenize-models.js
+```
 
 **NEVER search or read `data/glass-inputs-autosave.json`** - it's too large and outdated.
 
