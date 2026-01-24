@@ -321,8 +321,7 @@ export function useDashboardState(viewMode) {
                 normalizedMode = 'constant'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names (handle both singular and plural forms)
-                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
+                if (groupMode === 'constant') normalizedMode = 'constant'
                 else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
                 else normalizedMode = groupMode
             }
@@ -538,8 +537,7 @@ export function useDashboardState(viewMode) {
                 normalizedMode = 'constant'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names (handle both singular and plural forms)
-                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
+                if (groupMode === 'constant') normalizedMode = 'constant'
                 else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
                 else normalizedMode = groupMode
             }
@@ -681,8 +679,7 @@ export function useDashboardState(viewMode) {
                 normalizedMode = 'constant'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names (handle both singular and plural forms)
-                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
+                if (groupMode === 'constant') normalizedMode = 'constant'
                 else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
                 else normalizedMode = groupMode
             }
