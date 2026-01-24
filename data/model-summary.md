@@ -1,5 +1,5 @@
 # Model Summary (Auto-generated)
-Generated: 2026-01-24T01:04:10.990Z
+Generated: 2026-01-24T02:51:48.426Z
 
 ## Key Periods (Flags)
 | Flag | Name | Periods | Start | End |
@@ -9,12 +9,12 @@ Generated: 2026-01-24T01:04:10.990Z
 | F3 | Normal Operations | 240 | 2028-10 | 2048-09 |
 | F4 | Life Extension | 60 | 2048-10 | 2053-09 |
 | F5 | Terminal Value | 1 | 2053-09 | 2053-09 |
-| F9 | Revenue Periods | 300 | 2028-10 | 2053-09 |
-| F6 | Offtake | 120 | 2028-10 | 2038-09 |
-| F7 | Merchant | 180 | 2038-10 | 2053-09 |
-| F10 | Debt Facilities | 258 | 2027-04 | 2048-09 |
-| F11 | Construction Facility | 18 | 2027-04 | 2028-09 |
-| F8 | Ops Debt | 240 | 2028-10 | 2048-09 |
+| F6 | Revenue Periods | 300 | 2028-10 | 2053-09 |
+| F7 | Offtake | 120 | 2028-10 | 2038-09 |
+| F8 | Merchant | 180 | 2038-10 | 2053-09 |
+| F9 | Debt Facilities | 258 | 2027-04 | 2048-09 |
+| F10 | Construction Facility | 18 | 2027-04 | 2028-09 |
+| F11 | Ops Debt | 240 | 2028-10 | 2048-09 |
 
 ## Constants (C1.X)
 | Ref | Name | Value |
@@ -96,4 +96,4 @@ Generated: 2026-01-24T01:04:10.990Z
 | R66 | Construction Debt | `R94` |
 | R67 | Construction Equity | `R64 - R65 - R66` |
 | R68 | Total Sources | `R65 + R66 + R67` |
-| ... | (55 more) | ... |
+| ... | (56 more) | ... |

@@ -585,7 +585,8 @@
       "groupId": 21,
       "name": "Monthly Discount Rate",
       "formula": "(1 + C1.8 / 100) ^ (1/T.MiY) - 1",
-      "description": "WACC converted to monthly"
+      "description": "WACC converted to monthly",
+      "type": "stock"
     },
     {
       "id": 51,
@@ -593,7 +594,8 @@
       "groupId": 21,
       "name": "Discount Factor",
       "formula": "CUMPROD(1 / (1 + R50))",
-      "description": ""
+      "description": "Cumulative discount factor for NPV",
+      "type": "stock"
     },
     {
       "id": 52,
@@ -666,8 +668,8 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Opening Debt Balance",
-      "formula": "(R94 * F2 - CUMSUM(R72) + R72) * F8",
-      "description": "Starts at R94 (cons debt) at COD, then decreases. F8=Ops Debt flag.",
+      "formula": "SHIFT(R74, 1) + R94 * (F2 - SHIFT(F2, 1)) + 0 * R74",
+      "description": "Prior closing balance, plus initial debt at first ops period. 0*R74 ensures correct calc order.",
       "type": "stock_start"
     },
     {
@@ -679,12 +681,21 @@
       "description": "Annual rate from C1.17 on opening balance"
     },
     {
+      "id": 131,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Cumulative Principal",
+      "formula": "MIN(CUMSUM((R94 * F2 / (C1.20 * T.MiY)) * F11), R94 * F2)",
+      "description": "Cumulative principal paid, capped at initial debt",
+      "type": "stock"
+    },
+    {
       "id": 72,
       "tabId": 3,
       "groupId": 15,
       "name": "Principal Repayment",
-      "formula": "MIN(R127, MAX(0, R70)) * F8",
-      "description": "DSCR-sculpted quarterly principal, capped by balance. F8=Ops Debt flag."
+      "formula": "R131 - SHIFT(R131, 1)",
+      "description": "Period principal = change in cumulative (stops when debt paid off)"
     },
     {
       "id": 73,
@@ -708,7 +719,8 @@
       "groupId": 15,
       "name": "DSCR (Monthly)",
       "formula": "R114 / MAX(R73, 0.0001)",
-      "description": "Monthly DSCR"
+      "description": "Monthly DSCR",
+      "type": "stock"
     },
     {
       "id": 116,
@@ -732,7 +744,8 @@
       "groupId": 15,
       "name": "DSCR (Quarterly)",
       "formula": "R116 / MAX(R117, 0.0001)",
-      "description": "Quarterly DSCR - compare with Excel 1.40x target"
+      "description": "Quarterly DSCR - compare with Excel 1.40x target",
+      "type": "stock"
     },
     {
       "id": 124,
@@ -740,7 +753,8 @@
       "groupId": 15,
       "name": "Target DSCR (Blended)",
       "formula": "F6 * C1.21 + (1 - F6) * F2 * C1.22",
-      "description": "1.4x during offtake (F6=1), 1.9x during merchant. C1.21=contracted, C1.22=uncontracted"
+      "description": "1.4x during offtake (F6=1), 1.9x during merchant. C1.21=contracted, C1.22=uncontracted",
+      "type": "stock"
     },
     {
       "id": 125,
@@ -748,15 +762,16 @@
       "groupId": 15,
       "name": "Max Debt Service (Quarterly)",
       "formula": "R116 / MAX(R124, 0.0001) * R121",
-      "description": "CFADS / DSCR at quarter end"
+      "description": "CFADS / DSCR at quarter end",
+      "type": "flow"
     },
     {
       "id": 126,
       "tabId": 3,
       "groupId": 15,
-      "name": "Quarterly Interest",
-      "formula": "(R71 + SHIFT(R71, 1) + SHIFT(R71, 2)) * R121",
-      "description": "Rolling 3-month interest at quarter end"
+      "name": "Quarterly Interest (Est)",
+      "formula": "(SHIFT(R71, 1) + SHIFT(R71, 2) + SHIFT(R71, 3)) * R121",
+      "description": "Prior 3 months interest estimate for DSCR sculpting (breaks circular dep)"
     },
     {
       "id": 127,
@@ -771,8 +786,8 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Closing Debt Balance",
-      "formula": "R70 - R72",
-      "description": "End of period balance",
+      "formula": "(R94 * F2 - R131) * F11",
+      "description": "Initial debt minus cumulative principal paid",
       "type": "stock"
     },
     {
