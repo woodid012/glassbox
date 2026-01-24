@@ -7,7 +7,7 @@ import { useAutoSave } from '@/hooks/useAutoSave'
 import { useInputManagement } from '@/hooks/useInputManagement'
 import { useInputArrays } from '@/hooks/useInputArrays'
 import { calculateModuleOutputs, MODULE_TEMPLATES } from '@/utils/moduleTemplates'
-import { processArrayFunctions, evaluateSafeExpression } from '@/utils/formulaEvaluator'
+import { processArrayFunctions, evaluateSafeExpression, getCachedRegex } from '@/utils/formulaEvaluator'
 
 export function useDashboardState(viewMode) {
     // Single state object - all state in one place for easy save/load
@@ -305,28 +305,36 @@ export function useDashboardState(viewMode) {
     // won't recalculate input groups, etc.
     // ============================================
 
-    // 1. Input Group References (V, S, C groups) - only invalidates when inputs/groups change
-    const inputGroupRefs = useMemo(() => {
-        const refs = {}
+    // 0. Pre-compute group metadata to avoid repeating expensive operations
+    // This is shared by inputGroupRefs, referenceTypeMap, and referenceNameMap
+    const groupMetadata = useMemo(() => {
+        // Build a map of group.id -> inputs for O(1) lookup
+        const inputsByGroupId = new Map()
+        inputGlass.forEach(input => {
+            if (!inputsByGroupId.has(input.groupId)) {
+                inputsByGroupId.set(input.groupId, [])
+            }
+            inputsByGroupId.get(input.groupId).push(input)
+        })
 
-        const activeGroups = inputGlassGroups.filter(group =>
-            inputGlass.some(input => input.groupId === group.id)
-        )
+        // Filter to active groups (groups that have inputs)
+        const activeGroups = inputGlassGroups.filter(group => inputsByGroupId.has(group.id))
+
+        // Build metadata for each group
         const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
+        const metadata = []
 
         activeGroups.forEach(group => {
-            const groupInputs = inputGlass.filter(input => input.groupId === group.id)
+            const groupInputs = inputsByGroupId.get(group.id) || []
 
             // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
             } else if (group.groupType === 'constants') {
-                // Handle constants groupType explicitly
                 normalizedMode = 'constant'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names (handle both singular and plural forms)
                 if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
                 else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
                 else normalizedMode = groupMode
@@ -337,9 +345,24 @@ export function useDashboardState(viewMode) {
                               normalizedMode === 'series' ? 'S' :
                               normalizedMode === 'constant' ? 'C' :
                               normalizedMode === 'lookup' ? 'L' : 'V'
-            const groupIndex = modeIndices[normalizedMode]
-            const groupRef = `${modePrefix}${groupIndex}`
+            const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
 
+            metadata.push({
+                group,
+                groupInputs,
+                normalizedMode,
+                groupRef
+            })
+        })
+
+        return metadata
+    }, [inputGlass, inputGlassGroups])
+
+    // 1. Input Group References (V, S, C groups) - only invalidates when inputs/groups change
+    const inputGroupRefs = useMemo(() => {
+        const refs = {}
+
+        groupMetadata.forEach(({ groupInputs, groupRef }) => {
             const groupArrays = groupInputs.map(input =>
                 inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
             )
@@ -356,7 +379,7 @@ export function useDashboardState(viewMode) {
         })
 
         return refs
-    }, [inputGlass, inputGlassGroups, inputGlassArrays, timeline.periods])
+    }, [groupMetadata, inputGlassArrays, timeline.periods])
 
     // 2. Flag References (F1, F2, F1.Start, F1.End, etc.) - only invalidates when flags change
     const flagRefs = useMemo(() => {
@@ -575,35 +598,7 @@ export function useDashboardState(viewMode) {
     const referenceTypeMap = useMemo(() => {
         const types = {}
 
-        const activeGroups = inputGlassGroups.filter(group =>
-            inputGlass.some(input => input.groupId === group.id)
-        )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
-
-        activeGroups.forEach(group => {
-            const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-
-            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
-            let normalizedMode
-            if (group.groupType === 'timing') {
-                normalizedMode = 'timing'
-            } else if (group.groupType === 'constants') {
-                normalizedMode = 'constant'
-            } else {
-                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names (handle both singular and plural forms)
-                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
-                else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-                else normalizedMode = groupMode
-            }
-
-            modeIndices[normalizedMode]++
-            const modePrefix = normalizedMode === 'timing' ? 'T' :
-                              normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' :
-                              normalizedMode === 'lookup' ? 'L' : 'V'
-            const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
-
+        groupMetadata.forEach(({ groupInputs, normalizedMode, groupRef }) => {
             // Determine group type - if ANY input is a flow or flowConverter, group inherits that
             let groupIsFlow = false
             let groupHasFlowConverter = false
@@ -729,41 +724,13 @@ export function useDashboardState(viewMode) {
         }
 
         return types
-    }, [inputGlass, inputGlassGroups, autoGeneratedFlags, autoGeneratedIndexations, modules])
+    }, [groupMetadata, inputGlass, inputGlassGroups, autoGeneratedFlags, autoGeneratedIndexations, modules])
 
     // Build reference-to-name map for formula expansion
     const referenceNameMap = useMemo(() => {
         const names = {}
 
-        const activeGroups = inputGlassGroups.filter(group =>
-            inputGlass.some(input => input.groupId === group.id)
-        )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
-
-        activeGroups.forEach(group => {
-            const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-
-            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
-            let normalizedMode
-            if (group.groupType === 'timing') {
-                normalizedMode = 'timing'
-            } else if (group.groupType === 'constants') {
-                normalizedMode = 'constant'
-            } else {
-                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names (handle both singular and plural forms)
-                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
-                else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-                else normalizedMode = groupMode
-            }
-
-            modeIndices[normalizedMode]++
-            const modePrefix = normalizedMode === 'timing' ? 'T' :
-                              normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' :
-                              normalizedMode === 'lookup' ? 'L' : 'V'
-            const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
-
+        groupMetadata.forEach(({ group, groupInputs, groupRef }) => {
             names[groupRef] = group.name
 
             groupInputs.forEach((input, idx) => {
@@ -876,7 +843,7 @@ export function useDashboardState(viewMode) {
         }
 
         return names
-    }, [inputGlass, inputGlassGroups, autoGeneratedFlags, autoGeneratedIndexations, modules, calculations])
+    }, [groupMetadata, inputGlass, inputGlassGroups, autoGeneratedFlags, autoGeneratedIndexations, modules, calculations])
 
     // Expand a formula to show input names instead of references
     const expandFormulaToNames = useCallback((formula) => {
@@ -888,7 +855,8 @@ export function useDashboardState(viewMode) {
         for (const ref of sortedRefs) {
             const name = referenceNameMap[ref]
             if (name) {
-                const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
+                const regex = getCachedRegex(ref)
+                regex.lastIndex = 0 // Reset for global patterns
                 expanded = expanded.replace(regex, name)
             }
         }
@@ -926,13 +894,17 @@ export function useDashboardState(viewMode) {
             // These need to be evaluated across all periods first, then substituted
             const { processedFormula, arrayFnResults } = processArrayFunctions(formula, allRefs, timeline)
 
+            // Pre-sort refs and filter to only those in formula (optimization)
+            const sortedRefs = Object.keys(allRefs).sort((a, b) => b.length - a.length)
+            const relevantRefs = sortedRefs.filter(ref => processedFormula.includes(ref.split('.')[0]))
+
             for (let i = 0; i < timeline.periods; i++) {
                 let expr = processedFormula
-                const sortedRefs = Object.keys(allRefs).sort((a, b) => b.length - a.length)
 
-                for (const ref of sortedRefs) {
+                for (const ref of relevantRefs) {
                     const value = allRefs[ref]?.[i] ?? 0
-                    const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
+                    const regex = getCachedRegex(ref)
+                    regex.lastIndex = 0 // Reset for global patterns
                     expr = expr.replace(regex, value.toString())
                 }
 

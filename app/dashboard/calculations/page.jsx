@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, memo, useCallback } from 'react'
+import React, { useState, useEffect, memo, useCallback, useMemo } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronRight, FolderPlus, Pencil } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 import { getAggregatedValueForArray, calculatePeriodValues, calculateTotal } from '@/utils/valueAggregation'
+import { getCachedRegex } from '@/utils/formulaEvaluator'
 import { groupInputsBySubgroup } from '@/components/inputs/utils/inputHelpers'
 import { DeferredInput } from '@/components/DeferredInput'
 import { getModeColorClasses, getCalcTypeColorClasses, getCalcTypeDisplayClasses, getModePrefix, getTabItems, getViewModeLabel } from '@/utils/styleHelpers'
@@ -1109,14 +1110,17 @@ const CalculationPreview = memo(function CalculationPreview({ calc, timeline, vi
     }
     const periodLabel = formatPeriod(sampleMonthIndex)
 
-    // Build sample calculation breakdown
+    // Build sample calculation breakdown (memoized within this render)
     const allRefs = { ...referenceMap, ...calculationResults }
     const sortedRefs = Object.keys(allRefs).sort((a, b) => b.length - a.length)
+    // Filter to only refs that appear in the formula for performance
+    const relevantRefs = sortedRefs.filter(ref => calc.formula?.includes(ref.split('.')[0]))
     let substitutedFormula = calc.formula
-    for (const ref of sortedRefs) {
+    for (const ref of relevantRefs) {
         const value = allRefs[ref]?.[sampleMonthIndex] ?? 0
         const formattedValue = value.toLocaleString('en-AU', { maximumFractionDigits: 2 })
-        const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
+        const regex = getCachedRegex(ref)
+        regex.lastIndex = 0 // Reset for global patterns
         substitutedFormula = substitutedFormula.replace(regex, formattedValue)
     }
     const resultValue = resultArray[sampleMonthIndex] ?? 0
@@ -1168,24 +1172,27 @@ const CalculationPreview = memo(function CalculationPreview({ calc, timeline, vi
 const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPreview({ calculations, calculationsGroups, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap }) {
     const viewModeLabel = getViewModeLabel(viewMode)
 
-    // Calculate grand total across all calculations (only sum flows, not stocks)
-    const grandTotalByPeriod = viewHeaders.map((header) => {
-        return calculations.reduce((sum, calc) => {
-            const calcRef = `R${calcIndexMap.get(calc.id)}`
-            const resultArray = calculationResults[calcRef] || []
-            const calcType = calculationTypes?.[calcRef] || 'flow'
+    // Memoize grand total calculation to avoid recalculating on every render
+    const { grandTotalByPeriod, overallTotal } = useMemo(() => {
+        const totals = viewHeaders.map((header) => {
+            return calculations.reduce((sum, calc) => {
+                const calcRef = `R${calcIndexMap.get(calc.id)}`
+                const resultArray = calculationResults[calcRef] || []
+                const calcType = calculationTypes?.[calcRef] || 'flow'
 
-            // Only include flows in the grand total (stocks shouldn't be summed)
-            if (calcType === 'stock') return sum
+                // Only include flows in the grand total (stocks shouldn't be summed)
+                if (calcType === 'stock') return sum
 
-            if (viewMode === 'M') {
-                return sum + (resultArray[header.index] ?? 0)
-            } else {
-                return sum + getAggregatedValueForArray(resultArray, header.indices || [header.index], calcType)
-            }
-        }, 0)
-    })
-    const overallTotal = grandTotalByPeriod.reduce((sum, v) => sum + v, 0)
+                if (viewMode === 'M') {
+                    return sum + (resultArray[header.index] ?? 0)
+                } else {
+                    return sum + getAggregatedValueForArray(resultArray, header.indices || [header.index], calcType)
+                }
+            }, 0)
+        })
+        const total = totals.reduce((sum, v) => sum + v, 0)
+        return { grandTotalByPeriod: totals, overallTotal: total }
+    }, [calculations, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap])
 
     return (
         <div className="border-t border-slate-200 pt-4 pb-4 px-6">
