@@ -4,10 +4,7 @@
  */
 import { useMemo } from 'react'
 import { evaluateSimpleFormula } from '@/utils/simpleFormulaEvaluator'
-import { getValuesArray, generatePeriods, detectFlowOrStock } from '@/components/inputs/utils/inputHelpers'
-
-// Re-export detectFlowOrStock for backwards compatibility
-export { detectFlowOrStock }
+import { getValuesArray, generatePeriods } from '@/components/inputs/utils/inputHelpers'
 
 /**
  * Hook for computing input arrays from input definitions

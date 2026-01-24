@@ -82,24 +82,9 @@ The system auto-detects Flow/Stock from the input name using keywords:
 
 Computes time-series arrays from input definitions.
 
-**Key function**: `detectFlowOrStock(inputName)`
-```javascript
-export function detectFlowOrStock(inputName) {
-    if (!inputName) return 'flow'
-    const name = inputName.toLowerCase()
-
-    const stockKeywords = ['price', 'rate', 'factor', ...]
-    const flowKeywords = ['revenue', 'cost', 'expense', ...]
-
-    if (stockKeywords.some(k => name.includes(k))) return 'stock'
-    if (flowKeywords.some(k => name.includes(k))) return 'flow'
-    return 'flow' // default
-}
-```
-
 **Key computation** in `inputGlassArrays` useMemo:
 - Determines entry mode (constant/values/series)
-- Auto-detects spreadMethod if not explicitly set
+- Uses explicit spreadMethod or defaults to 'spread' (flow)
 - Calculates `periodsPerValueFreq` based on timeline frequency
 - For Series mode: spreads or repeats value based on spreadMethod
 - For Values mode: looks up sparse values by period index
@@ -110,7 +95,7 @@ CRUD operations for inputs and groups.
 
 **Key function**: `addInputGlass(groupId)`
 - Creates new input with default `entryMode: 'values'`
-- Sets `spreadMethod: null` for auto-detection
+- Uses `spreadMethod: 'spread'` (flow) by default
 
 ### 3. `components/inputs/InputGroups.jsx`
 

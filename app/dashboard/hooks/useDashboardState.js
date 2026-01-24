@@ -6,7 +6,6 @@ import { getDefaultState } from '../../../utils/glassInputsState'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useInputManagement } from '@/hooks/useInputManagement'
 import { useInputArrays } from '@/hooks/useInputArrays'
-import { detectFlowOrStock } from '@/components/inputs/utils/inputHelpers'
 import { calculateModuleOutputs, MODULE_TEMPLATES } from '@/utils/moduleTemplates'
 import { processArrayFunctions, evaluateSafeExpression } from '@/utils/formulaEvaluator'
 
@@ -618,8 +617,8 @@ export function useDashboardState(viewMode) {
                 } else if (isConstantMode) {
                     spreadMethod = 'lookup'
                 } else {
-                    const detected = detectFlowOrStock(input.name)
-                    spreadMethod = detected === 'stock' ? 'lookup' : 'spread'
+                    // Default to flow (spread) - no hidden auto-detection based on name
+                    spreadMethod = 'spread'
                 }
 
                 const isFlow = spreadMethod === 'spread'

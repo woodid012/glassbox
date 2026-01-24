@@ -104,6 +104,23 @@ Example: A calculation with `"id": 60` is always referenced as `R60`, regardless
 2. Use that ID in formulas (e.g., `R60 + R61`)
 3. Array position only affects display order, not formula resolution
 
+**Handling constants in formulas:**
+- **Never hardcode constants directly in calculations** - avoid formulas like `R5 * 0.15`
+- Before adding a constant, check if it already exists in the constants group
+- If the constant doesn't exist, add it to the constants list first
+- Reference the constant in your formula (e.g., `R5 * V10` where V10 is the tax rate)
+- This ensures all assumptions are visible, auditable, and easy to update
+
+**Time constants (use instead of hardcoded values):**
+- `T.MiY` - Months in Year (12) - use instead of `/12` for annual-to-monthly conversion
+- `T.DiY` - Days in Year (365/366)
+- `T.DiM` - Days in Month (28-31, varies by period)
+- `T.QiY` - Quarters in Year (4)
+- `T.HiD` - Hours in Day (24)
+- `T.HiY` - Hours in Year (8760/8784)
+
+Example: `R70 * C1.17 / 100 / T.MiY` instead of `R70 * C1.17 / 100 / 12`
+
 ## Number Formatting
 
 Smart number formatting is used throughout the application:

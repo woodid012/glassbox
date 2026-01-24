@@ -798,7 +798,7 @@
       "tabId": 3,
       "groupId": 16,
       "name": "Monthly Depreciation",
-      "formula": "(R81 / C1.20 / 12) * (R120 > 0) * (R120 <= C1.20 * 12)",
+      "formula": "(R81 / C1.20 / T.MiY) * (R120 > 0) * (R120 <= C1.20 * T.MiY)",
       "description": "Straight line over C1.20 years, stops when fully depreciated. R120=Ops Period counter."
     },
     {

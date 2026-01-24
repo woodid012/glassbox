@@ -1,43 +1,6 @@
 // Month names for formatting
 export const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-/**
- * Auto-detect whether an input should be treated as Flow or Stock based on its name
- * Flow (spread/divide when spreading): revenues, costs, volumes - things that accumulate over time
- * Stock (lookup/repeat when spreading): prices, rates, factors - point-in-time values
- *
- * @param {string} inputName - The name of the input
- * @returns {'flow' | 'stock'} - The detected type
- */
-export function detectFlowOrStock(inputName) {
-    if (!inputName) return 'flow' // default
-
-    const name = inputName.toLowerCase()
-
-    // Stock keywords - values that should be repeated (not divided)
-    const stockKeywords = [
-        'price', 'rate', 'factor', 'percent', 'ratio',
-        'count', 'capacity', 'balance', 'index',
-        'escalation', 'inflation', 'growth', 'yield', 'margin', 'fee'
-    ]
-
-    // Flow keywords - values that should be divided across periods
-    const flowKeywords = [
-        'revenue', 'cost', 'expense', 'capex', 'opex',
-        'volume', 'production', 'generation', 'payment',
-        'cash', 'income', 'profit', 'loss', 'spend', 'budget', 'amount', 'total'
-    ]
-
-    // Check stock keywords first (more specific)
-    if (stockKeywords.some(k => name.includes(k))) return 'stock'
-
-    // Then check flow keywords
-    if (flowKeywords.some(k => name.includes(k))) return 'flow'
-
-    // Default to flow (safer - dividing is usually what users expect for financial inputs)
-    return 'flow'
-}
-
 export function formatPeriodLabel(year, month, frequency = 'M', config = null) {
     if (frequency === 'Y') return String(year)
     if (frequency === 'FY') {
