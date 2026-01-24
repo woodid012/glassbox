@@ -20,6 +20,46 @@ This is a Next.js 14 financial model builder with two main pages:
 - `/glassinputs` - Time series input definition (flags, indexations, values)
 - `/model-builder` - Formula-based calculations with dependency tracking
 
+## Glass Box Philosophy
+
+This project follows the **Glass Box** philosophy - complete transparency in financial modeling:
+
+### Core Principles
+
+1. **Full Transparency** - Every calculation is visible and traceable. No hidden logic or black-box formulas. Users can see exactly how any number was derived.
+
+2. **Period-Level Granularity** - All calculations operate at the finest granularity (monthly periods). This ensures accuracy and allows drilling down to understand any value.
+
+3. **Flexible Output Detail** - While calculations run at period level, outputs can be aggregated to appropriate detail levels for different users:
+   - Executives: Annual summaries
+   - Analysts: Quarterly breakdowns
+   - Auditors: Full monthly detail
+
+4. **Audit-Ready Exports** - The system supports dumping complete input sets and calculation chains for:
+   - External audits
+   - Model validation
+   - Knowledge transfer
+   - Regulatory compliance
+
+### Data Flow: Inputs → Calculations → Results
+
+```
+Inputs (transparent, editable)
+    ↓
+Calculations (visible formulas, traceable references)
+    ↓
+Results (period-level detail, aggregated views)
+    ↓
+Exports (full audit trail available)
+```
+
+### Design Implications
+
+- All formulas use explicit references (V1, S1, R1) that can be traced back to source inputs
+- No magic numbers - constants are named and documented
+- Calculation order is deterministic via topological sorting
+- Every output can be explained by walking the formula chain backwards
+
 ## Key Files
 
 - `app/glassinputs/page.jsx` - Input arrays page
