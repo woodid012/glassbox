@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Settings, RotateCcw, Check, Loader2, Camera } from 'lucide-react'
+import { RotateCcw, Check, Loader2, Camera } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 
 const NAV_CONFIG = [
@@ -11,6 +11,7 @@ const NAV_CONFIG = [
     { id: 'inputs', label: 'Inputs', href: '/dashboard/inputs' },
     { id: 'modules', label: 'Modules', href: '/dashboard/modules' },
     { id: 'calculations', label: 'Calculations', href: '/dashboard/calculations' },
+    { id: 'validation', label: 'Validation', href: '/dashboard/validation' },
     { id: 'array-view', label: 'Array View', href: '/dashboard/array-view' },
     { id: 'notes', label: 'Notes', href: '/dashboard/notes' },
 ]
@@ -20,15 +21,11 @@ export default function DashboardNavigation() {
     const [snapshotStatus, setSnapshotStatus] = useState(null)
 
     const {
-        appState,
-        setters,
         derived,
         handlers,
         autoSaveState
     } = useDashboard()
 
-    const { showConfig } = appState
-    const { setShowConfig } = setters
     const { timeline } = derived
     const { handleRevertToOriginal } = handlers
     const { saveStatus } = autoSaveState
@@ -137,18 +134,6 @@ export default function DashboardNavigation() {
                         title="Revert to original template (discard all changes)"
                     >
                         <RotateCcw className="w-5 h-5" />
-                    </button>
-
-                    {/* Settings Toggle */}
-                    <button
-                        onClick={() => setShowConfig(!showConfig)}
-                        className={`p-2 rounded-lg transition-colors ${
-                            showConfig
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300'
-                        }`}
-                    >
-                        <Settings className="w-5 h-5" />
                     </button>
                 </div>
             </div>
