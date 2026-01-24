@@ -565,38 +565,6 @@
       "type": "stock"
     },
     {
-      "id": 52,
-      "tabId": 4,
-      "groupId": 4,
-      "name": "PV of FCFF",
-      "formula": "R46 * R51",
-      "description": ""
-    },
-    {
-      "id": 53,
-      "tabId": 4,
-      "groupId": 4,
-      "name": "PV of FCFE",
-      "formula": "R49 * R51",
-      "description": ""
-    },
-    {
-      "id": 54,
-      "tabId": 4,
-      "groupId": 4,
-      "name": "Cumulative NPV (Firm)",
-      "formula": "CUMSUM(R52)",
-      "description": ""
-    },
-    {
-      "id": 55,
-      "tabId": 4,
-      "groupId": 4,
-      "name": "Cumulative NPV (Equity)",
-      "formula": "CUMSUM(R53)",
-      "description": ""
-    },
-    {
       "id": 90,
       "tabId": 3,
       "groupId": 17,
@@ -687,7 +655,7 @@
       "tabId": 3,
       "groupId": 16,
       "name": "Reduction",
-      "formula": "MIN(R80 + R81, CUMSUM(V1) / C1.24 / T.MiY) * F2",
+      "formula": "MIN(R80 + R81, CUMSUM(V1) /C1.19 / T.MiY)",
       "description": "Depreciation: MIN(book value, asset/life). Final payment = remaining balance."
     },
     {

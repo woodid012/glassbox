@@ -82,6 +82,11 @@ export function evalExprForAllPeriods(expr, allRefs, periods) {
             periodExpr = periodExpr.replace(regex, value.toString())
         }
 
+        // Replace any unresolved R-references with 0
+        // These are calculations not yet computed (e.g., SHIFT(R84,1) when R84 hasn't been evaluated)
+        // Without this, sanitization would strip "R" from "R84" leaving literal "84"
+        periodExpr = periodExpr.replace(/\bR\d+\b/g, '0')
+
         // Convert MIN/MAX/ABS to Math functions
         periodExpr = periodExpr
             .replace(/\bMIN\s*\(/gi, 'Math.min(')
@@ -89,7 +94,8 @@ export function evalExprForAllPeriods(expr, allRefs, periods) {
             .replace(/\bABS\s*\(/gi, 'Math.abs(')
 
         // Sanitize and convert power operator
-        let safeExpr = periodExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,]/gi, '')
+        // Allow comparison operators (>, <, =, !), logical operators (&, |), and modulo (%)
+        let safeExpr = periodExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,<>=!&|%]/gi, '')
         safeExpr = safeExpr.replace(/\^/g, '**')
 
         // Evaluate using cached function
@@ -309,8 +315,8 @@ export function evaluateSafeExpression(expr) {
         .replace(/\bMAX\s*\(/gi, 'Math.max(')
         .replace(/\bABS\s*\(/gi, 'Math.abs(')
 
-    // Allow Math. in addition to numbers and operators
-    let safeExpr = processedExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,]/gi, '')
+    // Allow Math., comparison operators (>, <, =, !), logical operators (&, |), and modulo (%)
+    let safeExpr = processedExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,<>=!&|%]/gi, '')
     safeExpr = safeExpr.replace(/\^/g, '**')
 
     // Use cached expression evaluation

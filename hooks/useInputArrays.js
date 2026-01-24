@@ -229,23 +229,37 @@ export function useInputArrays({
         })
 
         // Flags from Key Periods: 1 when within period's start/end, 0 otherwise
+        // Also generates .Start (first period only) and .End (last period only) flags
         keyPeriods.forEach(keyPeriod => {
             const arr = new Array(timeline.periods).fill(0)
+            const startArr = new Array(timeline.periods).fill(0)
+            const endArr = new Array(timeline.periods).fill(0)
 
             const startTotal = keyPeriod.startYear * 12 + keyPeriod.startMonth
             const endTotal = keyPeriod.endYear * 12 + keyPeriod.endMonth
+
+            let firstPeriodIdx = -1
+            let lastPeriodIdx = -1
 
             for (let i = 0; i < timeline.periods; i++) {
                 const periodTotal = timeline.year[i] * 12 + timeline.month[i]
                 if (periodTotal >= startTotal && periodTotal <= endTotal) {
                     arr[i] = 1
+                    if (firstPeriodIdx === -1) firstPeriodIdx = i
+                    lastPeriodIdx = i
                 }
             }
 
+            // Set start/end flags at boundary periods
+            if (firstPeriodIdx >= 0) startArr[firstPeriodIdx] = 1
+            if (lastPeriodIdx >= 0) endArr[lastPeriodIdx] = 1
+
             flags[`flag_keyperiod_${keyPeriod.id}`] = {
                 id: `flag_keyperiod_${keyPeriod.id}`,
-                name: `${keyPeriod.name} Flag`,
-                array: arr
+                name: `${keyPeriod.name}`,
+                array: arr,
+                startArray: startArr,
+                endArray: endArr
             }
         })
 

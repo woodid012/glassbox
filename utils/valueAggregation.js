@@ -45,13 +45,14 @@ export function getAggregatedValueForArray(arr, indices, type = 'flow', category
     if (!arr || indices.length === 0) return 0
 
     // For flags, use boolean OR: 1 if ANY period has flag=1, else 0
-    if (category === 'flag') {
+    // Check both category and type since calcs pass type='flag'
+    if (category === 'flag' || type === 'flag') {
         const values = indices.map(idx => arr[idx] || 0)
         return values.some(v => v === 1 || v === '1') ? 1 : 0
     }
 
-    // Stock: point-in-time value
-    if (type === 'stock' || type === 'stock_end') {
+    // Stock/constant: point-in-time value (use last value in period)
+    if (type === 'stock' || type === 'stock_end' || type === 'constant') {
         // End of period: last index
         return arr[indices[indices.length - 1]] || 0
     }
@@ -125,13 +126,17 @@ export function calculatePeriodValues(resultArray, viewHeaders, viewMode, calcTy
  * @returns {number} The total value
  */
 export function calculateTotal(periodValues, calcType = 'flow') {
-    if (calcType === 'stock' || calcType === 'stock_end') {
-        // Stock: use last period value
+    if (calcType === 'stock' || calcType === 'stock_end' || calcType === 'constant') {
+        // Stock/constant: use last period value
         return periodValues[periodValues.length - 1] || 0
     }
     if (calcType === 'stock_start') {
         // Stock start: use first period value
         return periodValues[0] || 0
+    }
+    if (calcType === 'flag') {
+        // Flag: 1 if any period is 1
+        return periodValues.some(v => v === 1 || v === '1') ? 1 : 0
     }
     // Flow: sum all values
     return periodValues.reduce((sum, v) => sum + v, 0)

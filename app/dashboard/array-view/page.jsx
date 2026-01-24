@@ -163,16 +163,17 @@ export default function ArrayViewPage() {
                 yearly: groupTotals
             }
 
-            // Individual inputs
+            // Individual inputs - use each input's own type from referenceTypeMap
             groupInputs.forEach((input, idx) => {
                 const inputRef = `${groupRef}.${idx + 1}`
+                const inputType = referenceTypeMap?.[inputRef] || groupType
                 const arr = inputGlassArrays[`inputtype3_${input.id}`] || []
                 debugData.inputs[inputRef] = {
                     name: input.name,
-                    type: groupType,
+                    type: inputType,
                     yearly: exportMonthly
                         ? [...arr]
-                        : yearlyHeaders.map(h => getAggregatedValueForArray(arr, h.indices, groupType))
+                        : yearlyHeaders.map(h => getAggregatedValueForArray(arr, h.indices, inputType))
                 }
             })
         })

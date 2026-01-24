@@ -76,9 +76,10 @@ function tokenizeInputs(data) {
   };
 
   // Compact key periods - just id, name, start/end
+  // Use array position (idx+1) to match runtime behavior in useDashboardState.js
   if (data.keyPeriods) {
-    data.keyPeriods.forEach(p => {
-      tok.periods[`F${p.id}`] = {
+    data.keyPeriods.forEach((p, idx) => {
+      tok.periods[`F${idx + 1}`] = {
         n: p.name,
         p: p.periods,
         s: `${p.startYear}-${String(p.startMonth).padStart(2, '0')}`,

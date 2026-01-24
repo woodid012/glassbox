@@ -103,6 +103,14 @@ After editing model-calculations.json or model-inputs.json:
 node scripts/tokenize-models.js
 ```
 
+### Sync JSON Edits to App
+**IMPORTANT:** The app loads from localStorage first, then JSON files. After Claude edits JSON files directly, the user must clear localStorage to see the changes:
+```javascript
+// In browser console (F12):
+localStorage.removeItem('glass-inputs-state-local')
+// Then refresh the page
+```
+
 **NEVER search or read `data/glass-inputs-autosave.json`** - it's too large and outdated.
 
 ## Formula Reference System
@@ -120,6 +128,18 @@ Example: A calculation with `"id": 60` is always referenced as `R60`, regardless
 1. Choose a unique ID that doesn't conflict with existing IDs
 2. Use that ID in formulas (e.g., `R60 + R61`)
 3. Array position only affects display order, not formula resolution
+
+**When deleting calculations:**
+1. Before deleting, search for all references to that calculation (e.g., grep for `R60`)
+2. Update or remove all formulas that reference the deleted calculation
+3. IDs do NOT renumber - if you delete R10, other calculations keep their IDs (R9 stays R9, R11 stays R11)
+4. Dangling references (e.g., `R60` when id 60 no longer exists) will cause formula errors
+
+**When modifying calculation structure:**
+1. Check upstream dependencies: What does this calculation reference?
+2. Check downstream dependencies: What references this calculation?
+3. Avoid circular dependencies - use SHIFT() to break cycles (e.g., `SHIFT(R84, 1)` references prior period, not current)
+4. If a ledger pattern (Opening → Addition → Reduction → Closing) creates a cycle, restructure so Closing is calculated independently
 
 **Handling constants in formulas:**
 - **Never hardcode business constants directly in calculations** - avoid formulas like `R5 * 0.15`
@@ -144,6 +164,20 @@ Example: A calculation with `"id": 60` is always referenced as `R60`, regardless
 - `T.FYE` - Financial Year End (1 at June - Australian FY)
 
 Example: `R70 * C1.17 / 100 / T.MiY` instead of `R70 * C1.17 / 100 / 12`
+
+**Key period flags (auto-generated from Key Periods):**
+- `F1` - Construction flag (1 during construction, 0 otherwise)
+- `F1.Start` - First period of construction only
+- `F1.End` - Last period of construction only (COD)
+- `F2` - Operations flag (1 during operations, 0 otherwise)
+- `F2.Start` - First period of operations only (COD)
+- `F2.End` - Last period of operations only
+- Same pattern for F3, F4, etc. based on defined Key Periods
+
+**Use .Start/.End flags for one-time events:**
+- Asset additions at COD: `CUMSUM(V1) * F2.Start` instead of `CUMSUM(V1) * MAX(0, F2 - SHIFT(F2, 1))`
+- Debt injection at ops start: `R94 * F2.Start`
+- Final releases at period end: `balance * F11.End`
 
 **Acceptable hardcoded numbers (structural/technical):**
 - `CUMSUM(1)` - incrementing counters
