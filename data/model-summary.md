@@ -1,5 +1,5 @@
 # Model Summary (Auto-generated)
-Generated: 2026-01-24T21:11:43.366Z
+Generated: 2026-01-24T21:55:16.286Z
 
 ## Key Periods (Flags)
 | Flag | Name | Periods | Start | End |
@@ -87,7 +87,7 @@ Generated: 2026-01-24T21:11:43.366Z
 | R63 | IDC | `CUMSUM(R92)` |
 | R64 | Total Uses | `R60 + R61 + R63` |
 | R65 | GST Received | `R61` |
-| R66 | Construction Debt | `R94` |
+| R66 | Construction Debt | `M1.1` |
 | R67 | Construction Equity | `R64 - R65 - R66` |
 | R68 | Total Sources | `R65 + R66 + R67` |
 | R35 | Construction Equity Injection | `V1 * F1 - R91` |
@@ -95,4 +95,4 @@ Generated: 2026-01-24T21:11:43.366Z
 | R40 | Net Cashflow | `R22 + R28 + R39` |
 | R41 | Opening Cash | `CUMSUM(R40) - R40` |
 | R42 | Closing Cash | `CUMSUM(R40)` |
-| ... | (37 more) | ... |
+| ... | (30 more) | ... |

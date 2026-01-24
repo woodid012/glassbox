@@ -655,7 +655,7 @@
       "tabId": 3,
       "groupId": 16,
       "name": "Reduction",
-      "formula": "MIN(R80 + R81, CUMSUM(V1) /C1.19 / T.MiY)",
+      "formula": "MIN(R80 + R81, CUMSUM(V1) / C1.24 / T.MiY)",
       "description": "Depreciation: MIN(book value, asset/life). Final payment = remaining balance."
     },
     {
