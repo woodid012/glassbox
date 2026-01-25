@@ -97,14 +97,12 @@ describe('evalExprForAllPeriods', () => {
   })
 
   it('handles missing references by leaving them as literals', () => {
-    // Note: Missing references are sanitized - the 'R' is stripped and
-    // the number remains, causing it to be added to the result.
-    // This test documents actual behavior - validation should catch
-    // missing refs before evaluation.
+    // Missing references return 0 (safe default behavior).
+    // Validation should catch missing refs before evaluation.
     const refs = { R1: [10, 20, 30] }
     const result = evalExprForAllPeriods('R1 + R999', refs, 3)
-    // R999 becomes just 999 after sanitization (R is stripped)
-    expect(result).toEqual([1009, 1019, 1029])
+    // R999 is missing, so it evaluates to 0
+    expect(result).toEqual([10, 20, 30])
   })
 
   it('handles power operator in formulas', () => {

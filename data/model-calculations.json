@@ -621,8 +621,32 @@
       "groupId": 15,
       "name": "Opening Balance",
       "formula": "M1.2",
-      "description": "Prior closing + initial debt at ops start",
+      "description": "From iterative debt sizing module",
       "type": "stock_start"
+    },
+    {
+      "id": 71,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Interest - Paid",
+      "formula": "M1.3",
+      "description": "From iterative debt sizing module"
+    },
+    {
+      "id": 72,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Principal",
+      "formula": "M1.4",
+      "description": "From iterative debt sizing module"
+    },
+    {
+      "id": 73,
+      "tabId": 3,
+      "groupId": 15,
+      "name": "Debt Service",
+      "formula": "M1.5",
+      "description": "Interest + Principal from iterative debt sizing module"
     },
     {
       "id": 74,
@@ -630,7 +654,7 @@
       "groupId": 15,
       "name": "Closing Balance",
       "formula": "M1.6",
-      "description": "Initial debt minus cumulative principal",
+      "description": "From iterative debt sizing module",
       "type": "stock"
     },
     {

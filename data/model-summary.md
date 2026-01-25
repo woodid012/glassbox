@@ -1,5 +1,5 @@
 # Model Summary (Auto-generated)
-Generated: 2026-01-25T01:39:15.432Z
+Generated: 2026-01-25T01:41:45.573Z
 
 ## Key Periods (Flags)
 | Flag | Name | Periods | Start | End |
@@ -95,4 +95,4 @@ Generated: 2026-01-25T01:39:15.432Z
 | R40 | Net Cashflow | `R22 + R28 + R39` |
 | R41 | Opening Cash | `CUMSUM(R40) - R40` |
 | R42 | Closing Cash | `CUMSUM(R40)` |
-| ... | (30 more) | ... |
+| ... | (33 more) | ... |
