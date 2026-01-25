@@ -1,11 +1,50 @@
 // Formula Evaluator Utility
 // Handles formula parsing and evaluation including array functions (CUMSUM, CUMPROD, etc.)
 
+// LRU Cache implementation for expression functions
+// Uses a Map which maintains insertion order, allowing efficient LRU eviction
+class LRUCache {
+    constructor(maxSize) {
+        this.cache = new Map()
+        this.maxSize = maxSize
+    }
+
+    get(key) {
+        if (!this.cache.has(key)) return undefined
+        // Move to end (most recently used)
+        const value = this.cache.get(key)
+        this.cache.delete(key)
+        this.cache.set(key, value)
+        return value
+    }
+
+    set(key, value) {
+        // If key exists, delete it first to update position
+        if (this.cache.has(key)) {
+            this.cache.delete(key)
+        } else if (this.cache.size >= this.maxSize) {
+            // Evict oldest entry (first key in iteration order)
+            const oldestKey = this.cache.keys().next().value
+            this.cache.delete(oldestKey)
+        }
+        this.cache.set(key, value)
+    }
+
+    has(key) {
+        return this.cache.has(key)
+    }
+
+    get size() {
+        return this.cache.size
+    }
+}
+
 // Cache for compiled expression functions - avoids repeated new Function() calls
-const expressionCache = new Map()
-const MAX_CACHE_SIZE = 1000
+// Using LRU cache to avoid clearing all cached functions when limit is reached
+const expressionCache = new LRUCache(1000)
 
 // Cache for compiled regex patterns - avoids repeated regex compilation
+// Regex cache doesn't need LRU since patterns are reused frequently
 const regexCache = new Map()
 
 /**
@@ -13,7 +52,7 @@ const regexCache = new Map()
  * @param {string} ref - Reference name to create regex for
  * @returns {RegExp} Cached or newly created regex
  */
-function getCachedRegex(ref) {
+export function getCachedRegex(ref) {
     if (!regexCache.has(ref)) {
         regexCache.set(ref, new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g'))
     }
@@ -30,10 +69,7 @@ function evaluateCachedExpression(safeExpr) {
 
     let evalFn = expressionCache.get(safeExpr)
     if (!evalFn) {
-        // Clear cache if it gets too large
-        if (expressionCache.size >= MAX_CACHE_SIZE) {
-            expressionCache.clear()
-        }
+        // LRU cache automatically evicts oldest entries when full
         try {
             evalFn = new Function(`return (${safeExpr})`)
             expressionCache.set(safeExpr, evalFn)

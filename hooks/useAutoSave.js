@@ -7,6 +7,7 @@ import { serializeState, deserializeState, getDefaultState } from '@/utils/glass
 
 // Debounce delay for auto-save (in milliseconds)
 const AUTOSAVE_DEBOUNCE_MS = 1500
+const LOCALSTORAGE_DEBOUNCE_MS = 300 // Debounce localStorage writes to prevent blocking UI
 
 /**
  * Hook for managing auto-save and auto-load functionality
@@ -23,8 +24,9 @@ export function useAutoSave(appState, setAppState) {
     const [lastSaved, setLastSaved] = useState(null) // timestamp of last save
     const [saveStatus, setSaveStatus] = useState(null) // 'saving' | 'saved' | 'error' | null
 
-    // Ref to track debounce timer
+    // Ref to track debounce timers
     const saveTimerRef = useRef(null)
+    const localStorageTimerRef = useRef(null)
 
     // Auto-load on mount - priority: split files → legacy autosave → original → defaults
     useEffect(() => {
@@ -131,21 +133,26 @@ export function useAutoSave(appState, setAppState) {
     useEffect(() => {
         if (!hasLoadedFromStorage) return
 
-        // Clear any existing timer
+        // Clear any existing timers
         if (saveTimerRef.current) {
             clearTimeout(saveTimerRef.current)
+        }
+        if (localStorageTimerRef.current) {
+            clearTimeout(localStorageTimerRef.current)
         }
 
         // Set saving status immediately
         setSaveStatus('saving')
 
-        // Save to localStorage immediately (fast)
-        try {
-            const serialized = serializeState(appState)
-            localStorage.setItem('glass-inputs-state-local', JSON.stringify(serialized))
-        } catch (e) {
-            console.error('Error saving to localStorage:', e)
-        }
+        // Debounced save to localStorage (prevents blocking UI on rapid changes)
+        localStorageTimerRef.current = setTimeout(() => {
+            try {
+                const serialized = serializeState(appState)
+                localStorage.setItem('glass-inputs-state-local', JSON.stringify(serialized))
+            } catch (e) {
+                console.error('Error saving to localStorage:', e)
+            }
+        }, LOCALSTORAGE_DEBOUNCE_MS)
 
         // Debounced save to server (split into 3 files)
         saveTimerRef.current = setTimeout(async () => {
@@ -175,10 +182,13 @@ export function useAutoSave(appState, setAppState) {
             }
         }, AUTOSAVE_DEBOUNCE_MS)
 
-        // Cleanup timer on unmount or state change
+        // Cleanup timers on unmount or state change
         return () => {
             if (saveTimerRef.current) {
                 clearTimeout(saveTimerRef.current)
+            }
+            if (localStorageTimerRef.current) {
+                clearTimeout(localStorageTimerRef.current)
             }
         }
     }, [appState, hasLoadedFromStorage])
