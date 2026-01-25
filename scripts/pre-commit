@@ -1,0 +1,24 @@
+#!/bin/sh
+# Pre-commit hook to validate model integrity before committing
+# To install: cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+echo "🔍 Running pre-commit validation..."
+
+# Run tests
+echo "📋 Running tests..."
+npm run test
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Commit aborted."
+    exit 1
+fi
+
+# Run lint
+echo "🔧 Running linter..."
+npm run lint
+if [ $? -ne 0 ]; then
+    echo "❌ Lint failed. Commit aborted."
+    exit 1
+fi
+
+echo "✅ All checks passed!"
+exit 0
