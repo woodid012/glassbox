@@ -258,6 +258,27 @@ export function shift(innerArray, n, periods) {
 }
 
 /**
+ * COUNT - Cumulative count of non-zero values
+ * COUNT([0, 5, 0, 10, 3]) returns [0, 1, 1, 2, 3]
+ * @param {number[]} innerArray - Array of values to count
+ * @param {number} periods - Number of periods
+ * @returns {number[]} Cumulative count array
+ */
+export function count(innerArray, periods) {
+    const result = new Array(periods).fill(0)
+    let cnt = 0
+
+    for (let i = 0; i < periods; i++) {
+        if (innerArray[i] !== 0) {
+            cnt++
+        }
+        result[i] = cnt
+    }
+
+    return result
+}
+
+/**
  * Process array functions in a formula and return the processed formula with placeholders
  * @param {string} formula - The formula string containing array functions
  * @param {Object} allRefs - Map of reference names to their value arrays
@@ -334,6 +355,19 @@ export function processArrayFunctions(formula, allRefs, timeline) {
         arrayFnResults[placeholder] = resultArray
         processedFormula = processedFormula.replace(match[0], placeholder)
         shiftRegex.lastIndex = 0
+    }
+
+    // COUNT(expr) - Cumulative count of non-zero values
+    const countRegex = /COUNT\s*\(([^)]+)\)/gi
+    while ((match = countRegex.exec(processedFormula)) !== null) {
+        const innerExpr = match[1]
+        const innerArray = evalExprForAllPeriods(innerExpr, allRefs, timeline.periods)
+        const resultArray = count(innerArray, timeline.periods)
+
+        const placeholder = `__ARRAYFN${arrayFnCounter++}__`
+        arrayFnResults[placeholder] = resultArray
+        processedFormula = processedFormula.replace(match[0], placeholder)
+        countRegex.lastIndex = 0
     }
 
     return { processedFormula, arrayFnResults }

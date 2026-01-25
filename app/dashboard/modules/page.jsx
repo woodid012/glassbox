@@ -43,6 +43,10 @@ export default function ModulesPage() {
                 // Stock: take last value in period
                 const lastIdx = indices[indices.length - 1]
                 return monthlyValues[lastIdx] || 0
+            } else if (outputType === 'stock_start') {
+                // Stock at start of period: take first value in period
+                const firstIdx = indices[0]
+                return monthlyValues[firstIdx] || 0
             } else {
                 // Flow: sum values in period
                 let sum = 0
@@ -233,6 +237,11 @@ export default function ModulesPage() {
                                             {template && (
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                                     {template.inputs.map(inputDef => {
+                                                        // Hide DB Multiplier when Straight Line is selected
+                                                        if (inputDef.key === 'dbMultiplier' &&
+                                                            (module.inputs?.method || 'straight_line') === 'straight_line') {
+                                                            return null
+                                                        }
                                                         return (
                                                             <div key={inputDef.key}>
                                                                 <label className="text-xs text-slate-500 mb-1 block">{inputDef.label}</label>
@@ -481,8 +490,9 @@ export default function ModulesPage() {
                                                                         const monthlyValues = moduleOutputs[ref] || []
                                                                         const outputType = output.type || 'flow'
                                                                         const displayValues = aggregateValues(monthlyValues, outputType)
-                                                                        const total = outputType === 'stock'
-                                                                            ? (displayValues[displayValues.length - 1] || 0)
+                                                                        const isStock = outputType === 'stock' || outputType === 'stock_start'
+                                                                        const total = isStock
+                                                                            ? (outputType === 'stock_start' ? (displayValues[0] || 0) : (displayValues[displayValues.length - 1] || 0))
                                                                             : displayValues.reduce((sum, v) => sum + v, 0)
 
                                                                         rows.push(
@@ -491,9 +501,9 @@ export default function ModulesPage() {
                                                                                     <span className="text-orange-600 font-medium">{ref}</span>
                                                                                     <span className="text-slate-500 ml-2">{output.label}</span>
                                                                                     <span className={`ml-1 text-[9px] px-1 py-0.5 rounded ${
-                                                                                        outputType === 'stock' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
+                                                                                        isStock ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
                                                                                     }`}>
-                                                                                        {outputType}
+                                                                                        {outputType === 'stock_start' ? 'stock (start)' : outputType}
                                                                                     </span>
                                                                                 </td>
                                                                                 <td className="py-1 px-2 text-right text-xs font-medium text-slate-900 sticky left-[180px] z-10 bg-white border-r border-slate-200">

@@ -34,6 +34,17 @@ function formatAccounting(value, decimals = 2) {
     return value < 0 ? `(${formatted})` : formatted
 }
 
+// Find next available calculation ID (fills gaps, e.g., if R1, R3 exist, returns 2)
+function getNextAvailableCalcId(calculations) {
+    const existingIds = new Set((calculations || []).map(c => c.id))
+    // Start from 1 and find first gap
+    let nextId = 1
+    while (existingIds.has(nextId)) {
+        nextId++
+    }
+    return nextId
+}
+
 // Calculation row with live formula preview - memoized to prevent unnecessary re-renders
 const CalcRow = memo(function CalcRow({
     calc,
@@ -233,9 +244,12 @@ export default function CalculationsPage() {
         const remainingTabs = tabs.filter(t => t.id !== tabId)
         const firstTabId = remainingTabs[0]?.id
 
-        // Count affected items
-        const tabCalcs = (calculations || []).filter(c => c.tabId === tabId)
+        // Count affected items (calculations derive tabId from their group)
         const tabGroups = (calculationsGroups || []).filter(g => g.tabId === tabId)
+        const tabCalcs = (calculations || []).filter(c => {
+            const group = (calculationsGroups || []).find(g => g.id === c.groupId)
+            return group?.tabId === tabId || (!group && c.tabId === tabId)
+        })
 
         // Build warning message
         let warningMsg = `Are you sure you want to delete the "${tab?.name || 'this'}" tab?`
@@ -254,21 +268,25 @@ export default function CalculationsPage() {
             return
         }
 
-        // Move calculations and groups from deleted tab to first remaining tab (if any)
-        setAppState(prev => ({
-            ...prev,
-            calculationsTabs: remainingTabs,
-            calculationsGroups: firstTabId
-                ? (prev.calculationsGroups || []).map(g =>
-                    g.tabId === tabId ? { ...g, tabId: firstTabId } : g
-                )
-                : (prev.calculationsGroups || []).filter(g => g.tabId !== tabId),
-            calculations: firstTabId
-                ? (prev.calculations || []).map(c =>
-                    c.tabId === tabId ? { ...c, tabId: firstTabId } : c
-                )
-                : (prev.calculations || []).filter(c => c.tabId !== tabId)
-        }))
+        // Move groups from deleted tab to first remaining tab (calculations follow automatically via groupId)
+        setAppState(prev => {
+            const groupsToMove = (prev.calculationsGroups || []).filter(g => g.tabId === tabId)
+            const groupIdsToMove = new Set(groupsToMove.map(g => g.id))
+
+            return {
+                ...prev,
+                calculationsTabs: remainingTabs,
+                calculationsGroups: firstTabId
+                    ? (prev.calculationsGroups || []).map(g =>
+                        g.tabId === tabId ? { ...g, tabId: firstTabId } : g
+                    )
+                    : (prev.calculationsGroups || []).filter(g => g.tabId !== tabId),
+                // Only delete orphaned calculations (those in deleted groups with no remaining tab)
+                calculations: firstTabId
+                    ? prev.calculations // Keep all - they follow their groups
+                    : (prev.calculations || []).filter(c => !groupIdsToMove.has(c.groupId))
+            }
+        })
 
         if (activeTabId === tabId) {
             setActiveTabId(firstTabId || 'all')
@@ -341,9 +359,8 @@ export default function CalculationsPage() {
                 calculationsTabs: [...(prev.calculationsTabs || []), { id: newTabId, name: `Sheet ${newTabId}` }],
                 calculationsGroups: [...(prev.calculationsGroups || []), { id: newGroupId, tabId: newTabId, name: 'Calculations' }],
                 calculations: [...(prev.calculations || []), {
-                    id: Date.now(),
-                    tabId: newTabId,
-                    groupId: newGroupId,
+                    id: getNextAvailableCalcId(prev.calculations),
+                    groupId: newGroupId,  // tabId is derived from group
                     name: 'New Calculation',
                     formula: '',
                     description: ''
@@ -365,9 +382,8 @@ export default function CalculationsPage() {
                 ...prev,
                 calculationsGroups: [...(prev.calculationsGroups || []), { id: newGroupId, tabId: activeTabId, name: 'Calculations' }],
                 calculations: [...(prev.calculations || []), {
-                    id: Date.now(),
-                    tabId: activeTabId,
-                    groupId: newGroupId,
+                    id: getNextAvailableCalcId(prev.calculations),
+                    groupId: newGroupId,  // tabId is derived from group
                     name: 'New Calculation',
                     formula: '',
                     description: ''
@@ -376,18 +392,19 @@ export default function CalculationsPage() {
             return
         }
 
-        const newCalc = {
-            id: Date.now(),
-            tabId: activeTabId,
-            groupId: targetGroupId,
-            name: 'New Calculation',
-            formula: '',
-            description: ''
-        }
-        setAppState(prev => ({
-            ...prev,
-            calculations: [...(prev.calculations || []), newCalc]
-        }))
+        setAppState(prev => {
+            const newCalc = {
+                id: getNextAvailableCalcId(prev.calculations),
+                groupId: targetGroupId,  // tabId is derived from group
+                name: 'New Calculation',
+                formula: '',
+                description: ''
+            }
+            return {
+                ...prev,
+                calculations: [...(prev.calculations || []), newCalc]
+            }
+        })
     }
 
     const updateCalculation = (calcId, field, value) => {
@@ -850,8 +867,9 @@ export default function CalculationsPage() {
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
-                                                                // Navigate to the calc's tab and select it
-                                                                const targetTab = calc.tabId || (calculationsTabs || [])[0]?.id
+                                                                // Navigate to the calc's tab (derived from group) and select it
+                                                                const calcGroup = (calculationsGroups || []).find(g => g.id === calc.groupId)
+                                                                const targetTab = calcGroup?.tabId || calc.tabId || (calculationsTabs || [])[0]?.id
                                                                 if (targetTab) {
                                                                     setActiveTabId(targetTab)
                                                                 }
@@ -875,8 +893,9 @@ export default function CalculationsPage() {
                             const isFirstTab = activeTabId === firstTabId
 
                             // Filter calculations and groups by active tab
-                            const tabCalcs = getTabItems(calculations, activeTabId, isFirstTab)
+                            // For calculations, derive tabId from their group's tabId
                             const tabGroups = getTabItems(calculationsGroups, activeTabId, isFirstTab)
+                            const tabCalcs = getTabItems(calculations, activeTabId, isFirstTab, calculationsGroups)
 
                             if (tabCalcs.length === 0 && tabGroups.length === 0) {
                                 return (

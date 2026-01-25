@@ -1,13 +1,13 @@
 /**
  * useAutoSave Hook
  * Handles auto-loading and debounced auto-saving of application state
+ * Uses JSON files as the single source of truth (no localStorage)
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { serializeState, deserializeState, getDefaultState } from '@/utils/glassInputsState'
 
 // Debounce delay for auto-save (in milliseconds)
 const AUTOSAVE_DEBOUNCE_MS = 1500
-const LOCALSTORAGE_DEBOUNCE_MS = 300 // Debounce localStorage writes to prevent blocking UI
 
 /**
  * Hook for managing auto-save and auto-load functionality
@@ -24,17 +24,16 @@ export function useAutoSave(appState, setAppState) {
     const [lastSaved, setLastSaved] = useState(null) // timestamp of last save
     const [saveStatus, setSaveStatus] = useState(null) // 'saving' | 'saved' | 'error' | null
 
-    // Ref to track debounce timers
+    // Ref to track debounce timer
     const saveTimerRef = useRef(null)
-    const localStorageTimerRef = useRef(null)
 
-    // Auto-load on mount - priority: split files → legacy autosave → original → defaults
+    // Auto-load on mount - load from JSON files via API
     useEffect(() => {
         let mounted = true
 
         const loadState = async () => {
             try {
-                // Try split model-state files first (merges model-inputs, model-calculations, model-ui-state)
+                // Load from split model-state files (model-inputs, model-calculations, model-ui-state)
                 const modelStateResponse = await fetch('/api/model-state')
                 if (modelStateResponse.ok) {
                     const modelState = await modelStateResponse.json()
@@ -42,12 +41,6 @@ export function useAutoSave(appState, setAppState) {
                         const deserialized = deserializeState(modelState)
                         setAppState(deserialized)
                         setHasLoadedFromStorage(true)
-                        // Sync localStorage
-                        try {
-                            localStorage.setItem('glass-inputs-state-local', JSON.stringify(serializeState(deserialized)))
-                        } catch (e) {
-                            console.error('Error syncing localStorage:', e)
-                        }
                         return
                     }
                 }
@@ -64,11 +57,6 @@ export function useAutoSave(appState, setAppState) {
                         const deserialized = deserializeState(autosaveState)
                         setAppState(deserialized)
                         setHasLoadedFromStorage(true)
-                        try {
-                            localStorage.setItem('glass-inputs-state-local', JSON.stringify(serializeState(deserialized)))
-                        } catch (e) {
-                            console.error('Error syncing localStorage:', e)
-                        }
                         return
                     }
                 }
@@ -85,35 +73,11 @@ export function useAutoSave(appState, setAppState) {
                         const deserialized = deserializeState(originalState)
                         setAppState(deserialized)
                         setHasLoadedFromStorage(true)
-                        // Sync localStorage
-                        try {
-                            localStorage.setItem('glass-inputs-state-local', JSON.stringify(serializeState(deserialized)))
-                        } catch (e) {
-                            console.error('Error syncing localStorage:', e)
-                        }
                         return
                     }
                 }
             } catch (e) {
                 console.error('Error loading from original:', e)
-            }
-
-            // If neither exists, check localStorage as fallback
-            if (typeof window !== 'undefined') {
-                try {
-                    const localData = localStorage.getItem('glass-inputs-state-local')
-                    if (localData) {
-                        const parsed = JSON.parse(localData)
-                        if (mounted) {
-                            const deserialized = deserializeState(parsed)
-                            setAppState(deserialized)
-                            setHasLoadedFromStorage(true)
-                            return
-                        }
-                    }
-                } catch (e) {
-                    console.error('Error loading from localStorage:', e)
-                }
             }
 
             // If nothing exists, mark as loaded (will use default state)
@@ -133,28 +97,15 @@ export function useAutoSave(appState, setAppState) {
     useEffect(() => {
         if (!hasLoadedFromStorage) return
 
-        // Clear any existing timers
+        // Clear any existing timer
         if (saveTimerRef.current) {
             clearTimeout(saveTimerRef.current)
-        }
-        if (localStorageTimerRef.current) {
-            clearTimeout(localStorageTimerRef.current)
         }
 
         // Set saving status immediately
         setSaveStatus('saving')
 
-        // Debounced save to localStorage (prevents blocking UI on rapid changes)
-        localStorageTimerRef.current = setTimeout(() => {
-            try {
-                const serialized = serializeState(appState)
-                localStorage.setItem('glass-inputs-state-local', JSON.stringify(serialized))
-            } catch (e) {
-                console.error('Error saving to localStorage:', e)
-            }
-        }, LOCALSTORAGE_DEBOUNCE_MS)
-
-        // Debounced save to server (split into 3 files)
+        // Debounced save to server (split into 3 JSON files)
         saveTimerRef.current = setTimeout(async () => {
             setIsAutoSaving(true)
             try {
@@ -182,13 +133,10 @@ export function useAutoSave(appState, setAppState) {
             }
         }, AUTOSAVE_DEBOUNCE_MS)
 
-        // Cleanup timers on unmount or state change
+        // Cleanup timer on unmount or state change
         return () => {
             if (saveTimerRef.current) {
                 clearTimeout(saveTimerRef.current)
-            }
-            if (localStorageTimerRef.current) {
-                clearTimeout(localStorageTimerRef.current)
             }
         }
     }, [appState, hasLoadedFromStorage])
@@ -204,11 +152,6 @@ export function useAutoSave(appState, setAppState) {
             await fetch('/api/model-state', { method: 'DELETE' })
             // Also delete legacy autosave for clean slate
             await fetch('/api/glass-inputs-autosave', { method: 'DELETE' })
-
-            // Clear localStorage
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem('glass-inputs-state-local')
-            }
 
             // Try to load original template
             try {

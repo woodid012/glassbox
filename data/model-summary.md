@@ -1,5 +1,5 @@
 # Model Summary (Auto-generated)
-Generated: 2026-01-25T01:41:45.573Z
+Generated: 2026-01-25T03:52:58.228Z
 
 ## Key Periods (Flags)
 | Flag | Name | Periods | Start | End |
@@ -41,20 +41,21 @@ Generated: 2026-01-25T01:41:45.573Z
 | C1.25 | Contracted DSCR Target | 1.4 |
 | C1.26 | Uncontracted DSCR Target | 1.9 |
 | C1.27 | Debt Tenor (Years) | 18 |
+| C1.28 | Input 127 | 50 |
 
 ## Calculations (R#)
 | ID | Name | Formula |
 |-----|------|---------|
 | R119 | Model Period | `CUMSUM(1)` |
 | R120 | Ops Period | `CUMSUM(F2)` |
-| R3 | Capex + Cont | `V1 * (1 + C1.18 / 100)` |
+| R3 | Capex + Cont | `V1 * (1 + C1.23 / 100)` |
 | R112 | Capex to Apply GST | `V1 - V1.1 - V1.9` |
-| R4 | Tolling Revenue | `C1.6 * C1.1 * T.HiY / T.MiY / 10^6 * F7 * I1` |
-| R5 | FCAS Revenue | `L1.2 * C1.1 / T.MiY / 10^6 * F8 * I1` |
-| R6 | Arb Revenue | `L1.1 * C1.1 / 10^6 / T.MiY * F8 * R12 * I1` |
+| R4 | Tolling Revenue | `C1.10 * C1.1 * T.HiY / T.MiY / 10^6 * F6 * I2` |
+| R5 | FCAS Revenue | `L1.2 * C1.1 / T.MiY / 10^6 * F7 * I2` |
+| R6 | Arb Revenue | `L1.1 * C1.1 / 10^6 / T.MiY * F7 * R12 * I2` |
 | R7 | Merchant Revenue | `R5 + R6` |
 | R8 | Total Revenue | `R4 + R7` |
-| R9 | Total OPEX (Nominal) | `-S1 * I1` |
+| R9 | Total OPEX (Nominal) | `-S1 * I2` |
 | R10 | Gross Margin | `R8 + R9` |
 | R111 | Monthly Decay Factor | `(1 - L3.5/100) ^ (T.DiM/T.DiY)` |
 | R11 | Degradation Index | `CUMPROD(1 - F2 + F2 * R111)` |
@@ -70,8 +71,8 @@ Generated: 2026-01-25T01:41:45.573Z
 | R21 | WC Movement | `-R98` |
 | R22 | Operating CF | `R20 + R21` |
 | R23 | Capex | `-V1 * F1` |
-| R24 | GST Paid on Capex | `-R112 * C1.11 / 100 * F1` |
-| R25 | GST Received | `SHIFT(R112 * C1.11 / 100 * F1, 1)` |
+| R24 | GST Paid on Capex | `-R112 * C1.15 / 100 * F1` |
+| R25 | GST Received | `SHIFT(R112 * C1.15 / 100 * F1, 1)` |
 | R26 | MRA Contribution | `0` |
 | R27 | MRA Release | `0` |
 | R28 | Investing CF | `R23 + R24 + R25 + R26 + R27` |
@@ -83,7 +84,7 @@ Generated: 2026-01-25T01:41:45.573Z
 | R34 | DSRA Release | `0` |
 | R60 | Capex + Contingency | `CUMSUM(R3 * F1)` |
 | R113 | Capex to Apply GST (Cum) | `CUMSUM(R112 * F1)` |
-| R61 | GST Paid | `R113 * C1.11 / 100` |
+| R61 | GST Paid | `R113 * C1.15 / 100` |
 | R63 | IDC | `CUMSUM(R92)` |
 | R64 | Total Uses | `R60 + R61 + R63` |
 | R65 | GST Received | `R61` |
@@ -95,4 +96,4 @@ Generated: 2026-01-25T01:41:45.573Z
 | R40 | Net Cashflow | `R22 + R28 + R39` |
 | R41 | Opening Cash | `CUMSUM(R40) - R40` |
 | R42 | Closing Cash | `CUMSUM(R40)` |
-| ... | (33 more) | ... |
+| ... | (35 more) | ... |

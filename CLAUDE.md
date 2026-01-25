@@ -80,42 +80,52 @@ Exports (full audit trail available)
 
 ## Data Files
 
-### For LLM Reading (Use These First)
-**Tokenized files are 70% smaller - always read these first:**
-- `data/model-calculations.tok.json` - Compact calculations (11 KB vs 33 KB)
-- `data/model-inputs.tok.json` - Compact inputs (31 KB vs 117 KB)
-- `data/model-summary.md` - Human-readable summary of all refs
-
-### For Full Details (Only When Needed)
-- `data/model-inputs.json` - Full input values and groups
-- `data/model-calculations.json` - Full formulas and structure
+- `data/model-inputs.json` - Input values and groups
+- `data/model-calculations.json` - Formulas and structure
 - `data/model-ui-state.json` - UI preferences
 - `data/model-links.json` - References between items
+- `data/model-summary.md` - Human-readable summary of all refs
 
-### Tokenized Format
-The `.tok.json` files use short keys for compactness:
-- `i` = id, `n` = name, `f` = formula, `d` = description, `t` = type, `g` = groupId
-- `v` = value, `vs` = values (non-zero only), `u` = unit
+### JSON Files as Source of Truth
+The app reads from and writes to the JSON files directly via `/api/model-state`. When Claude edits `model-calculations.json` or `model-inputs.json`, refresh the browser to see the changes.
 
-### Re-tokenize After Edits
-After editing model-calculations.json or model-inputs.json:
-```bash
-node scripts/tokenize-models.js
+**NEVER search or read `data/glass-inputs-autosave.json`** - it's a legacy file, too large and outdated.
+
+### Calculation Groups & Tabs Structure
+
+**Groups own the tab assignment, not calculations.**
+
+Calculations derive their tab from their group's `tabId`. This means:
+- To move calculations to a different tab, change the **group's** `tabId`
+- Calculations only need `groupId`, not `tabId`
+- Moving a group automatically moves all its calculations
+
+```json
+// Group - owns the tab assignment
+{ "id": 26, "tabId": 4, "name": "Equity IRR" }
+
+// Calculation - only needs groupId (tabId derived from group)
+{ "id": 130, "groupId": 26, "name": "Initial Equity", "formula": "..." }
 ```
 
-### Sync JSON Edits to App
-**IMPORTANT:** The app loads from localStorage first, then JSON files. After Claude edits JSON files directly, the user must clear localStorage to see the changes:
-```javascript
-// In browser console (F12):
-localStorage.removeItem('glass-inputs-state-local')
-// Then refresh the page
-```
+**When creating calculations:**
+- Set `groupId` to assign to a group
+- Do NOT set `tabId` (it's derived from the group)
+- Ungrouped calculations (no `groupId`) use their own `tabId` as fallback
 
-**NEVER search or read `data/glass-inputs-autosave.json`** - it's too large and outdated.
+**When moving groups between tabs:**
+- Change only the group's `tabId`
+- All calculations in that group move automatically
 
 ## Formula Reference System
 
-**R-references resolve by calculation ID, not array position.**
+**All references are ID-based for stability.**
+
+Both calculation references (R-refs) and input references (V, S, C, L) resolve by ID, not array position. This means:
+- Deleting an item does NOT shift other references
+- References are stable across edits
+
+### Calculation References (R-refs)
 
 When writing formulas that reference other calculations:
 - `R60` references the calculation with `"id": 60`
@@ -123,6 +133,19 @@ When writing formulas that reference other calculations:
 - Inserting/reordering calculations does NOT break references
 
 Example: A calculation with `"id": 60` is always referenced as `R60`, regardless of where it appears in the array.
+
+### Input References (V1.X, S1.X, C1.X, L1.X)
+
+Input references are also ID-based:
+
+| Type | Group ID | Reference Formula | Example |
+|------|----------|-------------------|---------|
+| Constants | 100 | `C1.{id - 99}` | id=118 → C1.19, id=123 → C1.24 |
+| CAPEX | 1 | `V1.{id}` | id=5 → V1.5 |
+| OPEX | 2 | `S1.{id}` | id=14 → S1.14 |
+| Lookups | varies | `L1.{id}` | Depends on lookup structure |
+
+**Important:** Constants use an offset of 99 because their IDs start at 100. Other inputs use their ID directly.
 
 **When adding new calculations:**
 1. Choose a unique ID that doesn't conflict with existing IDs
@@ -165,19 +188,33 @@ Example: A calculation with `"id": 60` is always referenced as `R60`, regardless
 
 Example: `R70 * C1.17 / 100 / T.MiY` instead of `R70 * C1.17 / 100 / 12`
 
-**Key period flags (auto-generated from Key Periods):**
-- `F1` - Construction flag (1 during construction, 0 otherwise)
-- `F1.Start` - First period of construction only
-- `F1.End` - Last period of construction only (COD)
-- `F2` - Operations flag (1 during operations, 0 otherwise)
-- `F2.Start` - First period of operations only (COD)
-- `F2.End` - Last period of operations only
-- Same pattern for F3, F4, etc. based on defined Key Periods
+**Key period flags (ID-based, auto-generated from Key Periods):**
+
+Flag references use the keyPeriod's ID, not array position. This means:
+- Deleting a key period does NOT renumber other flag references
+- `F{id}` references the key period with that specific ID
+- Reference names are stable across edits
+
+Examples from current model:
+- `F1` - Construction flag (keyPeriod id=1)
+- `F2` - Total Operations flag (keyPeriod id=2)
+- `F3` - Normal Operations flag (keyPeriod id=3)
+- `F6` - Offtake flag (keyPeriod id=6)
+- `F7` - Merchant flag (keyPeriod id=7)
+- `F8` - Ops Debt flag (keyPeriod id=8)
+- `F{id}.Start` - First period only
+- `F{id}.End` - Last period only
+
+**Indexation references (ID-based):**
+
+Indexation references also use the index's ID:
+- `I2` - CPI indexation (index id=2)
+- Deleting an index does NOT renumber other indexation references
 
 **Use .Start/.End flags for one-time events:**
 - Asset additions at COD: `CUMSUM(V1) * F2.Start` instead of `CUMSUM(V1) * MAX(0, F2 - SHIFT(F2, 1))`
 - Debt injection at ops start: `R94 * F2.Start`
-- Final releases at period end: `balance * F11.End`
+- Final releases at period end: `balance * F8.End`
 
 **Acceptable hardcoded numbers (structural/technical):**
 - `CUMSUM(1)` - incrementing counters
@@ -195,6 +232,154 @@ Example: `R70 * C1.17 / 100 / T.MiY` instead of `R70 * C1.17 / 100 / 12`
 - Days per year (365) → use `T.DiY`
 - Depreciation life, debt term → use C1.xx constants
 - Any business assumption that an analyst might want to change
+
+## Ledger Pattern (Gold Standard)
+
+Ledger-style calculations (Opening → Addition → Reduction → Closing) create circular dependencies because Opening depends on prior Closing, and Closing depends on Opening. The gold standard solution uses CUMSUM to eliminate these cycles entirely.
+
+### The Problem
+
+Traditional ledger formulas create cycles:
+```
+Opening = SHIFT(Closing, 1)  ← needs Closing
+Closing = Opening + Addition - Reduction  ← needs Opening
+```
+
+SHIFT-based solutions have evaluation order issues and are fragile.
+
+### The Solution: Calculate Closing First
+
+The key insight: **Calculate Closing first using CUMSUM, then derive Opening from prior cumulative values.**
+
+```
+1. CLOSING = MAX(0, CUMSUM(Addition) - Rate * CUMSUM(ActiveFlag))
+   - Directly calculated, no circular dependencies
+   - MAX(0, ...) prevents negative balances
+
+2. OPENING = MAX(0, (CUMSUM(Addition) - Addition) - Rate * (CUMSUM(ActiveFlag) - ActiveFlag))
+   - Uses "CUMSUM(X) - X" to get prior period's cumulative
+   - No SHIFT needed!
+
+3. ADDITION = (one-time or periodic formula)
+   - For one-time: Use F.Start flag (e.g., CUMSUM(V1) * F2.Start)
+   - For periodic: Direct formula (e.g., Drawdown amount * Flag)
+
+4. REDUCTION = MIN(Opening + Addition, Rate) * ActiveFlag
+   - Known rate, capped at book value
+   - Only during active period (Flag)
+```
+
+### Pattern Variations
+
+| Scenario | Addition Formula | Rate Formula |
+|----------|------------------|--------------|
+| **Depreciation** | `CUMSUM(V1) * F2.Start` | `CUMSUM(V1) / Life / T.MiY` |
+| **Simple Debt** | `DebtAmount * F.Start` | `DebtAmount / Tenor / T.MiY` |
+| **Amortizing Debt** | `Principal * F.Start` | `PMT-style or DSCR-based` |
+| **Reserve Account** | `TargetAmount * F.Start` | `ReleaseAmount * F.End` |
+
+### Why This Works
+
+1. **No circular dependency**: Closing is calculated purely from CUMSUM of inputs
+2. **No SHIFT evaluation issues**: Opening uses `CUMSUM(X) - X` instead of `SHIFT(X, 1)`
+3. **Correct ordering**: CUMSUM functions evaluate all periods at once
+4. **Self-capping**: MAX(0, ...) and MIN(...) prevent over-reduction
+
+### Reference Implementation: D&A (R80-R84)
+
+```javascript
+// R84 Closing - calculated FIRST, no dependencies on other ledger rows
+"MAX(0, CUMSUM(R81) - CUMSUM(V1) / C1.24 / T.MiY * CUMSUM(F2))"
+
+// R80 Opening - uses prior cumulative (no SHIFT)
+"MAX(0, (CUMSUM(R81) - R81) - CUMSUM(V1) / C1.24 / T.MiY * (CUMSUM(F2) - F2))"
+
+// R81 Addition - one-time at COD
+"CUMSUM(V1) * F2.Start"
+
+// R82 Reduction - known rate, capped at book value
+"MIN(R80 + R81, CUMSUM(V1) / C1.24 / T.MiY) * F2"
+
+// R83 Accumulated - running total
+"CUMSUM(R82)"
+```
+
+### Verification Checklist
+
+When implementing a ledger pattern:
+- [ ] Closing formula uses only CUMSUM, no references to Opening
+- [ ] Opening uses `CUMSUM(X) - X` pattern, not SHIFT
+- [ ] Reduction is capped with MIN to prevent over-reduction
+- [ ] MAX(0, ...) prevents negative balances
+- [ ] Opening in period N equals Closing in period N-1
+
+## Calculation & Module Execution Order (CRITICAL)
+
+The model uses a **two-pass calculation architecture** to handle dependencies between calculations and modules. This is critical to understand when working with module outputs.
+
+### The Problem
+
+Modules (M1, M2, etc.) often depend on calculation results (R17, R115, etc.), but calculations may also reference module outputs (M5.7, M1.3, etc.). This creates a chicken-and-egg problem:
+
+```
+Pass 1: Calculations run → but module refs (M5.7) return 0
+        ↓
+Modules run → using calculation results from Pass 1
+        ↓
+Pass 2: Calculations that reference modules are RE-EVALUATED
+        with real module values
+```
+
+### Execution Flow
+
+1. **First Pass (calculationResults)**: All calculations are evaluated in dependency order. Any reference to module outputs (M1.1, M5.7, etc.) returns **zeros** at this stage.
+
+2. **Module Calculation (postCalcModuleOutputs)**: Modules are computed using the first-pass calculation results. Modules are topologically sorted so they can reference each other.
+
+3. **Second Pass (finalCalculationResults)**: Calculations that reference module outputs are re-evaluated with the real module values. This includes any calculations that depend on those (transitively).
+
+### Key Implementation Details
+
+Located in `app/dashboard/hooks/useDashboardState.js`:
+
+- `regularModuleOutputs` - Initializes module refs as zeros (placeholder)
+- `calculationResults` - First pass evaluation
+- `postCalcModuleOutputs` - Actual module calculations
+- `finalCalculationResults` - Second pass re-evaluation
+- The hook returns `finalCalculationResults` (not `calculationResults`)
+
+### When Adding Module References to Calculations
+
+When a calculation references a module output (e.g., `R18 = -M5.7`):
+
+1. The first pass will compute R18 as 0 (since M5.7 doesn't exist yet)
+2. The module (M5) will compute using other calc results
+3. The second pass will re-compute R18 with the real M5.7 value
+4. Any calculation depending on R18 will also be re-evaluated
+
+### Module Output References
+
+Module outputs are referenced as `M{moduleIndex}.{outputIndex}`:
+- Module index is 1-based position in the modules array
+- Output index is 1-based position in the template's outputs array
+
+Example for Tax module (5th module):
+```
+M5.1 = taxable_income_before_losses
+M5.2 = losses_opening
+M5.3 = losses_generated
+M5.4 = losses_utilised
+M5.5 = losses_closing
+M5.6 = net_taxable_income
+M5.7 = tax_payable
+```
+
+### Debugging Tips
+
+If module values show in the module preview but not in calculations:
+1. Check that `finalCalculationResults` is being returned (not `calculationResults`)
+2. Verify the calculation formula uses correct M*.* syntax
+3. Check browser console for any evaluation errors
 
 ## Number Formatting
 

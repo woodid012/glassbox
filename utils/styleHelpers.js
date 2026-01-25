@@ -96,15 +96,28 @@ export function getModePrefix(mode) {
 
 /**
  * Filter items (calculations or groups) by tab ID
+ * For calculations, tabId can be derived from their group's tabId
  * @param {Array} items - Array of items with optional tabId
  * @param {string|number} tabId - The active tab ID
  * @param {boolean} includeOrphaned - If true, include items without tabId when on first tab
+ * @param {Array} groups - Optional groups array to derive tabId from groupId (for calculations)
  * @returns {Array} Filtered items
  */
-export function getTabItems(items, tabId, includeOrphaned = false) {
-    return (items || []).filter(item =>
-        item.tabId === tabId || (includeOrphaned && !item.tabId)
-    )
+export function getTabItems(items, tabId, includeOrphaned = false, groups = null) {
+    return (items || []).filter(item => {
+        // If groups provided and item has groupId, try to derive tabId from group
+        if (groups && item.groupId !== undefined) {
+            const group = groups.find(g => g.id === item.groupId)
+            if (group) {
+                // Group found - use group's tabId
+                return group.tabId === tabId
+            }
+            // Group not found - fall back to item's tabId (orphaned calc)
+        }
+        // Use item's own tabId (groups, or calcs without groupId, or calcs with missing group)
+        const effectiveTabId = item.tabId
+        return effectiveTabId === tabId || (includeOrphaned && !effectiveTabId)
+    })
 }
 
 /**

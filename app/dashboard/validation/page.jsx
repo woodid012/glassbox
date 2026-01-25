@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useDashboard } from '../context/DashboardContext'
 import {
     validateAllCalculations,
@@ -18,7 +19,8 @@ import {
     ChevronRight,
     RefreshCw,
     Filter,
-    Link as LinkIcon
+    Link as LinkIcon,
+    ExternalLink
 } from 'lucide-react'
 
 // Severity icons and colors
@@ -103,7 +105,7 @@ function IssueCard({ issue }) {
     )
 }
 
-function CalculationIssueGroup({ calcRef, calcName, issues, isExpanded, onToggle }) {
+function CalculationIssueGroup({ calcRef, calcName, calcId, issues, isExpanded, onToggle, onGoTo }) {
     const errorCount = issues.filter(i => i.severity === SEVERITY.ERROR).length
     const warningCount = issues.filter(i => i.severity === SEVERITY.WARNING).length
     const infoCount = issues.filter(i => i.severity === SEVERITY.INFO).length
@@ -114,13 +116,13 @@ function CalculationIssueGroup({ calcRef, calcName, issues, isExpanded, onToggle
 
     return (
         <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-            <button
-                onClick={onToggle}
-                className={`w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-50 transition-colors ${
-                    hasErrors ? 'bg-red-50/50' : hasWarnings ? 'bg-amber-50/50' : ''
-                }`}
-            >
-                <div className="flex items-center gap-3">
+            <div className={`px-4 py-3 flex items-center justify-between ${
+                hasErrors ? 'bg-red-50/50' : hasWarnings ? 'bg-amber-50/50' : ''
+            }`}>
+                <button
+                    onClick={onToggle}
+                    className="flex items-center gap-3 flex-1 text-left hover:opacity-80 transition-opacity"
+                >
                     {isExpanded ? (
                         <ChevronDown className="w-4 h-4 text-slate-400" />
                     ) : (
@@ -136,7 +138,7 @@ function CalculationIssueGroup({ calcRef, calcName, issues, isExpanded, onToggle
                             </span>
                         )}
                     </div>
-                </div>
+                </button>
                 <div className="flex items-center gap-2">
                     {errorCount > 0 && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
@@ -156,8 +158,19 @@ function CalculationIssueGroup({ calcRef, calcName, issues, isExpanded, onToggle
                             {infoCount}
                         </span>
                     )}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onGoTo(calcId)
+                        }}
+                        className="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                        title="Go to calculation"
+                    >
+                        <ExternalLink className="w-3 h-3" />
+                        Go to
+                    </button>
                 </div>
-            </button>
+            </div>
             {isExpanded && (
                 <div className="px-4 pb-4 pt-2 space-y-2 border-t border-slate-100">
                     {issues.map((issue, idx) => (
@@ -190,13 +203,21 @@ function SummaryCard({ label, value, icon: Icon, color }) {
 }
 
 export default function ValidationPage() {
-    const { appState, derived } = useDashboard()
+    const { appState, derived, setters } = useDashboard()
     const { calculations } = appState
     const { referenceMap, moduleOutputs } = derived
+    const { setSelectedCalculationId } = setters
+    const router = useRouter()
 
     const [expandedCalcs, setExpandedCalcs] = useState(new Set())
     const [severityFilter, setSeverityFilter] = useState('all')
     const [categoryFilter, setCategoryFilter] = useState('all')
+
+    // Navigate to a calculation
+    const goToCalculation = (calcId) => {
+        setSelectedCalculationId(calcId)
+        router.push('/dashboard/calculations')
+    }
 
     // Run validation
     const issues = useMemo(() => {
@@ -348,16 +369,22 @@ export default function ValidationPage() {
 
                             return 0
                         })
-                        .map(([key, group]) => (
-                            <CalculationIssueGroup
-                                key={key}
-                                calcRef={group.calcRef}
-                                calcName={group.calcName}
-                                issues={group.issues}
-                                isExpanded={expandedCalcs.has(key)}
-                                onToggle={() => toggleCalc(key)}
-                            />
-                        ))}
+                        .map(([key, group]) => {
+                            // Extract calc ID from calcRef (e.g., "R123" -> 123)
+                            const calcId = group.calcRef ? parseInt(group.calcRef.replace('R', ''), 10) : null
+                            return (
+                                <CalculationIssueGroup
+                                    key={key}
+                                    calcRef={group.calcRef}
+                                    calcName={group.calcName}
+                                    calcId={calcId}
+                                    issues={group.issues}
+                                    isExpanded={expandedCalcs.has(key)}
+                                    onToggle={() => toggleCalc(key)}
+                                    onGoTo={goToCalculation}
+                                />
+                            )
+                        })}
                 </div>
             ) : (
                 <div className="text-center py-12 bg-white rounded-lg border border-slate-200">

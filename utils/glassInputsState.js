@@ -110,24 +110,105 @@ export function getDefaultState() {
         // Available module templates (pre-built)
         moduleTemplates: [
             {
-                id: 'iterative_debt_sizing',
-                name: 'Iterative Debt Sizing (DSCR Sculpted)',
-                description: 'Binary search to find optimal debt with DSCR-sculpted repayments',
+                id: 'construction_funding',
+                name: 'Construction Funding (Gold Standard)',
+                description: 'Construction funding waterfall with IDC equity-funded',
                 category: 'financing',
                 inputs: [
-                    { key: 'cfadsRef', label: 'CFADS Reference', type: 'reference', default: '' },
-                    { key: 'debtFlagRef', label: 'Debt Service Flag', type: 'reference', default: '' },
-                    { key: 'totalCapex', label: 'Total Capex ($M)', type: 'number', default: 100 },
+                    { key: 'constructionCostsRef', label: 'Construction Costs (cumulative)', type: 'reference', default: 'R60' },
+                    { key: 'gstPaidRef', label: 'GST Paid (cumulative)', type: 'reference', default: 'R61' },
+                    { key: 'feesRef', label: 'Fees/Other Uses (cumulative)', type: 'reference', default: '' },
+                    { key: 'sizedDebtRef', label: 'Sized Debt (from Debt Module)', type: 'reference', default: 'M1.1' },
+                    { key: 'gearingCapPct', label: 'Gearing Cap (%)', type: 'number', default: 65 },
+                    { key: 'interestRatePct', label: 'IDC Interest Rate (%)', type: 'number', default: 5 },
+                    { key: 'drawdownMethod', label: 'Drawdown Method', type: 'select', options: [
+                        { value: 'prorata', label: 'Pro-rata' },
+                        { value: 'equity_first', label: 'Equity First' }
+                    ], default: 'prorata' },
+                    { key: 'constructionFlagRef', label: 'Construction Flag', type: 'reference', default: 'F1' }
+                ],
+                outputs: ['total_uses_incl_idc', 'senior_debt', 'equity', 'gearing_pct', 'cumulative_idc', 'debt_drawdown', 'equity_drawdown', 'idc', 'total_uses_ex_idc']
+            },
+            {
+                id: 'reserve_account',
+                name: 'Reserve Account (Gold Standard)',
+                description: 'Reserve account (MRA/DSRA) with funding and drawdown using CUMSUM pattern',
+                category: 'financing',
+                inputs: [
+                    { key: 'fundingAmountRef', label: 'Funding Amount', type: 'reference', default: '' },
+                    { key: 'fundingFlagRef', label: 'Funding Flag (e.g., F1.End)', type: 'reference', default: 'F1.End' },
+                    { key: 'drawdownRef', label: 'Drawdown Amount (optional)', type: 'reference', default: '' },
+                    { key: 'drawdownFlagRef', label: 'Drawdown Flag (e.g., F2)', type: 'reference', default: 'F2' },
+                    { key: 'releaseFlagRef', label: 'Release Flag (e.g., F2.End)', type: 'reference', default: 'F2.End' }
+                ],
+                outputs: ['opening', 'funding', 'drawdown', 'release', 'closing']
+            },
+            {
+                id: 'gst_receivable',
+                name: 'GST Paid/Received (Gold Standard)',
+                description: 'GST ledger with configurable receipt delay using CUMSUM pattern',
+                category: 'accounting',
+                inputs: [
+                    { key: 'gstBaseRef', label: 'GST Base Amount (e.g., R112)', type: 'reference', default: 'R112' },
+                    { key: 'activeFlagRef', label: 'Active Period Flag', type: 'reference', default: 'F1' },
+                    { key: 'gstRatePct', label: 'GST Rate (%)', type: 'number', default: 10 },
+                    { key: 'receiptDelayMonths', label: 'Receipt Delay (months)', type: 'number', default: 1 }
+                ],
+                outputs: ['gst_base', 'gst_amount', 'gst_paid', 'receivable_opening', 'gst_received', 'receivable_closing', 'net_gst_cashflow']
+            },
+            {
+                id: 'tax_losses',
+                name: 'Tax & Tax Losses (Gold Standard)',
+                description: 'Tax calculation with loss carry-forward using CUMSUM pattern',
+                category: 'accounting',
+                inputs: [
+                    { key: 'taxableIncomeRef', label: 'Taxable Income Before Losses', type: 'reference', default: '' },
+                    { key: 'opsFlagRef', label: 'Operations Flag', type: 'reference', default: 'F2' },
+                    { key: 'taxRatePct', label: 'Tax Rate (%)', type: 'number', default: 30 }
+                ],
+                outputs: ['taxable_income_before_losses', 'losses_opening', 'losses_generated', 'losses_utilised', 'losses_closing', 'net_taxable_income', 'tax_payable']
+            },
+            {
+                id: 'depreciation_amortization',
+                name: 'Depreciation & Amortization (Gold Standard)',
+                description: 'CUMSUM-based ledger pattern - no circular dependencies',
+                category: 'accounting',
+                inputs: [
+                    { key: 'additionsRef', label: 'Capital Additions Reference', type: 'reference', default: 'V1' },
+                    { key: 'opsFlagRef', label: 'Operations Flag', type: 'reference', default: 'F2' },
+                    { key: 'lifeYears', label: 'Useful Life (years)', type: 'number', default: 15 },
+                    { key: 'method', label: 'Depreciation Method', type: 'select', options: [
+                        { value: 'straight_line', label: 'Straight Line' },
+                        { value: 'declining_balance', label: 'Declining Balance' }
+                    ], default: 'straight_line' },
+                    { key: 'dbMultiplier', label: 'DB Multiplier', type: 'select', options: [
+                        { value: 2.0, label: 'Double (2x)' },
+                        { value: 1.5, label: '150% (1.5x)' },
+                        { value: 1.0, label: '100% (1x)' }
+                    ], default: 2.0 }
+                ],
+                outputs: ['opening', 'addition', 'depreciation', 'accumulated', 'closing']
+            },
+            {
+                id: 'iterative_debt_sizing',
+                name: 'Iterative Debt Sizing (DSCR Sculpted)',
+                description: 'Binary search to find optimal debt with DSCR-sculpted repayments. Supports separate contracted/merchant DSCRs.',
+                category: 'financing',
+                inputs: [
+                    { key: 'contractedCfadsRef', label: 'Contracted CFADS', type: 'reference', default: 'R115' },
+                    { key: 'contractedDSCR', label: 'Contracted DSCR', type: 'number_or_ref', default: 'C1.25' },
+                    { key: 'merchantCfadsRef', label: 'Merchant CFADS', type: 'reference', default: 'R116' },
+                    { key: 'merchantDSCR', label: 'Merchant DSCR', type: 'number_or_ref', default: 'C1.26' },
+                    { key: 'debtFlagRef', label: 'Debt Service Flag', type: 'reference', default: 'F8' },
+                    { key: 'totalFundingRef', label: 'Total Capex (ex-IDC)', type: 'reference', default: 'R60' },
                     { key: 'maxGearingPct', label: 'Max Gearing (%)', type: 'number', default: 65 },
                     { key: 'interestRatePct', label: 'Interest Rate (%)', type: 'number', default: 5 },
                     { key: 'tenorYears', label: 'Debt Tenor (years)', type: 'number', default: 18 },
-                    { key: 'targetDSCR', label: 'Target DSCR', type: 'number', default: 1.4 },
                     { key: 'debtPeriod', label: 'Debt Service Period', type: 'select', options: [
                         { value: 'M', label: 'Monthly' },
                         { value: 'Q', label: 'Quarterly' },
                         { value: 'Y', label: 'Yearly' }
                     ], default: 'Q' },
-                    { key: 'idcRef', label: 'IDC Reference (optional)', type: 'reference', default: '' },
                     { key: 'tolerance', label: 'Tolerance ($M)', type: 'number', default: 0.1 },
                     { key: 'maxIterations', label: 'Max Iterations', type: 'number', default: 50 }
                 ],

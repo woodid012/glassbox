@@ -65,7 +65,14 @@
       "Bash(git -C \"C:/Projects/glassbox\" add -A)",
       "Bash(git -C \"C:/Projects/glassbox\" status --short)",
       "Bash(git -C \"C:/Projects/glassbox\" commit -m \"$\\(cat <<''EOF''\nRefactor dashboard to route-based pages\n\n- Convert tab components to route-based pages \\(array-view, inputs, key-periods, modules, notes\\)\n- Remove old DashboardContent, DashboardHeader, and tab index\n- Update dashboard page and package.json\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git -C \"C:/Projects/glassbox\" commit -m \"$\\(cat <<''EOF''\nUpdate module templates and settings\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git -C \"C:/Projects/glassbox\" commit -m \"$\\(cat <<''EOF''\nUpdate module templates and settings\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(node scripts/tokenize-models.js:*)",
+      "Bash(node -c:*)",
+      "Bash(npm test)",
+      "Bash(sort:*)",
+      "Bash(tee:*)"
     ]
   }
 }

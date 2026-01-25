@@ -3487,6 +3487,42 @@
       "value": 18,
       "valueFrequency": "Y",
       "spreadMethod": null
+    },
+    {
+      "id": 127,
+      "groupId": 100,
+      "subgroupId": null,
+      "name": "Minimum Cash Balance ($M)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 1.5,
+      "valueFrequency": "Y",
+      "spreadMethod": null
+    },
+    {
+      "id": 128,
+      "groupId": 100,
+      "subgroupId": null,
+      "name": "Dividend Withholding Tax (%)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 0,
+      "valueFrequency": "Y",
+      "spreadMethod": null
+    },
+    {
+      "id": 129,
+      "groupId": 100,
+      "subgroupId": null,
+      "name": "Terminal Value EBITDA Multiple",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 0,
+      "valueFrequency": "Y",
+      "spreadMethod": null
     }
   ],
   "inputType1": [],

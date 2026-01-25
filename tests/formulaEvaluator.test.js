@@ -6,6 +6,7 @@ import {
   cumsumY,
   cumprodY,
   shift,
+  count,
   processArrayFunctions,
   evaluateSafeExpression,
 } from '../utils/formulaEvaluator.js'
@@ -244,6 +245,32 @@ describe('shift', () => {
   })
 })
 
+describe('count', () => {
+  it('counts non-zero values cumulatively', () => {
+    const input = [0, 5, 0, 10, 3]
+    const result = count(input, 5)
+    expect(result).toEqual([0, 1, 1, 2, 3])
+  })
+
+  it('handles all zeros', () => {
+    const input = [0, 0, 0, 0]
+    const result = count(input, 4)
+    expect(result).toEqual([0, 0, 0, 0])
+  })
+
+  it('handles all non-zeros', () => {
+    const input = [1, 2, 3, 4]
+    const result = count(input, 4)
+    expect(result).toEqual([1, 2, 3, 4])
+  })
+
+  it('handles negative values as non-zero', () => {
+    const input = [0, -5, 0, -10]
+    const result = count(input, 4)
+    expect(result).toEqual([0, 1, 1, 2])
+  })
+})
+
 describe('processArrayFunctions', () => {
   const mockTimeline = {
     periods: 4,
@@ -325,6 +352,18 @@ describe('processArrayFunctions', () => {
     expect(processedFormula).toBe('__ARRAYFN0__ + __ARRAYFN1__')
     expect(arrayFnResults['__ARRAYFN0__']).toEqual([1, 3, 6, 10])
     expect(arrayFnResults['__ARRAYFN1__']).toEqual([0, 10, 10, 10])
+  })
+
+  it('processes COUNT function', () => {
+    const refs = { R1: [0, 5, 0, 10] }
+    const { processedFormula, arrayFnResults } = processArrayFunctions(
+      'COUNT(R1)',
+      refs,
+      mockTimeline
+    )
+
+    expect(processedFormula).toBe('__ARRAYFN0__')
+    expect(arrayFnResults['__ARRAYFN0__']).toEqual([0, 1, 1, 2])
   })
 })
 
