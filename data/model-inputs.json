@@ -270,7 +270,7 @@
       "periods": 396,
       "linkedKeyPeriodId": null,
       "frequency": "Y",
-      "groupType": "constants",
+      "groupType": "constant",
       "startYear": 2027,
       "startMonth": 4,
       "endYear": 2053,

@@ -321,14 +321,11 @@ export function useDashboardState(viewMode) {
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
-            } else if (group.groupType === 'constants') {
-                // Handle constants groupType explicitly
+            } else if (group.groupType === 'constant') {
                 normalizedMode = 'constant'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names (handle both singular and plural forms)
-                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
-                else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
                 else normalizedMode = groupMode
             }
 
@@ -587,13 +584,11 @@ export function useDashboardState(viewMode) {
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
-            } else if (group.groupType === 'constants') {
+            } else if (group.groupType === 'constant') {
                 normalizedMode = 'constant'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names (handle both singular and plural forms)
-                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
-                else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
                 else normalizedMode = groupMode
             }
 
@@ -610,7 +605,7 @@ export function useDashboardState(viewMode) {
 
             groupInputs.forEach((input, idx) => {
                 const entryMode = input.entryMode || input.mode || 'values'
-                const isConstantMode = entryMode === 'constant' || entryMode === 'constants'
+                const isConstantMode = entryMode === 'constant'
 
                 // Check for flowConverter flag (time factors like Hours in Year)
                 // Also, all inputs in timing groups are flow converters
@@ -747,13 +742,11 @@ export function useDashboardState(viewMode) {
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
-            } else if (group.groupType === 'constants') {
+            } else if (group.groupType === 'constant') {
                 normalizedMode = 'constant'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                // Normalize mode names (handle both singular and plural forms)
-                if (groupMode === 'constants' || groupMode === 'constant') normalizedMode = 'constant'
-                else if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
                 else normalizedMode = groupMode
             }
 

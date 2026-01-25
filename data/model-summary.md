@@ -1,5 +1,5 @@
 # Model Summary (Auto-generated)
-Generated: 2026-01-24T21:55:16.286Z
+Generated: 2026-01-25T01:39:15.432Z
 
 ## Key Periods (Flags)
 | Flag | Name | Periods | Start | End |

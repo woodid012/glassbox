@@ -361,7 +361,7 @@ export function useInputManagement({
             startMonth: config.startMonth,
             periods: 12,
             linkedKeyPeriodId: null,
-            groupType: 'constants'
+            groupType: 'constant'
         }])
     }, [inputType1Groups, config.startYear, config.startMonth, setInputType1Groups])
 
