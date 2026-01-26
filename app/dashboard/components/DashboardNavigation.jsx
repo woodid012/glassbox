@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
-import { RotateCcw, Check, Loader2, Camera } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { RotateCcw, Check, Loader2, Camera, Calculator, CheckCircle, Download, FileSpreadsheet, Code } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 
 const NAV_CONFIG = [
@@ -11,6 +11,7 @@ const NAV_CONFIG = [
     { id: 'inputs', label: 'Inputs', href: '/dashboard/inputs' },
     { id: 'modules', label: 'Modules', href: '/dashboard/modules' },
     { id: 'calculations', label: 'Calculations', href: '/dashboard/calculations' },
+    { id: 'outputs', label: 'Outputs', href: '/dashboard/outputs' },
     { id: 'validation', label: 'Validation', href: '/dashboard/validation' },
     { id: 'array-view', label: 'Array View', href: '/dashboard/array-view' },
     { id: 'notes', label: 'Notes', href: '/dashboard/notes' },
@@ -19,16 +20,33 @@ const NAV_CONFIG = [
 export default function DashboardNavigation() {
     const pathname = usePathname()
     const [snapshotStatus, setSnapshotStatus] = useState(null)
+    const [exportStatus, setExportStatus] = useState(null)
 
     const {
         derived,
         handlers,
-        autoSaveState
+        autoSaveState,
+        calcState
     } = useDashboard()
 
     const { timeline } = derived
-    const { handleRevertToOriginal } = handlers
+    const { handleRevertToOriginal, runFullCalculation } = handlers
     const { saveStatus } = autoSaveState
+    const { isDirty, isCalculating } = calcState
+
+    // Keyboard shortcut: Ctrl+Enter to calculate
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault()
+                if (isDirty && !isCalculating) {
+                    runFullCalculation()
+                }
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [isDirty, isCalculating, runFullCalculation])
 
     const handleSnapshot = async () => {
         setSnapshotStatus('saving')
@@ -45,6 +63,37 @@ export default function DashboardNavigation() {
         } catch (err) {
             setSnapshotStatus('error')
             setTimeout(() => setSnapshotStatus(null), 3000)
+        }
+    }
+
+    const handleExport = async (format) => {
+        setExportStatus(format)
+        try {
+            const endpoint = format === 'python' ? '/api/export/python' : '/api/export/excel'
+            const response = await fetch(endpoint)
+
+            if (!response.ok) {
+                throw new Error('Export failed')
+            }
+
+            const blob = await response.blob()
+            const filename = format === 'python' ? 'glassbox_model.zip' : 'GlassBox_Model.xlsx'
+
+            // Create download link
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = filename
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+
+            setExportStatus(null)
+        } catch (err) {
+            console.error('Export error:', err)
+            setExportStatus('error')
+            setTimeout(() => setExportStatus(null), 3000)
         }
     }
 
@@ -70,6 +119,37 @@ export default function DashboardNavigation() {
                             </Link>
                         ))}
                     </div>
+
+                    {/* Calculate Button */}
+                    <button
+                        onClick={runFullCalculation}
+                        disabled={isCalculating}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold text-sm transition-all ${
+                            isCalculating
+                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                : isDirty
+                                ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse shadow-lg shadow-amber-500/25'
+                                : 'bg-green-100 text-green-700 border border-green-300'
+                        }`}
+                        title={isDirty ? 'Click to recalculate model (Ctrl+Enter)' : 'Model is up to date'}
+                    >
+                        {isCalculating ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Calculating...</span>
+                            </>
+                        ) : isDirty ? (
+                            <>
+                                <Calculator className="w-4 h-4" />
+                                <span>Calculate</span>
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Up to date</span>
+                            </>
+                        )}
+                    </button>
 
                     <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
                         {timeline.periods} periods
@@ -100,6 +180,45 @@ export default function DashboardNavigation() {
                                 <span className="text-xs text-slate-400">Auto-save on</span>
                             </>
                         )}
+                    </div>
+
+                    {/* Export Buttons */}
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 border border-slate-200">
+                        <span className="text-xs text-slate-500 mr-1">Export:</span>
+                        <button
+                            onClick={() => handleExport('python')}
+                            disabled={exportStatus !== null}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                exportStatus === 'python'
+                                    ? 'bg-blue-100 text-blue-600'
+                                    : 'hover:bg-slate-200 text-slate-600'
+                            }`}
+                            title="Export model to Python package"
+                        >
+                            {exportStatus === 'python' ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                                <Code className="w-3 h-3" />
+                            )}
+                            Python
+                        </button>
+                        <button
+                            onClick={() => handleExport('excel')}
+                            disabled={exportStatus !== null}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                exportStatus === 'excel'
+                                    ? 'bg-green-100 text-green-600'
+                                    : 'hover:bg-slate-200 text-slate-600'
+                            }`}
+                            title="Export model to Excel workbook"
+                        >
+                            {exportStatus === 'excel' ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                                <FileSpreadsheet className="w-3 h-3" />
+                            )}
+                            Excel
+                        </button>
                     </div>
 
                     {/* Snapshot Button */}

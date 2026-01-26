@@ -3,36 +3,11 @@
 import React, { useState, useEffect, memo, useCallback, useMemo } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronRight, FolderPlus, Pencil } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
-import { getAggregatedValueForArray, calculatePeriodValues, calculateTotal } from '@/utils/valueAggregation'
+import { getAggregatedValueForArray, calculatePeriodValues, calculateTotal, formatValue } from '@/utils/valueAggregation'
 import { getCachedRegex } from '@/utils/formulaEvaluator'
 import { groupInputsBySubgroup } from '@/components/inputs/utils/inputHelpers'
 import { DeferredInput } from '@/components/DeferredInput'
 import { getModeColorClasses, getCalcTypeColorClasses, getCalcTypeDisplayClasses, getModePrefix, getTabItems, getViewModeLabel } from '@/utils/styleHelpers'
-
-// Format number in accounting style with smart rounding:
-// - Large numbers (>=1000): whole numbers
-// - Small decimals (<1): 2 significant figures
-// - Medium numbers: up to 2 decimals
-function formatAccounting(value, decimals = 2) {
-    if (value === 0 || value === null || value === undefined) return ''
-    const absVal = Math.abs(value)
-    let formatted
-
-    if (absVal >= 1000) {
-        // Large numbers: no decimals
-        formatted = Math.round(absVal).toLocaleString('en-US')
-    } else if (absVal > 0 && absVal < 1) {
-        // Small decimals: 2 significant figures
-        const magnitude = Math.floor(Math.log10(absVal))
-        const sigFigDecimals = Math.max(0, -magnitude + 1)
-        formatted = absVal.toLocaleString('en-US', { maximumFractionDigits: sigFigDecimals })
-    } else {
-        // Medium numbers: up to 2 decimals
-        formatted = absVal.toLocaleString('en-US', { maximumFractionDigits: decimals })
-    }
-
-    return value < 0 ? `(${formatted})` : formatted
-}
 
 // Find next available calculation ID (fills gaps, e.g., if R1, R3 exist, returns 2)
 function getNextAvailableCalcId(calculations) {
@@ -170,6 +145,20 @@ const CalcRow = memo(function CalcRow({
                 </button>
             </div>
         </div>
+    )
+}, (prevProps, nextProps) => {
+    // Custom comparison - only re-render when data props change
+    // Ignore function props (onSelect, onUpdate*, onRemove) as they always change
+    return (
+        prevProps.calc.id === nextProps.calc.id &&
+        prevProps.calc.name === nextProps.calc.name &&
+        prevProps.calc.formula === nextProps.calc.formula &&
+        prevProps.calc.type === nextProps.calc.type &&
+        prevProps.calcIndex === nextProps.calcIndex &&
+        prevProps.calcRef === nextProps.calcRef &&
+        prevProps.isSelected === nextProps.isSelected &&
+        prevProps.viewMode === nextProps.viewMode &&
+        prevProps.calculationErrors?.[prevProps.calcRef] === nextProps.calculationErrors?.[nextProps.calcRef]
     )
 })
 
@@ -457,12 +446,28 @@ export default function CalculationsPage() {
 
     const referenceList = buildReferenceList()
 
-    // Build calculation index map for R references
+    // Build calculation index map for R references (memoized)
     // Now uses calculation ID directly (not array position) for stable references
-    const calcIndexMap = new Map()
-    ;(calculations || []).forEach((calc) => {
-        calcIndexMap.set(calc.id, calc.id)
-    })
+    const calcIndexMap = useMemo(() => {
+        const map = new Map()
+        ;(calculations || []).forEach((calc) => {
+            map.set(calc.id, calc.id)
+        })
+        return map
+    }, [calculations])
+
+    // Pre-index calculations by groupId to avoid O(n) filters in render loops
+    const calcsByGroupId = useMemo(() => {
+        const map = new Map()
+        ;(calculations || []).forEach(calc => {
+            const gid = calc.groupId || 'ungrouped'
+            if (!map.has(gid)) {
+                map.set(gid, [])
+            }
+            map.get(gid).push(calc)
+        })
+        return map
+    }, [calculations])
 
     return (
         <main className="max-w-[1800px] mx-auto px-6 py-6">
@@ -1269,11 +1274,11 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                                                     </div>
                                                 </td>
                                                 <td className={`py-1 px-3 text-right text-xs font-medium w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-white border-r border-slate-200 ${total < 0 ? 'text-red-600' : 'text-slate-900'}`}>
-                                                    {formatAccounting(total, 2)}
+                                                    {formatValue(total, { accounting: true })}
                                                 </td>
                                                 {periodValues.map((val, i) => (
                                                     <td key={i} className={`py-1 px-0.5 text-right text-[11px] min-w-[55px] w-[55px] border-r border-slate-100 ${val < 0 ? 'text-red-600' : 'text-slate-600'}`}>
-                                                        {formatAccounting(val, 2)}
+                                                        {formatValue(val, { accounting: true })}
                                                     </td>
                                                 ))}
                                             </tr>
@@ -1319,11 +1324,11 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                                             </div>
                                         </td>
                                         <td className={`py-1 px-3 text-right text-xs font-medium w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-white border-r border-slate-200 ${total < 0 ? 'text-red-600' : 'text-slate-900'}`}>
-                                            {formatAccounting(total, 2)}
+                                            {formatValue(total, { accounting: true })}
                                         </td>
                                         {periodValues.map((val, i) => (
                                             <td key={i} className={`py-1 px-0.5 text-right text-[11px] min-w-[55px] w-[55px] border-r border-slate-100 ${val < 0 ? 'text-red-600' : 'text-slate-600'}`}>
-                                                {formatAccounting(val, 2)}
+                                                {formatValue(val, { accounting: true })}
                                             </td>
                                         ))}
                                     </tr>
@@ -1339,11 +1344,11 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                                 Grand Total
                             </td>
                             <td className={`py-1.5 px-3 text-right text-xs font-bold w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-slate-100 border-r border-slate-300 ${overallTotal < 0 ? 'text-red-600' : 'text-slate-900'}`}>
-                                {formatAccounting(overallTotal, 2)}
+                                {formatValue(overallTotal, { accounting: true })}
                             </td>
                             {grandTotalByPeriod.map((val, i) => (
                                 <td key={i} className={`py-1 px-0.5 text-right text-[11px] font-semibold min-w-[55px] w-[55px] border-r border-slate-100 ${val < 0 ? 'text-red-600' : 'text-slate-700'}`}>
-                                    {formatAccounting(val, 1)}
+                                    {formatValue(val, { accounting: true, decimals: 1 })}
                                 </td>
                             ))}
                         </tr>

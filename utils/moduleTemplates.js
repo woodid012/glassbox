@@ -46,7 +46,20 @@ export const MODULE_TEMPLATES = {
             { key: 'equity_drawdown', label: 'Equity Drawdown', type: 'flow' },
             { key: 'idc', label: 'IDC (Period)', type: 'flow' },
             { key: 'total_uses_ex_idc', label: 'Total Uses (ex-IDC)', type: 'stock' }
-        ]
+        ],
+        // Auditable formula descriptions for each output
+        // These use input keys as placeholders: {constructionCostsRef}, {gearingCapPct}, etc.
+        outputFormulas: {
+            total_uses_ex_idc: '{constructionCostsRef} + CUMSUM({gstPaidRef}) + CUMSUM({feesRef})',
+            senior_debt: 'MIN({sizedDebtRef}, total_uses_ex_idc × {gearingCapPct}/100)',
+            debt_drawdown: 'senior_debt - SHIFT(senior_debt, 1)',
+            gearing_pct: 'senior_debt / total_uses_ex_idc × 100',
+            idc: 'SHIFT(senior_debt, 1) × {interestRatePct}/100 / T.MiY × {constructionFlagRef}',
+            cumulative_idc: 'CUMSUM(idc)',
+            total_uses_incl_idc: 'total_uses_ex_idc + cumulative_idc',
+            equity: 'total_uses_incl_idc - senior_debt',
+            equity_drawdown: 'equity - SHIFT(equity, 1)'
+        }
     },
     reserve_account: {
         type: 'reserve_account',
@@ -65,7 +78,14 @@ export const MODULE_TEMPLATES = {
             { key: 'drawdown', label: 'Drawdown', type: 'flow' },
             { key: 'release', label: 'Release', type: 'flow' },
             { key: 'closing', label: 'Closing Balance', type: 'stock' }
-        ]
+        ],
+        outputFormulas: {
+            opening: 'SHIFT(closing, 1)',
+            funding: '{fundingAmountRef} × {fundingFlagRef}',
+            drawdown: 'MIN({drawdownRef}, opening + funding) × {drawdownFlagRef}',
+            release: 'closing × {releaseFlagRef}',
+            closing: 'CUMSUM(funding) - CUMSUM(drawdown) - CUMSUM(release)'
+        }
     },
     gst_receivable: {
         type: 'gst_receivable',
@@ -85,7 +105,16 @@ export const MODULE_TEMPLATES = {
             { key: 'gst_received', label: 'GST Received (Inflow)', type: 'flow' },
             { key: 'receivable_closing', label: 'GST Receivable - Closing', type: 'stock' },
             { key: 'net_gst_cashflow', label: 'Net GST Cash Flow', type: 'flow' }
-        ]
+        ],
+        outputFormulas: {
+            gst_base: '{gstBaseRef}',
+            gst_amount: '{gstBaseRef} × {gstRatePct}/100',
+            gst_paid: '-gst_amount × {activeFlagRef}',
+            receivable_opening: 'SHIFT(receivable_closing, 1)',
+            gst_received: 'SHIFT(CUMSUM(-gst_paid), {receiptDelayMonths}) - SHIFT(CUMSUM(-gst_paid), {receiptDelayMonths}+1)',
+            receivable_closing: 'CUMSUM(-gst_paid) - CUMSUM(gst_received)',
+            net_gst_cashflow: 'gst_paid + gst_received'
+        }
     },
     tax_losses: {
         type: 'tax_losses',
@@ -104,7 +133,16 @@ export const MODULE_TEMPLATES = {
             { key: 'losses_closing', label: 'Tax Losses - Closing', type: 'stock' },
             { key: 'net_taxable_income', label: 'Net Taxable Income', type: 'flow' },
             { key: 'tax_payable', label: 'Tax Payable', type: 'flow' }
-        ]
+        ],
+        outputFormulas: {
+            taxable_income_before_losses: '{taxableIncomeRef}',
+            losses_opening: 'CUMSUM(MAX(0, -{taxableIncomeRef})) - SHIFT(MIN(CUMSUM(MAX(0, -{taxableIncomeRef})), CUMSUM(MAX(0, {taxableIncomeRef}))), 1)',
+            losses_generated: 'MAX(0, -{taxableIncomeRef}) × {opsFlagRef}',
+            losses_utilised: 'MIN(CUMSUM(losses_generated), CUMSUM(MAX(0, {taxableIncomeRef}))) - SHIFT(MIN(CUMSUM(losses_generated), CUMSUM(MAX(0, {taxableIncomeRef}))), 1)',
+            losses_closing: 'CUMSUM(losses_generated) - MIN(CUMSUM(losses_generated), CUMSUM(MAX(0, {taxableIncomeRef})))',
+            net_taxable_income: 'MAX(0, {taxableIncomeRef} - losses_utilised)',
+            tax_payable: 'net_taxable_income × {taxRatePct}/100'
+        }
     },
     depreciation_amortization: {
         type: 'depreciation_amortization',
@@ -135,7 +173,14 @@ export const MODULE_TEMPLATES = {
             { key: 'depreciation', label: 'Depreciation Expense', type: 'flow' },
             { key: 'accumulated', label: 'Accumulated Depreciation', type: 'stock' },
             { key: 'closing', label: 'Closing Book Value', type: 'stock' }
-        ]
+        ],
+        outputFormulas: {
+            opening: 'MAX(0, (CUMSUM({additionsRef}) - {additionsRef}) - CUMSUM({additionsRef}) / {lifeYears} / T.MiY × (CUMSUM({opsFlagRef}) - {opsFlagRef}))',
+            addition: 'CUMSUM({additionsRef}) × {opsFlagRef}.Start',
+            depreciation: 'MIN(opening + addition, CUMSUM({additionsRef}) / {lifeYears} / T.MiY) × {opsFlagRef}',
+            accumulated: 'CUMSUM(depreciation)',
+            closing: 'MAX(0, CUMSUM({additionsRef}) - CUMSUM({additionsRef}) / {lifeYears} / T.MiY × CUMSUM({opsFlagRef}))'
+        }
     },
     iterative_debt_sizing: {
         type: 'iterative_debt_sizing',
@@ -174,7 +219,17 @@ export const MODULE_TEMPLATES = {
             { key: 'closing_balance', label: 'Closing Balance', type: 'stock' },
             { key: 'period_dscr', label: 'Period DSCR', type: 'stock' },
             { key: 'cumulative_principal', label: 'Cumulative Principal', type: 'stock' }
-        ]
+        ],
+        outputFormulas: {
+            sized_debt: 'BinarySearch(MaxDebt where DebtService ≤ DSCapacity for all periods)\n  where DSCapacity = {contractedCfadsRef}/{contractedDSCR} + {merchantCfadsRef}/{merchantDSCR}\n  subject to: Debt ≤ {totalFundingRef} × {maxGearingPct}/100',
+            opening_balance: 'SHIFT(closing_balance, 1) + sized_debt × {debtFlagRef}.Start',
+            interest_payment: 'opening_balance × {interestRatePct}/100 / T.MiY × {debtFlagRef}',
+            principal_payment: 'MIN(DSCapacity - interest_payment, opening_balance / remaining_periods) × {debtFlagRef}',
+            debt_service: 'interest_payment + principal_payment',
+            closing_balance: 'opening_balance - principal_payment',
+            period_dscr: '({contractedCfadsRef} + {merchantCfadsRef}) / debt_service',
+            cumulative_principal: 'CUMSUM(principal_payment)'
+        }
     }
 }
 

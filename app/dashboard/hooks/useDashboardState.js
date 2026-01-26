@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import * as helpers from '../../../utils/timeArrayHelpers'
 import { getDefaultState } from '../../../utils/glassInputsState'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useInputManagement } from '@/hooks/useInputManagement'
 import { useInputArrays } from '@/hooks/useInputArrays'
-import { calculateModuleOutputs, MODULE_TEMPLATES } from '@/utils/moduleTemplates'
-import { processArrayFunctions, evaluateSafeExpression } from '@/utils/formulaEvaluator'
+import { MODULE_TEMPLATES } from '@/utils/moduleTemplates'
+import { useReferenceMap } from './useReferenceMap'
+import { useCalculationEngine } from './useCalculationEngine'
+import { useModuleEngine } from './useModuleEngine'
 
 export function useDashboardState(viewMode) {
     // Single state object - all state in one place for easy save/load
@@ -15,6 +17,21 @@ export function useDashboardState(viewMode) {
 
     // Array View sub-tab state
     const [arrayViewSubTab, setArrayViewSubTab] = useState('inputs') // 'inputs' | 'modules' | 'results'
+
+    // ============================================
+    // CALCULATION CONTROL STATE (On-Demand Recalc)
+    // ============================================
+    // calcVersion: Incremented when user clicks Calculate button
+    // isDirty: True when inputs/formulas changed since last calculation
+    // isCalculating: True while calculation is running
+    const [calcVersion, setCalcVersion] = useState(0)
+    const [isDirty, setIsDirty] = useState(false)
+    const [isCalculating, setIsCalculating] = useState(false)
+
+    // Snapshots used for committed calculations
+    const referenceMapSnapshot = useRef(null)
+    const calculationsSnapshot = useRef(null)
+    const modulesSnapshot = useRef(null)
 
     // Destructure state for easier access
     const {
@@ -217,8 +234,59 @@ export function useDashboardState(viewMode) {
         setCalcDragOverIndex(null)
     }, [])
 
-    // Auto-save hook
-    const { hasLoadedFromStorage, isAutoSaving, lastSaved, saveStatus, handleRevertToOriginal } = useAutoSave(appState, setAppState)
+    // Auto-save hook (also loads cached calculation results for instant startup)
+    const { hasLoadedFromStorage, isAutoSaving, lastSaved, saveStatus, handleRevertToOriginal, cachedResults, saveCalculationResults } = useAutoSave(appState, setAppState)
+
+    // On startup: Use cached results instead of recalculating
+    // If no cached results, mark as dirty so user knows to click Calculate
+    const hasCheckedCache = useRef(false)
+    useEffect(() => {
+        if (hasLoadedFromStorage && !hasCheckedCache.current) {
+            hasCheckedCache.current = true
+            // If no cached results, mark dirty so user knows to calculate
+            if (!cachedResults) {
+                setIsDirty(true)
+            }
+        }
+    }, [hasLoadedFromStorage, cachedResults])
+
+    // Track dirty state - mark dirty when inputs/formulas/modules change after initial load
+    // Use a ref to track the previous values for comparison
+    const prevStateRef = useRef(null)
+    useEffect(() => {
+        if (!hasLoadedFromStorage) return
+
+        // Skip on first load - don't mark dirty immediately
+        if (prevStateRef.current === null) {
+            prevStateRef.current = {
+                inputGlass: appState.inputGlass,
+                calculations: appState.calculations,
+                modules: appState.modules,
+                indices: appState.indices,
+                keyPeriods: appState.keyPeriods
+            }
+            return
+        }
+
+        // Check if any calculation-affecting state changed
+        const stateChanged =
+            prevStateRef.current.inputGlass !== appState.inputGlass ||
+            prevStateRef.current.calculations !== appState.calculations ||
+            prevStateRef.current.modules !== appState.modules ||
+            prevStateRef.current.indices !== appState.indices ||
+            prevStateRef.current.keyPeriods !== appState.keyPeriods
+
+        if (stateChanged) {
+            setIsDirty(true)
+            prevStateRef.current = {
+                inputGlass: appState.inputGlass,
+                calculations: appState.calculations,
+                modules: appState.modules,
+                indices: appState.indices,
+                keyPeriods: appState.keyPeriods
+            }
+        }
+    }, [hasLoadedFromStorage, appState.inputGlass, appState.calculations, appState.modules, appState.indices, appState.keyPeriods])
 
     // Generate Timeline
     const timeline = useMemo(() => {
@@ -300,242 +368,40 @@ export function useDashboardState(viewMode) {
     }, [timeline, viewMode])
 
     // ============================================
-    // SPLIT REFERENCE MAP INTO FOCUSED MEMOS
-    // This allows granular invalidation - changing flags
-    // won't recalculate input groups, etc.
+    // EXTRACTED HOOKS FOR BETTER MEMOIZATION
     // ============================================
 
-    // 1. Input Group References (V, S, C groups) - only invalidates when inputs/groups change
-    const inputGroupRefs = useMemo(() => {
-        const refs = {}
+    // Reference Map Hook - builds V, S, C, F, I, T, L references
+    const { referenceMap } = useReferenceMap({
+        inputGlass,
+        inputGlassGroups,
+        inputGlassArrays,
+        autoGeneratedFlags,
+        autoGeneratedIndexations,
+        timeline
+    })
 
-        const activeGroups = inputGlassGroups.filter(group =>
-            inputGlass.some(input => input.groupId === group.id)
-        )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
-
-        activeGroups.forEach(group => {
-            const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-
-            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
-            let normalizedMode
-            if (group.groupType === 'timing') {
-                normalizedMode = 'timing'
-            } else if (group.groupType === 'constant') {
-                normalizedMode = 'constant'
-            } else {
-                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-                else normalizedMode = groupMode
-            }
-
-            modeIndices[normalizedMode]++
-            const modePrefix = normalizedMode === 'timing' ? 'T' :
-                              normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' :
-                              normalizedMode === 'lookup' ? 'L' : 'V'
-            const groupIndex = modeIndices[normalizedMode]
-            const groupRef = `${modePrefix}${groupIndex}`
-
-            const groupArrays = groupInputs.map(input =>
-                inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
-            )
-            const subtotalArray = new Array(timeline.periods).fill(0)
-            for (let i = 0; i < timeline.periods; i++) {
-                subtotalArray[i] = groupArrays.reduce((sum, arr) => sum + (arr[i] || 0), 0)
-            }
-            refs[groupRef] = subtotalArray
-
-            // Use ID-based refs (like R-refs) for stability - deleting an item won't shift other refs
-            // For constants (groupId 100): use input.id - 99 (id=100→1, id=118→19, id=123→24)
-            // For other groups: use input.id directly
-            groupInputs.forEach((input) => {
-                const inputNum = group.id === 100 ? input.id - 99 : input.id
-                const itemRef = `${groupRef}.${inputNum}`
-                refs[itemRef] = inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
-            })
+    // ============================================
+    // CALCULATION CONTROL FUNCTION
+    // ============================================
+    // Triggers full model recalculation by incrementing calcVersion
+    const runFullCalculation = useCallback(() => {
+        setIsCalculating(true)
+        // Use requestAnimationFrame to allow UI to update before heavy calculation
+        requestAnimationFrame(() => {
+            setCalcVersion(v => v + 1)
+            setIsDirty(false)
+            // isCalculating will be cleared after calculation completes
+            // We use a small timeout to ensure the calculation has started
+            setTimeout(() => setIsCalculating(false), 50)
         })
+    }, [])
 
-        return refs
-    }, [inputGlass, inputGlassGroups, inputGlassArrays, timeline.periods])
-
-    // 2. Flag References (F1, F2, F1.Start, F1.End, etc.) - ID-based, not position-based
-    const flagRefs = useMemo(() => {
-        const refs = {}
-        Object.values(autoGeneratedFlags).forEach((flag) => {
-            // Extract keyPeriod ID from internal key format: flag_keyperiod_{id}
-            const idMatch = flag.id?.match(/flag_keyperiod_(\d+)/)
-            if (!idMatch) return
-            const refNum = parseInt(idMatch[1], 10)
-            refs[`F${refNum}`] = flag.array || new Array(timeline.periods).fill(0)
-            // Add .Start and .End variants for key period flags
-            if (flag.startArray) refs[`F${refNum}.Start`] = flag.startArray
-            if (flag.endArray) refs[`F${refNum}.End`] = flag.endArray
-        })
-        return refs
-    }, [autoGeneratedFlags, timeline.periods])
-
-    // 3. Indexation References (I1, I2, etc.) - ID-based, not position-based
-    const indexationRefs = useMemo(() => {
-        const refs = {}
-        Object.values(autoGeneratedIndexations).forEach((indexation) => {
-            // Extract index ID from internal key format: index_{id}
-            const idMatch = indexation.id?.match(/index_(\d+)/)
-            if (!idMatch) return
-            const refNum = parseInt(idMatch[1], 10)
-            refs[`I${refNum}`] = indexation.array || new Array(timeline.periods).fill(0)
-        })
-        return refs
-    }, [autoGeneratedIndexations, timeline.periods])
-
-    // 4. Time Constant References (T.DiM, T.DiY, etc.) - only invalidates when timeline changes
-    const timeConstantRefs = useMemo(() => {
-        const refs = {}
-
-        // Cache year-based calculations to avoid redundant computations
-        const yearCache = new Map()
-        const getYearData = (year) => {
-            if (!yearCache.has(year)) {
-                const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0)
-                const dec31 = new Date(year, 11, 31)
-                const jan1 = new Date(year, 0, 1)
-                const weeksInYear = dec31.getDay() === 4 || jan1.getDay() === 4 ? 53 : 52
-                yearCache.set(year, { isLeap, weeksInYear })
-            }
-            return yearCache.get(year)
-        }
-
-        const getDaysInMonth = (year, month) => new Date(year, month, 0).getDate()
-
-        // DiM - Days in Month (varies: 28-31)
-        refs['T.DiM'] = new Array(timeline.periods).fill(0).map((_, i) =>
-            getDaysInMonth(timeline.year[i], timeline.month[i])
-        )
-        // DiY - Days in Year (365 or 366)
-        refs['T.DiY'] = new Array(timeline.periods).fill(0).map((_, i) =>
-            getYearData(timeline.year[i]).isLeap ? 366 : 365
-        )
-        // MiY - Months in Year (always 12)
-        refs['T.MiY'] = new Array(timeline.periods).fill(12)
-        // QiY - Quarters in Year (always 4)
-        refs['T.QiY'] = new Array(timeline.periods).fill(4)
-        // WiY - Weeks in Year (52 or 53)
-        refs['T.WiY'] = new Array(timeline.periods).fill(0).map((_, i) =>
-            getYearData(timeline.year[i]).weeksInYear
-        )
-        // HiD - Hours in Day (always 24)
-        refs['T.HiD'] = new Array(timeline.periods).fill(24)
-        // HiM - Hours in Month (DiM * 24)
-        refs['T.HiM'] = refs['T.DiM'].map(d => d * 24)
-        // HiY - Hours in Year (8760 or 8784)
-        refs['T.HiY'] = new Array(timeline.periods).fill(0).map((_, i) =>
-            getYearData(timeline.year[i]).isLeap ? 8784 : 8760
-        )
-        // MiQ - Months in Quarter (always 3)
-        refs['T.MiQ'] = new Array(timeline.periods).fill(3)
-        // DiQ - Days in Quarter (varies: ~90-92)
-        refs['T.DiQ'] = new Array(timeline.periods).fill(0).map((_, i) => {
-            const year = timeline.year[i]
-            const month = timeline.month[i]
-            const quarter = Math.floor((month - 1) / 3)
-            const startMonth = quarter * 3 + 1
-            return getDaysInMonth(year, startMonth) + getDaysInMonth(year, startMonth + 1) + getDaysInMonth(year, startMonth + 2)
-        })
-
-        // Time-based flags (1 at period end, 0 otherwise)
-        // QE - Quarter End (1 at months 3, 6, 9, 12)
-        refs['T.QE'] = new Array(timeline.periods).fill(0).map((_, i) =>
-            [3, 6, 9, 12].includes(timeline.month[i]) ? 1 : 0
-        )
-        // CYE - Calendar Year End (1 at December)
-        refs['T.CYE'] = new Array(timeline.periods).fill(0).map((_, i) =>
-            timeline.month[i] === 12 ? 1 : 0
-        )
-        // FYE - Financial Year End (1 at June - Australian FY)
-        refs['T.FYE'] = new Array(timeline.periods).fill(0).map((_, i) =>
-            timeline.month[i] === 6 ? 1 : 0
-        )
-
-        return refs
-    }, [timeline.periods, timeline.year, timeline.month])
-
-    // 5. Lookup References (L1, L1.1, L1.1.1, etc.) - only invalidates when lookups change
-    const lookupRefs = useMemo(() => {
-        const refs = {}
-        let lookupIndex = 0
-
-        inputGlassGroups
-            .filter(group => group.entryMode === 'lookup' || group.entryMode === 'lookup2')
-            .forEach(group => {
-                lookupIndex++
-                const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-                const lookupRef = `L${lookupIndex}`
-                const selectedIndices = group.selectedIndices || {}
-
-                // Group inputs by subgroup
-                const subgroups = group.subgroups || []
-                const rootInputs = groupInputs.filter(inp => !inp.subgroupId)
-                const hasActualSubgroups = subgroups.length > 0
-
-                // If NO subgroups, reference inputs directly as L3.1, L3.2, etc.
-                if (!hasActualSubgroups) {
-                    rootInputs.forEach((input, inputIdx) => {
-                        const inputRef = `${lookupRef}.${inputIdx + 1}`
-                        refs[inputRef] = inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
-                    })
-                } else {
-                    // WITH subgroups: L3.1 (subgroup), L3.1.1 (input in subgroup), etc.
-                    const subgroupedInputs = []
-                    if (rootInputs.length > 0) {
-                        subgroupedInputs.push({ id: null, name: null, inputs: rootInputs })
-                    }
-                    subgroups.forEach(sg => {
-                        const sgInputs = groupInputs.filter(inp => inp.subgroupId === sg.id)
-                        subgroupedInputs.push({ id: sg.id, name: sg.name, inputs: sgInputs })
-                    })
-
-                    subgroupedInputs.forEach((sg, sgIdx) => {
-                        if (sg.inputs.length === 0) return
-
-                        const key = sg.id ?? 'root'
-                        const selectedIdx = selectedIndices[key] ?? 0
-                        const selectedInput = sg.inputs[selectedIdx] || sg.inputs[0]
-                        const subgroupRef = `${lookupRef}.${sgIdx + 1}`
-
-                        // Add subgroup reference (L1.1) - points to selected input's array
-                        if (selectedInput) {
-                            refs[subgroupRef] = inputGlassArrays[`inputtype3_${selectedInput.id}`] || new Array(timeline.periods).fill(0)
-                        }
-
-                        // Add individual option references (L1.1.1, L1.1.2, etc.)
-                        sg.inputs.forEach((input, inputIdx) => {
-                            const optionRef = `${subgroupRef}.${inputIdx + 1}`
-                            refs[optionRef] = inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
-                        })
-                    })
-                }
-            })
-
-        return refs
-    }, [inputGlass, inputGlassGroups, inputGlassArrays, timeline.periods])
-
-    // 6. COMBINED Reference Map - merges all focused refs
-    // Only re-merges when a sub-ref changes, not when unrelated data changes
-    const referenceMap = useMemo(() => ({
-        ...inputGroupRefs,
-        ...flagRefs,
-        ...indexationRefs,
-        ...timeConstantRefs,
-        ...lookupRefs
-    }), [inputGroupRefs, flagRefs, indexationRefs, timeConstantRefs, lookupRefs])
-
-    // Calculate non-iterative module outputs (before calculations)
-    const regularModuleOutputs = useMemo(() => {
+    // Initialize placeholder module outputs for first calculation pass
+    const placeholderModuleOutputs = useMemo(() => {
         const outputs = {}
         if (!modules || modules.length === 0) return outputs
 
-        // All modules are now calculated in post-calculation phase
-        // This phase just initializes empty arrays for the dependency chain
         modules.forEach((module, moduleIdx) => {
             const templateKey = module.templateId
             const template = MODULE_TEMPLATES[templateKey]
@@ -548,13 +414,58 @@ export function useDashboardState(viewMode) {
         })
 
         return outputs
-    }, [modules, referenceMap, timeline])
+    }, [modules, timeline.periods])
 
-    // Placeholder for iterative outputs - will be populated after calculations
-    const moduleOutputs = regularModuleOutputs
+    // Calculation Engine Hook - evaluates all calculations
+    // calcVersion controls when full recalculation happens (on-demand)
+    // cachedResults provides instant startup without recalculating
+    const {
+        evaluateFormula,
+        previewFormula,
+        calculationResults,
+        calculationErrors,
+        calculationTypes
+    } = useCalculationEngine({
+        calculations,
+        referenceMap,
+        moduleOutputs: placeholderModuleOutputs,
+        timeline,
+        calcVersion,
+        cachedResults
+    })
+
+    // Module Engine Hook - computes module outputs and re-evaluates calculations
+    // calcVersion controls when full recalculation happens (on-demand)
+    // cachedResults provides instant startup without recalculating
+    const {
+        allModuleOutputs,
+        finalCalculationResults
+    } = useModuleEngine({
+        modules,
+        referenceMap,
+        calculationResults,
+        calculations,
+        timeline,
+        calcVersion,
+        cachedResults
+    })
+
+    // Save calculation results to file after calculation completes
+    // This allows instant startup on next load
+    const prevCalcVersion = useRef(0)
+    useEffect(() => {
+        // Only save when calcVersion increases (calculation completed)
+        // Skip saving when calcVersion is 0 (initial load)
+        if (calcVersion > 0 && calcVersion !== prevCalcVersion.current) {
+            prevCalcVersion.current = calcVersion
+            // Wait a tick to ensure finalCalculationResults is computed
+            setTimeout(() => {
+                saveCalculationResults(finalCalculationResults, allModuleOutputs)
+            }, 100)
+        }
+    }, [calcVersion, finalCalculationResults, allModuleOutputs, saveCalculationResults])
 
     // Build reference type map (flow vs stock vs flowConverter) for each reference
-    // Types: 'flow' (accumulates over time), 'stock' (point-in-time), 'flowConverter' (converts calc to flow)
     const referenceTypeMap = useMemo(() => {
         const types = {}
 
@@ -566,7 +477,6 @@ export function useDashboardState(viewMode) {
         activeGroups.forEach(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
 
-            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
@@ -585,27 +495,20 @@ export function useDashboardState(viewMode) {
                               normalizedMode === 'lookup' ? 'L' : 'V'
             const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
 
-            // Determine group type - if ANY input is a flow or flowConverter, group inherits that
             let groupIsFlow = false
             let groupHasFlowConverter = false
 
-            // Use ID-based refs (like R-refs) for stability
-            // For constants (groupId 100): use input.id - 99
-            // For other groups: use input.id directly
             groupInputs.forEach((input) => {
                 const inputNum = group.id === 100 ? input.id - 99 : input.id
                 const entryMode = input.entryMode || input.mode || 'values'
                 const isConstantMode = entryMode === 'constant'
 
-                // Check for flowConverter flag (time factors like Hours in Year)
-                // Also, all inputs in timing groups are flow converters
                 if (input.flowConverter || normalizedMode === 'timing') {
                     types[`${groupRef}.${inputNum}`] = 'flowConverter'
                     groupHasFlowConverter = true
                     return
                 }
 
-                // Determine spreadMethod for this input
                 let spreadMethod
                 if (input.spreadMethod) {
                     spreadMethod = input.spreadMethod
@@ -616,7 +519,6 @@ export function useDashboardState(viewMode) {
                 } else if (isConstantMode) {
                     spreadMethod = 'lookup'
                 } else {
-                    // Default to flow (spread) - no hidden auto-detection based on name
                     spreadMethod = 'spread'
                 }
 
@@ -626,7 +528,6 @@ export function useDashboardState(viewMode) {
                 if (isFlow) groupIsFlow = true
             })
 
-            // Group total inherits type - flowConverter > flow > stock
             if (groupHasFlowConverter) {
                 types[groupRef] = 'flowConverter'
             } else if (groupIsFlow) {
@@ -636,7 +537,7 @@ export function useDashboardState(viewMode) {
             }
         })
 
-        // Flags are always stock (binary 0/1 values) - ID-based references
+        // Flags are always stock (binary 0/1 values)
         Object.values(autoGeneratedFlags).forEach((flag) => {
             const idMatch = flag.id?.match(/flag_keyperiod_(\d+)/)
             if (!idMatch) return
@@ -646,7 +547,7 @@ export function useDashboardState(viewMode) {
             if (flag.endArray) types[`F${refNum}.End`] = 'stock'
         })
 
-        // Indexations are always stock (multiplier factors) - ID-based references
+        // Indexations are always stock (multiplier factors)
         Object.values(autoGeneratedIndexations).forEach((indexation) => {
             const idMatch = indexation.id?.match(/index_(\d+)/)
             if (!idMatch) return
@@ -660,9 +561,7 @@ export function useDashboardState(viewMode) {
             types[tc] = 'flowConverter'
         })
 
-        // Lookups are stock (selected values)
-        // Structure without subgroups: L1.1, L1.2, etc. (direct inputs)
-        // Structure with subgroups: L1.1 (subgroup selected), L1.1.1, L1.1.2 (options), etc.
+        // Lookups are stock
         let lookupIndex = 0
         inputGlassGroups
             .filter(group => group.entryMode === 'lookup' || group.entryMode === 'lookup2')
@@ -676,12 +575,10 @@ export function useDashboardState(viewMode) {
                 const hasActualSubgroups = subgroups.length > 0
 
                 if (!hasActualSubgroups) {
-                    // No subgroups: L3.1, L3.2, etc.
                     rootInputs.forEach((_, inputIdx) => {
                         types[`${lookupRef}.${inputIdx + 1}`] = 'stock'
                     })
                 } else {
-                    // With subgroups: L3.1 (subgroup), L3.1.1 (input), etc.
                     const subgroupedInputs = []
                     if (rootInputs.length > 0) {
                         subgroupedInputs.push({ id: null, inputs: rootInputs })
@@ -707,8 +604,7 @@ export function useDashboardState(viewMode) {
         // Module outputs - get types from MODULE_TEMPLATES
         if (modules) {
             modules.forEach((module, idx) => {
-                const templateKeyMap = { 'iterative_debt_sizing': 'iterative_debt_sizing' }
-                const templateKey = templateKeyMap[module.templateId] || module.templateId
+                const templateKey = module.templateId
                 const template = MODULE_TEMPLATES[templateKey]
                 if (template && template.outputs) {
                     template.outputs.forEach((output, outputIdx) => {
@@ -722,7 +618,8 @@ export function useDashboardState(viewMode) {
     }, [inputGlass, inputGlassGroups, autoGeneratedFlags, autoGeneratedIndexations, modules])
 
     // Build reference-to-name map for formula expansion
-    const referenceNameMap = useMemo(() => {
+    // Also pre-computes sorted refs and regex patterns for performance
+    const referenceNameMapData = useMemo(() => {
         const names = {}
 
         const activeGroups = inputGlassGroups.filter(group =>
@@ -733,7 +630,6 @@ export function useDashboardState(viewMode) {
         activeGroups.forEach(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
 
-            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
@@ -754,16 +650,13 @@ export function useDashboardState(viewMode) {
 
             names[groupRef] = group.name
 
-            // Use ID-based refs (like R-refs) for stability
-            // For constants (groupId 100): use input.id - 99
-            // For other groups: use input.id directly
             groupInputs.forEach((input) => {
                 const inputNum = group.id === 100 ? input.id - 99 : input.id
                 names[`${groupRef}.${inputNum}`] = input.name
             })
         })
 
-        // Flags - ID-based references
+        // Flags
         Object.values(autoGeneratedFlags).forEach((flag) => {
             const idMatch = flag.id?.match(/flag_keyperiod_(\d+)/)
             if (!idMatch) return
@@ -773,7 +666,7 @@ export function useDashboardState(viewMode) {
             if (flag.endArray) names[`F${refNum}.End`] = `${flag.name} End`
         })
 
-        // Indexations - ID-based references
+        // Indexations
         Object.values(autoGeneratedIndexations).forEach((indexation) => {
             const idMatch = indexation.id?.match(/index_(\d+)/)
             if (!idMatch) return
@@ -797,8 +690,6 @@ export function useDashboardState(viewMode) {
         names['T.FYE'] = 'Financial Year End'
 
         // Lookup names
-        // Structure without subgroups: L1.1, L1.2, etc. (direct inputs)
-        // Structure with subgroups: L1.1 (subgroup selected), L1.1.1, L1.1.2 (options), etc.
         let lookupIndex = 0
         inputGlassGroups
             .filter(group => group.entryMode === 'lookup' || group.entryMode === 'lookup2')
@@ -812,16 +703,13 @@ export function useDashboardState(viewMode) {
                 const rootInputs = groupInputs.filter(inp => !inp.subgroupId)
                 const hasActualSubgroups = subgroups.length > 0
 
-                // Group name (L1)
                 names[lookupRef] = group.name
 
                 if (!hasActualSubgroups) {
-                    // No subgroups: L3.1, L3.2, etc. are direct input names
                     rootInputs.forEach((input, inputIdx) => {
                         names[`${lookupRef}.${inputIdx + 1}`] = `${group.name} - ${input.name}`
                     })
                 } else {
-                    // With subgroups
                     const subgroupedInputs = []
                     if (rootInputs.length > 0) {
                         subgroupedInputs.push({ id: null, name: null, inputs: rootInputs })
@@ -855,9 +743,7 @@ export function useDashboardState(viewMode) {
         if (modules) {
             modules.forEach((module, idx) => {
                 names[`M${idx + 1}`] = module.name
-                // Get output labels from MODULE_TEMPLATES
-                const templateKeyMap = { 'iterative_debt_sizing': 'iterative_debt_sizing' }
-                const templateKey = templateKeyMap[module.templateId] || module.templateId
+                const templateKey = module.templateId
                 const template = MODULE_TEMPLATES[templateKey]
                 if (template && template.outputs) {
                     template.outputs.forEach((output, outputIdx) => {
@@ -868,425 +754,43 @@ export function useDashboardState(viewMode) {
         }
 
         if (calculations) {
-            // Use calculation ID instead of array position for stable references
             calculations.forEach((calc) => {
                 names[`R${calc.id}`] = calc.name
             })
         }
 
-        return names
+        // Pre-compute sorted refs and regex patterns for expandFormulaToNames
+        // This avoids O(n log n) sort on every keystroke
+        const sortedRefs = Object.keys(names).sort((a, b) => b.length - a.length)
+        const refPatterns = sortedRefs.map(ref => ({
+            ref,
+            name: names[ref],
+            regex: new RegExp(`\\b${ref.replace(/\./g, '\\.')}\\b`, 'g')
+        }))
+
+        return { names, sortedRefs, refPatterns }
     }, [inputGlass, inputGlassGroups, autoGeneratedFlags, autoGeneratedIndexations, modules, calculations])
 
+    // Extract names map for backward compatibility
+    const referenceNameMap = referenceNameMapData.names
+
     // Expand a formula to show input names instead of references
+    // Uses pre-computed sorted refs and regex patterns for performance
     const expandFormulaToNames = useCallback((formula) => {
         if (!formula || !formula.trim()) return ''
 
         let expanded = formula
-        const sortedRefs = Object.keys(referenceNameMap).sort((a, b) => b.length - a.length)
+        const { refPatterns } = referenceNameMapData
 
-        for (const ref of sortedRefs) {
-            const name = referenceNameMap[ref]
+        for (const { name, regex } of refPatterns) {
             if (name) {
-                const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
+                regex.lastIndex = 0  // Reset regex state
                 expanded = expanded.replace(regex, name)
             }
         }
 
         return expanded
-    }, [referenceNameMap])
-
-    // Evaluate a formula string and return the result array
-    const evaluateFormula = useCallback((formula, calcResults = {}) => {
-        if (!formula || !formula.trim()) {
-            return { values: new Array(timeline.periods).fill(0), error: null }
-        }
-
-        try {
-            const allRefs = { ...referenceMap, ...moduleOutputs, ...calcResults }
-            const resultArray = new Array(timeline.periods).fill(0)
-
-            // Check for unresolved references before evaluation
-            // Remove SHIFT(...) patterns first - these are lagged dependencies that may not be computed yet
-            // and will be resolved correctly during evaluation (using prior period values)
-            const formulaWithoutShift = formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
-            // Match patterns like V1, V1.1, S1, C1, T1, F1, I1, L1, L1.1, L1.1.1, R1, M1, M1.1, T.DiM, etc.
-            const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*|T\.[A-Za-z]+)\b/g
-            const refsInFormula = [...formulaWithoutShift.matchAll(refPattern)].map(m => m[1])
-            const missingRefs = refsInFormula.filter(ref => !allRefs[ref])
-
-            if (missingRefs.length > 0) {
-                return {
-                    values: new Array(timeline.periods).fill(0),
-                    error: `Unknown reference(s): ${missingRefs.join(', ')}`
-                }
-            }
-
-            // Pre-process array functions (CUMPROD, CUMPROD_Y, CUMSUM, CUMSUM_Y)
-            // These need to be evaluated across all periods first, then substituted
-            const { processedFormula, arrayFnResults } = processArrayFunctions(formula, allRefs, timeline)
-
-            for (let i = 0; i < timeline.periods; i++) {
-                let expr = processedFormula
-                const sortedRefs = Object.keys(allRefs).sort((a, b) => b.length - a.length)
-
-                for (const ref of sortedRefs) {
-                    const value = allRefs[ref]?.[i] ?? 0
-                    const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
-                    expr = expr.replace(regex, value.toString())
-                }
-
-                // Substitute array function results
-                for (const [placeholder, arr] of Object.entries(arrayFnResults)) {
-                    expr = expr.replace(placeholder, arr[i].toString())
-                }
-
-                resultArray[i] = evaluateSafeExpression(expr)
-            }
-
-            return { values: resultArray, error: null }
-        } catch (e) {
-            return { values: new Array(timeline.periods).fill(0), error: e.message }
-        }
-    }, [referenceMap, moduleOutputs, timeline.periods, timeline.year])
-
-    // Evaluate all calculations in dependency order (using IDs, not positions)
-    const { calculationResults, calculationErrors } = useMemo(() => {
-        const results = {}
-        const errors = {}
-        if (!calculations || calculations.length === 0) return { calculationResults: results, calculationErrors: errors }
-
-        // Build ID-based lookups for stable references
-        const calcById = new Map()
-        const allIds = new Set()
-        calculations.forEach(calc => {
-            calcById.set(calc.id, calc)
-            allIds.add(calc.id)
-        })
-
-        const getDependencies = (formula) => {
-            if (!formula) return []
-            // Remove SHIFT(...) patterns - these are lagged dependencies (prior period)
-            // and don't create true cycles in the dependency graph
-            const formulaWithoutShift = formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
-            const deps = []
-            const regex = /R(\d+)(?![0-9])/g
-            let match
-            while ((match = regex.exec(formulaWithoutShift)) !== null) {
-                const refId = parseInt(match[1])
-                // Only include if it's a valid calculation ID
-                if (allIds.has(refId)) {
-                    deps.push(refId)
-                }
-            }
-            return [...new Set(deps)]
-        }
-
-        // Build dependencies using calculation IDs
-        const dependencies = {}
-        calculations.forEach(calc => {
-            dependencies[calc.id] = getDependencies(calc.formula)
-        })
-
-        // Topological sort using IDs
-        const inDegree = {}
-        const adjList = {}
-        for (const id of allIds) {
-            inDegree[id] = 0
-            adjList[id] = []
-        }
-
-        for (const id of allIds) {
-            for (const dep of dependencies[id]) {
-                if (adjList[dep]) {
-                    adjList[dep].push(id)
-                    inDegree[id]++
-                }
-            }
-        }
-
-        const queue = []
-        for (const id of allIds) {
-            if (inDegree[id] === 0) {
-                queue.push(id)
-            }
-        }
-
-        const evalOrder = []
-        while (queue.length > 0) {
-            const id = queue.shift()
-            evalOrder.push(id)
-            for (const neighbor of adjList[id]) {
-                inDegree[neighbor]--
-                if (inDegree[neighbor] === 0) {
-                    queue.push(neighbor)
-                }
-            }
-        }
-
-        // Evaluate in topological order
-        if (evalOrder.length !== calculations.length) {
-            // Cycle detected - identify which calculations are in the cycle
-            const inCycle = new Set(allIds)
-            evalOrder.forEach(id => inCycle.delete(id))
-            const cycleCalcs = [...inCycle].map(id => `R${id}`).join(', ')
-
-            // Evaluate non-cyclic calculations first
-            for (const id of evalOrder) {
-                const calc = calcById.get(id)
-                const { values, error } = evaluateFormula(calc.formula, results)
-                results[`R${id}`] = values
-                if (error) errors[`R${id}`] = error
-            }
-
-            // Mark cyclic calculations with error
-            for (const id of inCycle) {
-                results[`R${id}`] = new Array(timeline.periods).fill(0)
-                errors[`R${id}`] = `Circular dependency detected: ${cycleCalcs}`
-            }
-        } else {
-            for (const id of evalOrder) {
-                const calc = calcById.get(id)
-                const { values, error } = evaluateFormula(calc.formula, results)
-                results[`R${id}`] = values
-                if (error) errors[`R${id}`] = error
-            }
-        }
-
-        return { calculationResults: results, calculationErrors: errors }
-    }, [calculations, evaluateFormula, timeline.periods])
-
-    // Get flow/stock type for each calculation from stored type (default: flow)
-    const calculationTypes = useMemo(() => {
-        const types = {}
-        if (!calculations || calculations.length === 0) return types
-
-        calculations.forEach((calc) => {
-            // Use calculation ID for stable references
-            const rRef = `R${calc.id}`
-            // Use stored type, default to 'flow'
-            types[rRef] = calc.type || 'flow'
-        })
-
-        return types
-    }, [calculations])
-
-    // Calculate ALL module outputs AFTER calculations (Phase 4)
-    // This ensures modules can reference both inputs (V, S, F, C, I) and calculations (R)
-    // Modules are topologically sorted by dependencies so order in the list doesn't matter
-    const postCalcModuleOutputs = useMemo(() => {
-        const outputs = {}
-        if (!modules || modules.length === 0) return outputs
-
-        // Build dependency graph for modules
-        // Each module can reference other modules via M1.1, M2.3, etc.
-        const moduleRefs = new Map() // moduleIdx -> Set of dependent moduleIdx
-        const modulePattern = /M(\d+)\.\d+/g
-
-        modules.forEach((module, moduleIdx) => {
-            const deps = new Set()
-            const inputs = module.inputs || {}
-
-            // Check all input values for M references
-            Object.values(inputs).forEach(value => {
-                if (typeof value === 'string') {
-                    let match
-                    while ((match = modulePattern.exec(value)) !== null) {
-                        const depModuleNum = parseInt(match[1], 10)
-                        const depModuleIdx = depModuleNum - 1
-                        if (depModuleIdx !== moduleIdx && depModuleIdx >= 0 && depModuleIdx < modules.length) {
-                            deps.add(depModuleIdx)
-                        }
-                    }
-                    modulePattern.lastIndex = 0 // Reset regex
-                }
-            })
-
-            moduleRefs.set(moduleIdx, deps)
-        })
-
-        // Topological sort using Kahn's algorithm
-        const inDegree = new Map()
-        modules.forEach((_, idx) => inDegree.set(idx, 0))
-
-        moduleRefs.forEach((deps, idx) => {
-            deps.forEach(depIdx => {
-                // idx depends on depIdx, so depIdx must come first
-                // This means idx has an incoming edge from depIdx
-            })
-        })
-
-        // Count incoming edges (how many modules depend on each module)
-        modules.forEach((_, idx) => {
-            const deps = moduleRefs.get(idx) || new Set()
-            deps.forEach(depIdx => {
-                // idx depends on depIdx - not what we want
-            })
-        })
-
-        // Actually: for topo sort, we need: for each module, count how many it depends ON
-        modules.forEach((_, idx) => {
-            const deps = moduleRefs.get(idx) || new Set()
-            inDegree.set(idx, deps.size)
-        })
-
-        // Start with modules that have no dependencies
-        const queue = []
-        modules.forEach((_, idx) => {
-            if (inDegree.get(idx) === 0) queue.push(idx)
-        })
-
-        const sortedOrder = []
-        while (queue.length > 0) {
-            const idx = queue.shift()
-            sortedOrder.push(idx)
-
-            // For each module that depends on idx, reduce its in-degree
-            modules.forEach((_, otherIdx) => {
-                const deps = moduleRefs.get(otherIdx) || new Set()
-                if (deps.has(idx)) {
-                    const newDegree = inDegree.get(otherIdx) - 1
-                    inDegree.set(otherIdx, newDegree)
-                    if (newDegree === 0) queue.push(otherIdx)
-                }
-            })
-        }
-
-        // If we couldn't sort all modules, there's a cycle - fall back to original order
-        if (sortedOrder.length !== modules.length) {
-            console.warn('Circular dependency detected in modules, using original order')
-            modules.forEach((_, idx) => { if (!sortedOrder.includes(idx)) sortedOrder.push(idx) })
-        }
-
-        // Calculate modules in dependency order
-        sortedOrder.forEach(moduleIdx => {
-            const module = modules[moduleIdx]
-            const templateKey = module.templateId
-            const template = MODULE_TEMPLATES[templateKey]
-            if (!template) return
-
-            // Iterative modules (like debt sizing) need solvedAt to calculate
-            const isIterative = templateKey === 'iterative_debt_sizing'
-            if (isIterative && !module.solvedAt) {
-                template.outputs.forEach((output, outputIdx) => {
-                    const ref = `M${moduleIdx + 1}.${outputIdx + 1}`
-                    outputs[ref] = new Array(timeline.periods).fill(0)
-                })
-                return
-            }
-
-            // Build context with referenceMap, calculationResults, previously calculated module outputs, and timeline
-            const context = { ...referenceMap, ...calculationResults, ...outputs, timeline }
-
-            const moduleInstance = {
-                moduleType: templateKey,
-                inputs: module.inputs || {}
-            }
-
-            const calculatedOutputs = calculateModuleOutputs(
-                moduleInstance,
-                timeline.periods,
-                context
-            )
-
-            template.outputs.forEach((output, outputIdx) => {
-                const ref = `M${moduleIdx + 1}.${outputIdx + 1}`
-                outputs[ref] = calculatedOutputs[output.key] || new Array(timeline.periods).fill(0)
-            })
-        })
-
-        return outputs
-    }, [modules, referenceMap, calculationResults, timeline])
-
-    // Merge all module outputs
-    const allModuleOutputs = useMemo(() => ({
-        ...regularModuleOutputs,
-        ...postCalcModuleOutputs
-    }), [regularModuleOutputs, postCalcModuleOutputs])
-
-    // Second pass: Re-evaluate calculations that reference module outputs
-    // This is needed because calculationResults is computed before modules,
-    // so any calc referencing M*.* would get zeros in the first pass
-    const finalCalculationResults = useMemo(() => {
-        if (!calculations || calculations.length === 0) return calculationResults
-
-        // Check if we have any real module outputs
-        const hasModuleOutputs = Object.keys(postCalcModuleOutputs).length > 0
-
-        if (!hasModuleOutputs) return calculationResults
-
-        // Find calculations that reference module outputs (M1.1, M2.3, etc.)
-        // Note: Don't use /g flag with .test() as it maintains lastIndex state between calls
-        const calcsWithModuleRefs = calculations.filter(calc =>
-            calc.formula && /M\d+\.\d+/.test(calc.formula)
-        )
-
-        if (calcsWithModuleRefs.length === 0) return calculationResults
-
-        // Build combined context with real module outputs
-        const allRefs = { ...referenceMap, ...postCalcModuleOutputs, ...calculationResults }
-
-        // Re-evaluate calculations that have module references
-        const updatedResults = { ...calculationResults }
-
-        // Build dependency order for calcs with module refs
-        const calcById = new Map()
-        calculations.forEach(calc => calcById.set(calc.id, calc))
-
-        // Get all calc IDs that need re-evaluation (directly or indirectly reference modules)
-        const needsReeval = new Set()
-        const checkDependents = (id) => {
-            if (needsReeval.has(id)) return
-            needsReeval.add(id)
-            // Find calcs that depend on this one
-            calculations.forEach(calc => {
-                if (calc.formula && calc.formula.includes(`R${id}`)) {
-                    checkDependents(calc.id)
-                }
-            })
-        }
-
-        calcsWithModuleRefs.forEach(calc => checkDependents(calc.id))
-
-        // Re-evaluate in dependency order
-        // Simple approach: iterate multiple times until stable
-        const reevalIds = [...needsReeval]
-        for (let pass = 0; pass < 3; pass++) {
-            for (const id of reevalIds) {
-                const calc = calcById.get(id)
-                if (!calc || !calc.formula) continue
-
-                try {
-                    // Build context with current results
-                    const context = { ...allRefs, ...updatedResults }
-                    const { processedFormula, arrayFnResults } = processArrayFunctions(calc.formula, context, timeline)
-
-                    const resultArray = new Array(timeline.periods).fill(0)
-                    for (let i = 0; i < timeline.periods; i++) {
-                        let expr = processedFormula
-                        const sortedRefs = Object.keys(context).sort((a, b) => b.length - a.length)
-
-                        for (const ref of sortedRefs) {
-                            const value = context[ref]?.[i] ?? 0
-                            const regex = new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g')
-                            expr = expr.replace(regex, value.toString())
-                        }
-
-                        for (const [placeholder, arr] of Object.entries(arrayFnResults)) {
-                            expr = expr.replace(placeholder, arr[i].toString())
-                        }
-
-                        resultArray[i] = evaluateSafeExpression(expr)
-                    }
-
-                    updatedResults[`R${id}`] = resultArray
-                } catch (e) {
-                    // Keep original result on error
-                }
-            }
-        }
-
-        return updatedResults
-    }, [calculations, calculationResults, referenceMap, postCalcModuleOutputs, timeline])
+    }, [referenceNameMapData])
 
     // Input management hook
     const inputManagement = useInputManagement({
@@ -1444,7 +948,8 @@ export function useDashboardState(viewMode) {
         autoGeneratedFlags,
         inputArrays,
         expandFormulaToNames,
-        evaluateFormula
+        evaluateFormula,
+        previewFormula
     }
 
     // Collect handlers
@@ -1457,6 +962,7 @@ export function useDashboardState(viewMode) {
         handleCalcDragOver,
         handleCalcDrop,
         handleCalcDragEnd,
+        runFullCalculation,
         ...inputManagement
     }
 
@@ -1477,12 +983,20 @@ export function useDashboardState(viewMode) {
         cellRefs
     }
 
+    // Collect calculation control state
+    const calcState = {
+        calcVersion,
+        isDirty,
+        isCalculating
+    }
+
     return {
         appState,
         setters,
         derived,
         handlers,
         autoSaveState,
-        uiState
+        uiState,
+        calcState
     }
 }

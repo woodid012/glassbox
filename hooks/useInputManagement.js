@@ -598,12 +598,13 @@ export function useInputManagement({
     // ==================== Calculations ====================
 
     const addCalculationsGroup = useCallback(() => {
+        // Use 1000+ range for group IDs to avoid collision with calculation IDs
         const newId = calculationsGroups.length > 0
-            ? Math.max(...calculationsGroups.map(g => g.id), 0) + 1
-            : 1
+            ? Math.max(...calculationsGroups.map(g => g.id), 999) + 1
+            : 1000
         setCalculationsGroups([...calculationsGroups, {
             id: newId,
-            name: `Group ${newId}`,
+            name: `Group ${newId - 1000}`,
             startYear: config.startYear,
             startMonth: config.startMonth,
             endYear: config.endYear,

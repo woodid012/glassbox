@@ -3,6 +3,22 @@
  * Functions for aggregating and formatting time series values
  */
 
+// Cached Intl.NumberFormat instances for performance
+// toLocaleString() creates a new formatter each call - caching gives ~100x speedup in hot paths
+const formatterCache = new Map()
+
+function getFormatter(key, options) {
+    if (!formatterCache.has(key)) {
+        formatterCache.set(key, new Intl.NumberFormat('en-US', options))
+    }
+    return formatterCache.get(key)
+}
+
+// Pre-create common formatters
+const FMT_INTEGER = getFormatter('int', { maximumFractionDigits: 0 })
+const FMT_COMPACT = getFormatter('compact', { maximumFractionDigits: 1 })
+const FMT_DEC2 = getFormatter('dec2', { maximumFractionDigits: 2 })
+
 /**
  * Get aggregated value for an input across multiple period indices
  * @param {Object} input - The input object with category and type
@@ -71,34 +87,59 @@ export function getAggregatedValueForArray(arr, indices, type = 'flow', category
  * - Small decimals (<1): 2 significant figures (e.g., 0.00456 → 0.0046)
  * - Medium numbers (1-999): up to 2 decimal places
  * @param {number} val - The value to format
- * @param {boolean} compact - Whether to use compact notation (e.g., 1.5k)
+ * @param {boolean|Object} options - Boolean for backward compat (compact mode) or options object
+ * @param {boolean} [options.accounting=false] - Show negatives in parentheses: (1,234)
+ * @param {boolean} [options.compact=false] - Use compact notation (e.g., 1.5k)
+ * @param {number} [options.decimals=2] - Max decimal places for medium numbers
+ * @param {string} [options.emptyValue=''] - Value to return for zero/null/undefined
  * @returns {string} Formatted string representation
  */
-export function formatValue(val, compact = false) {
+export function formatValue(val, options = false) {
+    // Backward compatibility: if options is a boolean, treat as compact flag
+    const opts = typeof options === 'boolean'
+        ? { compact: options, accounting: false, decimals: 2, emptyValue: '–' }
+        : { compact: false, accounting: false, decimals: 2, emptyValue: '', ...options }
+
+    const { compact, accounting, decimals, emptyValue } = opts
+
+    // Handle zero/null/undefined - return emptyValue ('' for accounting/explicit, '–' for default)
+    if (val === 0 || val === null || val === undefined) {
+        return emptyValue
+    }
     if (typeof val !== 'number' || isNaN(val)) return '–'
+
     const absVal = Math.abs(val)
+    let formatted
 
     if (compact && absVal >= 1000) {
-        return (val / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 }) + 'k'
-    }
-
-    // Large numbers: no decimals
-    if (absVal >= 1000) {
-        return Math.round(val).toLocaleString('en-US')
-    }
-
-    // Small decimals: 2 significant figures
-    if (absVal > 0 && absVal < 1) {
+        formatted = FMT_COMPACT.format(absVal / 1000) + 'k'
+    } else if (absVal >= 1000) {
+        // Large numbers: no decimals
+        formatted = FMT_INTEGER.format(Math.round(absVal))
+    } else if (absVal > 0 && absVal < 1) {
+        // Small decimals: 2 significant figures
         const magnitude = Math.floor(Math.log10(absVal))
         const sigFigDecimals = Math.max(0, -magnitude + 1)
-        return val.toLocaleString('en-US', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: sigFigDecimals
-        })
+        // Cache formatters for common sig fig decimal counts (0-6 covers most cases)
+        const key = `sig${sigFigDecimals}`
+        const fmt = getFormatter(key, { minimumFractionDigits: 0, maximumFractionDigits: sigFigDecimals })
+        formatted = fmt.format(absVal)
+    } else {
+        // Medium numbers: up to specified decimals
+        if (decimals === 2) {
+            formatted = FMT_DEC2.format(absVal)
+        } else {
+            const key = `dec${decimals}`
+            const fmt = getFormatter(key, { maximumFractionDigits: decimals })
+            formatted = fmt.format(absVal)
+        }
     }
 
-    // Medium numbers: up to 2 decimals
-    return val.toLocaleString('en-US', { maximumFractionDigits: 2 })
+    // Handle negatives: accounting style uses parentheses, otherwise prefix with minus
+    if (val < 0) {
+        return accounting ? `(${formatted})` : `-${formatted}`
+    }
+    return formatted
 }
 
 /**

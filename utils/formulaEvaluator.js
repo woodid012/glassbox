@@ -54,7 +54,7 @@ const regexCache = new Map()
  */
 export function getCachedRegex(ref) {
     if (!regexCache.has(ref)) {
-        regexCache.set(ref, new RegExp(`\\b${ref.replace('.', '\\.')}\\b`, 'g'))
+        regexCache.set(ref, new RegExp(`\\b${ref.replace(/\./g, '\\.')}\\b`, 'g'))
     }
     return regexCache.get(ref)
 }
@@ -91,10 +91,13 @@ function evaluateCachedExpression(safeExpr) {
  * @param {string} expr - The expression to evaluate
  * @param {Object} allRefs - Map of reference names to their value arrays
  * @param {number} periods - Number of periods
- * @returns {number[]} Array of evaluated values for each period
+ * @param {Object} [options] - Optional settings
+ * @param {boolean} [options.trackWarnings=false] - Whether to track unresolved references
+ * @returns {number[]|{values: number[], warnings: string[]}} Array of values, or object with values and warnings if trackWarnings is true
  */
-export function evalExprForAllPeriods(expr, allRefs, periods) {
+export function evalExprForAllPeriods(expr, allRefs, periods, options = {}) {
     const arr = new Array(periods).fill(0)
+    const warnings = options.trackWarnings ? new Set() : null
 
     // Sort refs once (longer refs first to avoid partial replacements)
     const sortedRefs = Object.keys(allRefs).sort((a, b) => b.length - a.length)
@@ -118,6 +121,14 @@ export function evalExprForAllPeriods(expr, allRefs, periods) {
             periodExpr = periodExpr.replace(regex, value.toString())
         }
 
+        // Track unresolved R-references before replacing with 0 (only on first period to avoid duplicates)
+        if (warnings && i === 0) {
+            const unresolvedMatches = periodExpr.match(/\bR\d+\b/g)
+            if (unresolvedMatches) {
+                unresolvedMatches.forEach(ref => warnings.add(ref))
+            }
+        }
+
         // Replace any unresolved R-references with 0
         // These are calculations not yet computed (e.g., SHIFT(R84,1) when R84 hasn't been evaluated)
         // Without this, sanitization would strip "R" from "R84" leaving literal "84"
@@ -136,6 +147,10 @@ export function evalExprForAllPeriods(expr, allRefs, periods) {
 
         // Evaluate using cached function
         arr[i] = evaluateCachedExpression(safeExpr)
+    }
+
+    if (options.trackWarnings) {
+        return { values: arr, warnings: Array.from(warnings) }
     }
     return arr
 }

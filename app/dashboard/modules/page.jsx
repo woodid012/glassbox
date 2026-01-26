@@ -4,6 +4,7 @@ import { Plus, Trash2, Play, RefreshCw } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 import { DeferredInput } from '@/components/DeferredInput'
 import { MODULE_TEMPLATES } from '@/utils/moduleTemplates'
+import { formatValue } from '@/utils/valueAggregation'
 import { useMemo, useState } from 'react'
 
 export default function ModulesPage() {
@@ -56,18 +57,6 @@ export default function ModulesPage() {
                 return sum
             }
         })
-    }
-
-    // Format number for display
-    const formatValue = (val) => {
-        if (val === 0 || val === undefined || val === null) return ''
-        if (Math.abs(val) >= 1000) {
-            return val.toLocaleString('en-US', { maximumFractionDigits: 0 })
-        }
-        if (Math.abs(val) < 1) {
-            return val.toLocaleString('en-US', { maximumFractionDigits: 4 })
-        }
-        return val.toLocaleString('en-US', { maximumFractionDigits: 2 })
     }
 
     const addModuleFromTemplate = (template) => {
@@ -337,8 +326,8 @@ export default function ModulesPage() {
                                                         const sizedDebtValues = moduleOutputs[sizedDebtRef] || []
                                                         const sizedDebt = sizedDebtValues[0] || 0
 
-                                                        // Check if inputs resolved
-                                                        const cfadsRef = module.inputs?.cfadsRef
+                                                        // Check if inputs resolved (support both old and new input key names)
+                                                        const cfadsRef = module.inputs?.contractedCfadsRef || module.inputs?.cfadsRef
                                                         const cfadsArray = cfadsRef ? allRefs[cfadsRef] : null
                                                         const cfadsFound = cfadsArray && cfadsArray.length > 0 && cfadsArray.some(v => v > 0)
 
@@ -460,13 +449,13 @@ export default function ModulesPage() {
                                                                                     </span>
                                                                                 </td>
                                                                                 <td className="py-1 px-2 text-right text-xs font-medium text-slate-900 sticky left-[180px] z-10 bg-indigo-50/30 border-r border-slate-200">
-                                                                                    {formatValue(total)}
+                                                                                    {formatValue(total, { emptyValue: '' })}
                                                                                 </td>
                                                                                 {displayValues.map((val, i) => (
                                                                                     <td key={i} className={`py-1 px-0.5 text-right text-[11px] min-w-[55px] w-[55px] border-r border-slate-100 ${
                                                                                         val !== 0 ? 'text-indigo-700' : 'text-slate-300'
                                                                                     }`}>
-                                                                                        {formatValue(val)}
+                                                                                        {formatValue(val, { emptyValue: '' })}
                                                                                     </td>
                                                                                 ))}
                                                                             </tr>
@@ -507,13 +496,13 @@ export default function ModulesPage() {
                                                                                     </span>
                                                                                 </td>
                                                                                 <td className="py-1 px-2 text-right text-xs font-medium text-slate-900 sticky left-[180px] z-10 bg-white border-r border-slate-200">
-                                                                                    {formatValue(total)}
+                                                                                    {formatValue(total, { emptyValue: '' })}
                                                                                 </td>
                                                                                 {displayValues.map((val, i) => (
                                                                                     <td key={i} className={`py-1 px-0.5 text-right text-[11px] min-w-[55px] w-[55px] border-r border-slate-100 ${
                                                                                         val !== 0 ? 'text-slate-700' : 'text-slate-300'
                                                                                     }`}>
-                                                                                        {formatValue(val)}
+                                                                                        {formatValue(val, { emptyValue: '' })}
                                                                                     </td>
                                                                                 ))}
                                                                             </tr>

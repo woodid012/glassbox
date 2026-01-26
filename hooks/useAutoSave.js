@@ -19,6 +19,9 @@ export function useAutoSave(appState, setAppState) {
     // Track if we've loaded from storage (to prevent overwriting with defaults)
     const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false)
 
+    // Cached calculation results (loaded from file for instant startup)
+    const [cachedResults, setCachedResults] = useState(null)
+
     // Auto-save state
     const [isAutoSaving, setIsAutoSaving] = useState(false)
     const [lastSaved, setLastSaved] = useState(null) // timestamp of last save
@@ -33,12 +36,17 @@ export function useAutoSave(appState, setAppState) {
 
         const loadState = async () => {
             try {
-                // Load from split model-state files (model-inputs, model-calculations, model-ui-state)
+                // Load from split model-state files (model-inputs, model-calculations, model-ui-state, model-results)
                 const modelStateResponse = await fetch('/api/model-state')
                 if (modelStateResponse.ok) {
                     const modelState = await modelStateResponse.json()
                     if (mounted) {
-                        const deserialized = deserializeState(modelState)
+                        // Extract cached results before deserializing
+                        const { cachedResults: results, ...stateData } = modelState
+                        if (results) {
+                            setCachedResults(results)
+                        }
+                        const deserialized = deserializeState(stateData)
                         setAppState(deserialized)
                         setHasLoadedFromStorage(true)
                         return
@@ -174,11 +182,30 @@ export function useAutoSave(appState, setAppState) {
         }
     }, [setAppState])
 
+    // Save calculation results to file (called after each calculation)
+    const saveCalculationResults = useCallback(async (calculationResults, moduleOutputs) => {
+        try {
+            const response = await fetch('/api/model-state', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ calculationResults, moduleOutputs })
+            })
+            if (response.ok) {
+                // Update cached results in memory
+                setCachedResults({ calculationResults, moduleOutputs })
+            }
+        } catch (error) {
+            console.error('Error saving calculation results:', error)
+        }
+    }, [])
+
     return {
         hasLoadedFromStorage,
         isAutoSaving,
         lastSaved,
         saveStatus,
-        handleRevertToOriginal
+        handleRevertToOriginal,
+        cachedResults,
+        saveCalculationResults
     }
 }

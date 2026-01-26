@@ -509,8 +509,8 @@
       "tabId": 3,
       "groupId": 25,
       "name": "Dividend Paid",
-      "formula": "R123 - SHIFT(R123, 1)",
-      "description": "Incremental cash distributed as dividend each period"
+      "formula": "(R123 - SHIFT(R123, 1)) * F2",
+      "description": "Incremental cash distributed as dividend each period (ops only)"
     },
     {
       "id": 125,
@@ -861,7 +861,7 @@
         "merchantDSCR": "C1.26",
         "debtFlagRef": "F8",
         "totalFundingRef": "R60",
-        "maxGearingPct": 65,
+        "maxGearingPct": "65",
         "interestRatePct": 5,
         "tenorYears": 18,
         "debtPeriod": "Q",
@@ -878,12 +878,12 @@
         "period_dscr",
         "cumulative_principal"
       ],
-      "solvedAt": 1769330268762
+      "solvedAt": 1769403953822
     },
     {
       "id": 1769317033954,
       "templateId": "depreciation_amortization",
-      "name": "Depreciation & Amortization (Gold Standard)",
+      "name": "Depreciation & Amortization",
       "description": "CUMSUM-based ledger pattern - no circular dependencies",
       "category": "accounting",
       "inputs": {
@@ -904,7 +904,7 @@
     {
       "id": 1769320996781,
       "templateId": "gst_receivable",
-      "name": "GST Paid/Received (Gold Standard)",
+      "name": "GST Paid/Received",
       "description": "GST ledger with configurable receipt delay using CUMSUM pattern",
       "category": "accounting",
       "inputs": {
@@ -926,7 +926,7 @@
     {
       "id": 1769323861808,
       "templateId": "construction_funding",
-      "name": "Construction Funding (Gold Standard)",
+      "name": "Construction Funding",
       "description": "Construction funding waterfall with IDC equity-funded",
       "category": "financing",
       "inputs": {
@@ -955,13 +955,13 @@
     {
       "id": 1769400000000,
       "templateId": "tax_losses",
-      "name": "Tax & Tax Losses (Gold Standard)",
+      "name": "Tax & Tax Losses",
       "description": "Tax calculation with loss carry-forward using CUMSUM pattern",
       "category": "accounting",
       "inputs": {
         "taxableIncomeRef": "R17",
         "opsFlagRef": "F2",
-        "taxRatePct": 30
+        "taxRatePct": "30"
       },
       "outputs": [
         "taxable_income_before_losses",
@@ -971,13 +971,42 @@
         "losses_closing",
         "net_taxable_income",
         "tax_payable"
+      ],
+      "solvedAt": null
+    },
+    {
+      "id": 1769408407252,
+      "templateId": "construction_funding",
+      "name": "Construction Funding",
+      "description": "Construction funding waterfall with IDC equity-funded",
+      "category": "financing",
+      "inputs": {
+        "constructionCostsRef": "R60",
+        "gstPaidRef": "R61",
+        "feesRef": "",
+        "sizedDebtRef": "M1.1",
+        "gearingCapPct": 65,
+        "interestRatePct": 5,
+        "drawdownMethod": "prorata",
+        "constructionFlagRef": "F1"
+      },
+      "outputs": [
+        "total_uses_incl_idc",
+        "senior_debt",
+        "equity",
+        "gearing_pct",
+        "cumulative_idc",
+        "debt_drawdown",
+        "equity_drawdown",
+        "idc",
+        "total_uses_ex_idc"
       ]
     }
   ],
   "moduleTemplates": [
     {
       "id": "construction_funding",
-      "name": "Construction Funding (Gold Standard)",
+      "name": "Construction Funding",
       "description": "Construction funding waterfall with IDC equity-funded",
       "category": "financing",
       "inputs": [
@@ -1054,7 +1083,7 @@
     },
     {
       "id": "reserve_account",
-      "name": "Reserve Account (Gold Standard)",
+      "name": "Reserve Account",
       "description": "Reserve account (MRA/DSRA) with funding and drawdown using CUMSUM pattern",
       "category": "financing",
       "inputs": [
@@ -1099,7 +1128,7 @@
     },
     {
       "id": "gst_receivable",
-      "name": "GST Paid/Received (Gold Standard)",
+      "name": "GST Paid/Received",
       "description": "GST ledger with configurable receipt delay using CUMSUM pattern",
       "category": "accounting",
       "inputs": [
@@ -1140,7 +1169,7 @@
     },
     {
       "id": "tax_losses",
-      "name": "Tax & Tax Losses (Gold Standard)",
+      "name": "Tax & Tax Losses",
       "description": "Tax calculation with loss carry-forward using CUMSUM pattern",
       "category": "accounting",
       "inputs": [
@@ -1175,7 +1204,7 @@
     },
     {
       "id": "depreciation_amortization",
-      "name": "Depreciation & Amortization (Gold Standard)",
+      "name": "Depreciation & Amortization",
       "description": "CUMSUM-based ledger pattern - no circular dependencies",
       "category": "accounting",
       "inputs": [
