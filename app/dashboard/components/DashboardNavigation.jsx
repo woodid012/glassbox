@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import { RotateCcw, Check, Loader2, Camera, Calculator, CheckCircle, Download, FileSpreadsheet, Code } from 'lucide-react'
+import { useState } from 'react'
+import { RotateCcw, Check, Loader2, Camera, CheckCircle, FileSpreadsheet, Code } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 
 const NAV_CONFIG = [
@@ -25,28 +25,12 @@ export default function DashboardNavigation() {
     const {
         derived,
         handlers,
-        autoSaveState,
-        calcState
+        autoSaveState
     } = useDashboard()
 
     const { timeline } = derived
-    const { handleRevertToOriginal, runFullCalculation } = handlers
+    const { handleRevertToOriginal } = handlers
     const { saveStatus } = autoSaveState
-    const { isDirty, isCalculating } = calcState
-
-    // Keyboard shortcut: Ctrl+Enter to calculate
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault()
-                if (isDirty && !isCalculating) {
-                    runFullCalculation()
-                }
-            }
-        }
-        window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [isDirty, isCalculating, runFullCalculation])
 
     const handleSnapshot = async () => {
         setSnapshotStatus('saving')
@@ -120,36 +104,11 @@ export default function DashboardNavigation() {
                         ))}
                     </div>
 
-                    {/* Calculate Button */}
-                    <button
-                        onClick={runFullCalculation}
-                        disabled={isCalculating}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold text-sm transition-all ${
-                            isCalculating
-                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                : isDirty
-                                ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse shadow-lg shadow-amber-500/25'
-                                : 'bg-green-100 text-green-700 border border-green-300'
-                        }`}
-                        title={isDirty ? 'Click to recalculate model (Ctrl+Enter)' : 'Model is up to date'}
-                    >
-                        {isCalculating ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span>Calculating...</span>
-                            </>
-                        ) : isDirty ? (
-                            <>
-                                <Calculator className="w-4 h-4" />
-                                <span>Calculate</span>
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle className="w-4 h-4" />
-                                <span>Up to date</span>
-                            </>
-                        )}
-                    </button>
+                    {/* Live calculation indicator */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-100 text-green-700 border border-green-300">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-sm font-semibold">Live</span>
+                    </div>
 
                     <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
                         {timeline.periods} periods

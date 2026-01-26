@@ -190,10 +190,44 @@ The input automatically expands to monthly periods and can be referenced:
 
 **Goal:** $0.29M quarterly maintenance from Oct 2042 to Sep 2045
 
-1. **Key Period** (id: 12) → Oct 2042 - Sep 2045 (36 months)
-2. **Input Group** (id: 8) → Quarterly frequency, linked to key period 12
-3. **Input** (id: 130) → $0.29M constant value
-4. **Module** (MRA) → References the input, calculates look-forward reserve target
+**1. Key Period** (id: 12) - defines WHEN:
+```json
+{
+  "id": 12,
+  "name": "Maintenance",
+  "startYear": 2042, "startMonth": 10,
+  "endYear": 2045, "endMonth": 9,
+  "periods": 36
+}
+```
+
+**2. Input Group** (id: 8) - defines HOW (series mode + linked to key period):
+```json
+{
+  "id": 8,
+  "name": "Maintenance",
+  "entryMode": "series",           // ← CRITICAL: must be "series" not "constant"
+  "linkedKeyPeriodId": "12",       // ← Links to F12 key period
+  "frequency": "Q",                // ← Quarterly entries
+  "groupType": "combined"
+}
+```
+
+**3. Input** (id: 130) - defines WHAT (constant value within the series):
+```json
+{
+  "id": 130,
+  "groupId": 8,
+  "name": "Base Maintenance",
+  "entryMode": "constant",         // ← Same value repeats each quarter
+  "value": 0.29,                   // ← $0.29M per quarter
+  "valueFrequency": "Q",
+  "seriesFrequency": "Q",
+  "unit": "$ M"
+}
+```
+
+**4. Module** (MRA) - references the input for drawdowns during F12
 
 ### Why This Pattern Matters
 
@@ -374,6 +408,22 @@ Closing = Opening + Addition - Reduction  ← needs Opening
 ```
 
 SHIFT-based solutions have evaluation order issues and are fragile.
+
+### CRITICAL: Why SHIFT Doesn't Work for Ledgers
+
+**NEVER use `SHIFT(RX, 1)` where RX depends on the current calculation.** The formula evaluator processes SHIFT by looking up RX in the current context - but RX doesn't exist yet when evaluating the SHIFT formula!
+
+```
+❌ WRONG - This will always return zeros:
+   Opening = SHIFT(Closing, 1)   ← Closing not in context yet!
+   Closing = Opening + Movement
+
+✓ CORRECT - Use CUMSUM pattern:
+   Closing = CUMSUM(Movement)           ← No dependencies
+   Opening = CUMSUM(Movement) - Movement  ← Prior period's cumulative
+```
+
+SHIFT only works for referencing ALREADY CALCULATED values (e.g., `SHIFT(R70, 1)` where R70 is evaluated before this formula).
 
 ### The Solution: Calculate Closing First
 

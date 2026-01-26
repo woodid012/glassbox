@@ -17,20 +17,6 @@ export function useDashboardState(viewMode) {
     // Array View sub-tab state
     const [arrayViewSubTab, setArrayViewSubTab] = useState('inputs') // 'inputs' | 'modules' | 'results'
 
-    // ============================================
-    // CALCULATION CONTROL STATE (On-Demand Recalc)
-    // ============================================
-    // calcVersion: Incremented when user clicks Calculate button
-    // isDirty: True when inputs/formulas changed since last calculation
-    // isCalculating: True while calculation is running
-    const [calcVersion, setCalcVersion] = useState(0)
-    const [isDirty, setIsDirty] = useState(false)
-    const [isCalculating, setIsCalculating] = useState(false)
-
-    // Snapshots used for committed calculations
-    const referenceMapSnapshot = useRef(null)
-    const calculationsSnapshot = useRef(null)
-    const modulesSnapshot = useRef(null)
 
     // Destructure state for easier access
     const {
@@ -233,83 +219,8 @@ export function useDashboardState(viewMode) {
         setCalcDragOverIndex(null)
     }, [])
 
-    // Auto-save hook (also loads cached calculation results for instant startup)
-    const { hasLoadedFromStorage, isAutoSaving, lastSaved, saveStatus, handleRevertToOriginal, cachedResults, saveCalculationResults } = useAutoSave(appState, setAppState)
-
-    // On startup: Use cached results instead of recalculating
-    // If no cached results, mark as dirty so user knows to click Calculate
-    const hasCheckedCache = useRef(false)
-    useEffect(() => {
-        if (hasLoadedFromStorage && !hasCheckedCache.current) {
-            hasCheckedCache.current = true
-            // If no cached results, mark dirty so user knows to calculate
-            if (!cachedResults) {
-                setIsDirty(true)
-            }
-        }
-    }, [hasLoadedFromStorage, cachedResults])
-
-    // Track dirty state and auto-calculate with debounce
-    // When inputs/formulas/modules change, wait 300ms then auto-calculate
-    const prevStateRef = useRef(null)
-    const autoCalcTimeoutRef = useRef(null)
-    const AUTO_CALC_DELAY = 300 // ms to wait before auto-calculating
-
-    useEffect(() => {
-        if (!hasLoadedFromStorage) return
-
-        // Skip on first load - don't mark dirty immediately
-        if (prevStateRef.current === null) {
-            prevStateRef.current = {
-                inputGlass: appState.inputGlass,
-                calculations: appState.calculations,
-                modules: appState.modules,
-                indices: appState.indices,
-                keyPeriods: appState.keyPeriods
-            }
-            return
-        }
-
-        // Check if any calculation-affecting state changed
-        const stateChanged =
-            prevStateRef.current.inputGlass !== appState.inputGlass ||
-            prevStateRef.current.calculations !== appState.calculations ||
-            prevStateRef.current.modules !== appState.modules ||
-            prevStateRef.current.indices !== appState.indices ||
-            prevStateRef.current.keyPeriods !== appState.keyPeriods
-
-        if (stateChanged) {
-            setIsDirty(true)
-            prevStateRef.current = {
-                inputGlass: appState.inputGlass,
-                calculations: appState.calculations,
-                modules: appState.modules,
-                indices: appState.indices,
-                keyPeriods: appState.keyPeriods
-            }
-
-            // Auto-calculate with debounce
-            // Clear any pending auto-calc and schedule a new one
-            if (autoCalcTimeoutRef.current) {
-                clearTimeout(autoCalcTimeoutRef.current)
-            }
-            autoCalcTimeoutRef.current = setTimeout(() => {
-                setIsCalculating(true)
-                requestAnimationFrame(() => {
-                    setCalcVersion(v => v + 1)
-                    setIsDirty(false)
-                    setTimeout(() => setIsCalculating(false), 50)
-                })
-            }, AUTO_CALC_DELAY)
-        }
-
-        // Cleanup timeout on unmount
-        return () => {
-            if (autoCalcTimeoutRef.current) {
-                clearTimeout(autoCalcTimeoutRef.current)
-            }
-        }
-    }, [hasLoadedFromStorage, appState.inputGlass, appState.calculations, appState.modules, appState.indices, appState.keyPeriods])
+    // Auto-save hook
+    const { hasLoadedFromStorage, isAutoSaving, lastSaved, saveStatus, handleRevertToOriginal } = useAutoSave(appState, setAppState)
 
     // Generate Timeline
     const timeline = useMemo(() => {
@@ -404,26 +315,9 @@ export function useDashboardState(viewMode) {
         timeline
     })
 
-    // ============================================
-    // CALCULATION CONTROL FUNCTION
-    // ============================================
-    // Triggers full model recalculation by incrementing calcVersion
-    const runFullCalculation = useCallback(() => {
-        setIsCalculating(true)
-        // Use requestAnimationFrame to allow UI to update before heavy calculation
-        requestAnimationFrame(() => {
-            setCalcVersion(v => v + 1)
-            setIsDirty(false)
-            // isCalculating will be cleared after calculation completes
-            // We use a small timeout to ensure the calculation has started
-            setTimeout(() => setIsCalculating(false), 50)
-        })
-    }, [])
-
     // Unified Calculation Hook - evaluates all calculations and modules in a single pass
     // Uses topological sort to handle dependencies correctly (no more 3-pass architecture)
-    // calcVersion controls when full recalculation happens (on-demand)
-    // cachedResults provides instant startup without recalculating
+    // Fast enough (~5ms) to run on every change - no caching needed
     const {
         calculationResults: finalCalculationResults,
         moduleOutputs: allModuleOutputs,
@@ -435,25 +329,8 @@ export function useDashboardState(viewMode) {
         calculations,
         modules,
         referenceMap,
-        timeline,
-        calcVersion,
-        cachedResults
+        timeline
     })
-
-    // Save calculation results to file after calculation completes
-    // This allows instant startup on next load
-    const prevCalcVersion = useRef(0)
-    useEffect(() => {
-        // Only save when calcVersion increases (calculation completed)
-        // Skip saving when calcVersion is 0 (initial load)
-        if (calcVersion > 0 && calcVersion !== prevCalcVersion.current) {
-            prevCalcVersion.current = calcVersion
-            // Wait a tick to ensure finalCalculationResults is computed
-            setTimeout(() => {
-                saveCalculationResults(finalCalculationResults, allModuleOutputs)
-            }, 100)
-        }
-    }, [calcVersion, finalCalculationResults, allModuleOutputs, saveCalculationResults])
 
     // Build reference type map (flow vs stock vs flowConverter) for each reference
     const referenceTypeMap = useMemo(() => {
@@ -952,7 +829,6 @@ export function useDashboardState(viewMode) {
         handleCalcDragOver,
         handleCalcDrop,
         handleCalcDragEnd,
-        runFullCalculation,
         ...inputManagement
     }
 
@@ -973,20 +849,12 @@ export function useDashboardState(viewMode) {
         cellRefs
     }
 
-    // Collect calculation control state
-    const calcState = {
-        calcVersion,
-        isDirty,
-        isCalculating
-    }
-
     return {
         appState,
         setters,
         derived,
         handlers,
         autoSaveState,
-        uiState,
-        calcState
+        uiState
     }
 }

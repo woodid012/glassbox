@@ -253,35 +253,16 @@ export function useUnifiedCalculation({
     calculations,
     modules,
     referenceMap,
-    timeline,
-    calcVersion = 0,
-    cachedResults = null
+    timeline
 }) {
     // Store committed results for preview function
     const committedResultsRef = useRef({ calculations: {}, modules: {} })
 
-    // Single unified calculation pass
+    // Single unified calculation pass - runs on every dependency change (fast enough now ~5ms)
     const { calculationResults, moduleOutputs, calculationErrors } = useMemo(() => {
         const calcResults = {}
         const modOutputs = {}
         const errors = {}
-
-        // On initial load (calcVersion === 0): Use cached results if available
-        if (calcVersion === 0) {
-            if (cachedResults?.calculationResults && cachedResults?.moduleOutputs) {
-                committedResultsRef.current = {
-                    calculations: cachedResults.calculationResults,
-                    modules: cachedResults.moduleOutputs
-                }
-                return {
-                    calculationResults: cachedResults.calculationResults,
-                    moduleOutputs: cachedResults.moduleOutputs,
-                    calculationErrors: {}
-                }
-            }
-            // No cached results - return empty
-            return { calculationResults: calcResults, moduleOutputs: modOutputs, calculationErrors: errors }
-        }
 
         const startTime = performance.now()
 
@@ -362,8 +343,7 @@ export function useUnifiedCalculation({
         console.log(`[UnifiedCalc] Evaluated ${calcCount} calculations and ${moduleCount} modules in ${elapsed.toFixed(0)}ms (single pass)`)
 
         return { calculationResults: calcResults, moduleOutputs: modOutputs, calculationErrors: errors }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [calcVersion, timeline.periods, cachedResults])
+    }, [calculations, modules, referenceMap, timeline])
 
     // Get flow/stock type for each calculation from stored type (default: flow)
     const calculationTypes = useMemo(() => {
