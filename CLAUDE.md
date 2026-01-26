@@ -202,6 +202,41 @@ The input automatically expands to monthly periods and can be referenced:
 - **Flexibility:** Change frequency without recreating inputs
 - **Auditability:** Clear traceability from output back to input assumptions
 
+### Alternative: Direct Period Array Input
+
+For ad-hoc data entry (e.g., pasting 12 months of forecast data), use the simpler pattern:
+
+1. **Set the period count** in the input group (e.g., `"periods": 12`)
+2. **Paste values directly** into the `values` object with period indices:
+
+```json
+{
+  "id": 140,
+  "groupId": 8,
+  "name": "Lump Sum Maintenance",
+  "mode": "values",
+  "values": {
+    "0": 0.5,
+    "3": 0.75,
+    "6": 0.5,
+    "9": 0.75
+  },
+  "unit": "$ M"
+}
+```
+
+This approach:
+- Defines periods directly (no key period linking needed)
+- Uses sparse object format (only non-zero periods need entries)
+- Index 0 = first period, index 11 = 12th period
+- Good for irregular or one-off payment schedules
+
+**When to use which:**
+| Pattern | Use Case |
+|---------|----------|
+| Key Period Linking | Recurring series tied to project phases (ops, construction) |
+| Direct Period Array | Ad-hoc data, irregular schedules, pasted forecasts |
+
 ### For Escalation (CPI, etc.)
 
 Don't add escalation to the input itself. Instead:
