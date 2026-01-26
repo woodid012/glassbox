@@ -20,7 +20,9 @@ import {
     RefreshCw,
     Filter,
     Link as LinkIcon,
-    ExternalLink
+    ExternalLink,
+    Scale,
+    DollarSign
 } from 'lucide-react'
 
 // Severity icons and colors
@@ -202,10 +204,41 @@ function SummaryCard({ label, value, icon: Icon, color }) {
     )
 }
 
+// Model integrity check component
+function IntegrityCheck({ label, description, value, tolerance = 0.01, unit = '$M' }) {
+    const isPass = Math.abs(value) <= tolerance
+    const Icon = isPass ? CheckCircle2 : AlertCircle
+    const colorClass = isPass
+        ? 'bg-green-50 border-green-200'
+        : 'bg-red-50 border-red-200'
+    const iconColor = isPass ? 'text-green-600' : 'text-red-600'
+    const valueColor = isPass ? 'text-green-700' : 'text-red-700'
+
+    return (
+        <div className={`flex items-center justify-between p-4 rounded-lg border ${colorClass}`}>
+            <div className="flex items-center gap-3">
+                <Icon className={`w-5 h-5 ${iconColor}`} />
+                <div>
+                    <div className="font-medium text-slate-900">{label}</div>
+                    <div className="text-xs text-slate-500">{description}</div>
+                </div>
+            </div>
+            <div className={`text-right ${valueColor}`}>
+                <div className="text-lg font-bold">
+                    {value >= 0 ? '' : '-'}{unit}{Math.abs(value).toFixed(2)}
+                </div>
+                <div className="text-xs">
+                    {isPass ? 'PASS' : 'FAIL'}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function ValidationPage() {
     const { appState, derived, setters } = useDashboard()
     const { calculations } = appState
-    const { referenceMap, moduleOutputs } = derived
+    const { referenceMap, moduleOutputs, calculationResults } = derived
     const { setSelectedCalculationId } = setters
     const router = useRouter()
 
@@ -218,6 +251,34 @@ export default function ValidationPage() {
         setSelectedCalculationId(calcId)
         router.push('/dashboard/calculations')
     }
+
+    // Model integrity checks
+    const integrityChecks = useMemo(() => {
+        // Get values at end of construction (find last non-zero period for R64)
+        const totalUsesArr = calculationResults?.R64 || []
+        const totalSourcesArr = calculationResults?.R68 || []
+        const sourcesUsesCheckArr = calculationResults?.R69 || []
+
+        // Find the construction end period (last non-zero Total Uses)
+        let constructionEndIdx = 0
+        for (let i = totalUsesArr.length - 1; i >= 0; i--) {
+            if (totalUsesArr[i] > 0) {
+                constructionEndIdx = i
+                break
+            }
+        }
+
+        const totalUses = totalUsesArr[constructionEndIdx] || 0
+        const totalSources = totalSourcesArr[constructionEndIdx] || 0
+        const sourcesUsesCheck = sourcesUsesCheckArr[constructionEndIdx] || (totalSources - totalUses)
+
+        return {
+            totalUses,
+            totalSources,
+            sourcesUsesCheck,
+            constructionEndIdx
+        }
+    }, [calculationResults])
 
     // Run validation
     const issues = useMemo(() => {
@@ -306,6 +367,36 @@ export default function ValidationPage() {
                     icon={LinkIcon}
                     color="slate"
                 />
+            </div>
+
+            {/* Model Integrity Checks */}
+            <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                    <Scale className="w-5 h-5 text-slate-600" />
+                    <h2 className="text-lg font-semibold text-slate-900">Model Integrity Checks</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <IntegrityCheck
+                        label="Sources = Uses"
+                        description={`Total Sources (${integrityChecks.totalSources.toFixed(1)}M) - Total Uses (${integrityChecks.totalUses.toFixed(1)}M)`}
+                        value={integrityChecks.sourcesUsesCheck}
+                        tolerance={0.01}
+                        unit="$"
+                    />
+                    <div className="flex items-center justify-between p-4 rounded-lg border bg-slate-50 border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <DollarSign className="w-5 h-5 text-slate-500" />
+                            <div>
+                                <div className="font-medium text-slate-900">Construction Summary</div>
+                                <div className="text-xs text-slate-500">At period {integrityChecks.constructionEndIdx + 1}</div>
+                            </div>
+                        </div>
+                        <div className="text-right text-slate-700">
+                            <div className="text-sm">Uses: <span className="font-semibold">${integrityChecks.totalUses.toFixed(1)}M</span></div>
+                            <div className="text-sm">Sources: <span className="font-semibold">${integrityChecks.totalSources.toFixed(1)}M</span></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Filters and Actions */}

@@ -437,6 +437,15 @@
       "type": "stock"
     },
     {
+      "id": 69,
+      "tabId": 3,
+      "groupId": 14,
+      "name": "Sources = Uses Check",
+      "formula": "R68 - R64",
+      "description": "Should be 0 (or near 0). Positive = excess sources, Negative = shortfall",
+      "type": "stock"
+    },
+    {
       "id": 35,
       "tabId": 3,
       "groupId": 12,
