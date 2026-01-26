@@ -305,16 +305,16 @@
       "tabId": 3,
       "groupId": 11,
       "name": "MRA Contribution",
-      "formula": "0",
-      "description": ""
+      "formula": "-M7.3",
+      "description": "Cash contributed to MRA (funding outflow)"
     },
     {
       "id": 27,
       "tabId": 3,
       "groupId": 11,
       "name": "MRA Release",
-      "formula": "0",
-      "description": ""
+      "formula": "M7.5",
+      "description": "Cash released from MRA at end of operations"
     },
     {
       "id": 28,
@@ -1001,6 +1001,29 @@
         "idc",
         "total_uses_ex_idc"
       ]
+    },
+    {
+      "id": 1769500000000,
+      "templateId": "mra_reserve",
+      "name": "MRA (Maintenance Reserve)",
+      "description": "Maintenance Reserve Account with look-forward target calculation",
+      "category": "financing",
+      "inputs": {
+        "accountName": "MRA",
+        "maintenanceRef": "S1.19",
+        "reservePeriodMonths": 12,
+        "reservePortion": 100,
+        "activeFlagRef": "F2",
+        "releaseFlagRef": "F2.End"
+      },
+      "outputs": [
+        "opening",
+        "target",
+        "funding",
+        "drawdown",
+        "release",
+        "closing"
+      ]
     }
   ],
   "moduleTemplates": [
@@ -1083,17 +1106,10 @@
     },
     {
       "id": "reserve_account",
-      "name": "Reserve Account",
+      "name": "Reserve Account (Gold Standard)",
       "description": "Reserve account (MRA/DSRA) with funding and drawdown using CUMSUM pattern",
       "category": "financing",
       "inputs": [
-        {
-          "key": "accountName",
-          "label": "Account Name",
-          "type": "text",
-          "placeholder": "e.g., MRA, DSRA",
-          "default": ""
-        },
         {
           "key": "fundingAmountRef",
           "label": "Funding Amount",
