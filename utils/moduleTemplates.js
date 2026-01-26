@@ -63,9 +63,10 @@ export const MODULE_TEMPLATES = {
     },
     reserve_account: {
         type: 'reserve_account',
-        name: 'Reserve Account (Gold Standard)',
+        name: 'Reserve Account',
         description: 'Reserve account (MRA/DSRA) with funding and drawdown using CUMSUM pattern',
         inputs: [
+            { key: 'accountName', label: 'Account Name', type: 'text', placeholder: 'e.g., MRA, DSRA', required: true },
             { key: 'fundingAmountRef', label: 'Funding Amount', type: 'reference', refType: 'any', required: true },
             { key: 'fundingFlagRef', label: 'Funding Flag (e.g., F1.End)', type: 'reference', refType: 'flag', required: true },
             { key: 'drawdownRef', label: 'Drawdown Amount (e.g., Maintenance)', type: 'reference', refType: 'any', required: false },

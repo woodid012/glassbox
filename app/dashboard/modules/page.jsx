@@ -274,6 +274,15 @@ export default function ModulesPage() {
                                                                         onChange={(e) => updateInputValue(module.id, inputDef.key, e.target.value)}
                                                                         className="w-full text-sm border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                                     />
+                                                                ) : inputDef.type === 'text' ? (
+                                                                    /* Plain text input for names/labels */
+                                                                    <input
+                                                                        type="text"
+                                                                        value={module.inputs[inputDef.key] ?? inputDef.default ?? ''}
+                                                                        onChange={(e) => updateInputValue(module.id, inputDef.key, e.target.value)}
+                                                                        placeholder={inputDef.placeholder || ''}
+                                                                        className="w-full text-sm border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                    />
                                                                 ) : (
                                                                     /* Unified formula input - accepts numbers, references, or formulas */
                                                                     <DeferredInput

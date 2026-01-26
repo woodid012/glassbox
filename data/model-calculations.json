@@ -1006,7 +1006,7 @@
   "moduleTemplates": [
     {
       "id": "construction_funding",
-      "name": "Construction Funding",
+      "name": "Construction Funding (Gold Standard)",
       "description": "Construction funding waterfall with IDC equity-funded",
       "category": "financing",
       "inputs": [
@@ -1088,6 +1088,13 @@
       "category": "financing",
       "inputs": [
         {
+          "key": "accountName",
+          "label": "Account Name",
+          "type": "text",
+          "placeholder": "e.g., MRA, DSRA",
+          "default": ""
+        },
+        {
           "key": "fundingAmountRef",
           "label": "Funding Amount",
           "type": "reference",
@@ -1128,7 +1135,7 @@
     },
     {
       "id": "gst_receivable",
-      "name": "GST Paid/Received",
+      "name": "GST Paid/Received (Gold Standard)",
       "description": "GST ledger with configurable receipt delay using CUMSUM pattern",
       "category": "accounting",
       "inputs": [
@@ -1169,7 +1176,7 @@
     },
     {
       "id": "tax_losses",
-      "name": "Tax & Tax Losses",
+      "name": "Tax & Tax Losses (Gold Standard)",
       "description": "Tax calculation with loss carry-forward using CUMSUM pattern",
       "category": "accounting",
       "inputs": [
@@ -1204,7 +1211,7 @@
     },
     {
       "id": "depreciation_amortization",
-      "name": "Depreciation & Amortization",
+      "name": "Depreciation & Amortization (Gold Standard)",
       "description": "CUMSUM-based ledger pattern - no circular dependencies",
       "category": "accounting",
       "inputs": [
