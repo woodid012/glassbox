@@ -8,8 +8,7 @@ import { useInputManagement } from '@/hooks/useInputManagement'
 import { useInputArrays } from '@/hooks/useInputArrays'
 import { MODULE_TEMPLATES } from '@/utils/moduleTemplates'
 import { useReferenceMap } from './useReferenceMap'
-import { useCalculationEngine } from './useCalculationEngine'
-import { useModuleEngine } from './useModuleEngine'
+import { useUnifiedCalculation } from './useUnifiedCalculation'
 
 export function useDashboardState(viewMode) {
     // Single state object - all state in one place for easy save/load
@@ -250,9 +249,12 @@ export function useDashboardState(viewMode) {
         }
     }, [hasLoadedFromStorage, cachedResults])
 
-    // Track dirty state - mark dirty when inputs/formulas/modules change after initial load
-    // Use a ref to track the previous values for comparison
+    // Track dirty state and auto-calculate with debounce
+    // When inputs/formulas/modules change, wait 300ms then auto-calculate
     const prevStateRef = useRef(null)
+    const autoCalcTimeoutRef = useRef(null)
+    const AUTO_CALC_DELAY = 300 // ms to wait before auto-calculating
+
     useEffect(() => {
         if (!hasLoadedFromStorage) return
 
@@ -284,6 +286,27 @@ export function useDashboardState(viewMode) {
                 modules: appState.modules,
                 indices: appState.indices,
                 keyPeriods: appState.keyPeriods
+            }
+
+            // Auto-calculate with debounce
+            // Clear any pending auto-calc and schedule a new one
+            if (autoCalcTimeoutRef.current) {
+                clearTimeout(autoCalcTimeoutRef.current)
+            }
+            autoCalcTimeoutRef.current = setTimeout(() => {
+                setIsCalculating(true)
+                requestAnimationFrame(() => {
+                    setCalcVersion(v => v + 1)
+                    setIsDirty(false)
+                    setTimeout(() => setIsCalculating(false), 50)
+                })
+            }, AUTO_CALC_DELAY)
+        }
+
+        // Cleanup timeout on unmount
+        return () => {
+            if (autoCalcTimeoutRef.current) {
+                clearTimeout(autoCalcTimeoutRef.current)
             }
         }
     }, [hasLoadedFromStorage, appState.inputGlass, appState.calculations, appState.modules, appState.indices, appState.keyPeriods])
@@ -397,54 +420,21 @@ export function useDashboardState(viewMode) {
         })
     }, [])
 
-    // Initialize placeholder module outputs for first calculation pass
-    const placeholderModuleOutputs = useMemo(() => {
-        const outputs = {}
-        if (!modules || modules.length === 0) return outputs
-
-        modules.forEach((module, moduleIdx) => {
-            const templateKey = module.templateId
-            const template = MODULE_TEMPLATES[templateKey]
-            if (template) {
-                template.outputs.forEach((output, outputIdx) => {
-                    const ref = `M${moduleIdx + 1}.${outputIdx + 1}`
-                    outputs[ref] = new Array(timeline.periods).fill(0)
-                })
-            }
-        })
-
-        return outputs
-    }, [modules, timeline.periods])
-
-    // Calculation Engine Hook - evaluates all calculations
+    // Unified Calculation Hook - evaluates all calculations and modules in a single pass
+    // Uses topological sort to handle dependencies correctly (no more 3-pass architecture)
     // calcVersion controls when full recalculation happens (on-demand)
     // cachedResults provides instant startup without recalculating
     const {
-        evaluateFormula,
-        previewFormula,
-        calculationResults,
+        calculationResults: finalCalculationResults,
+        moduleOutputs: allModuleOutputs,
         calculationErrors,
-        calculationTypes
-    } = useCalculationEngine({
+        calculationTypes,
+        evaluateFormula,
+        previewFormula
+    } = useUnifiedCalculation({
         calculations,
-        referenceMap,
-        moduleOutputs: placeholderModuleOutputs,
-        timeline,
-        calcVersion,
-        cachedResults
-    })
-
-    // Module Engine Hook - computes module outputs and re-evaluates calculations
-    // calcVersion controls when full recalculation happens (on-demand)
-    // cachedResults provides instant startup without recalculating
-    const {
-        allModuleOutputs,
-        finalCalculationResults
-    } = useModuleEngine({
         modules,
         referenceMap,
-        calculationResults,
-        calculations,
         timeline,
         calcVersion,
         cachedResults
