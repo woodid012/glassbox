@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Trash2, Play, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, Play, RefreshCw, ToggleLeft, ToggleRight } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 import { DeferredInput } from '@/components/DeferredInput'
 import { MODULE_TEMPLATES } from '@/utils/moduleTemplates'
@@ -83,6 +83,15 @@ export default function ModulesPage() {
             ...prev,
             modules: prev.modules.map(m =>
                 m.id === moduleId ? { ...m, name } : m
+            )
+        }))
+    }
+
+    const toggleModuleEnabled = (moduleId) => {
+        setAppState(prev => ({
+            ...prev,
+            modules: prev.modules.map(m =>
+                m.id === moduleId ? { ...m, enabled: m.enabled === false ? true : false } : m
             )
         }))
     }
@@ -193,7 +202,11 @@ export default function ModulesPage() {
                                     return (
                                         <div
                                             key={module.id}
-                                            className="border border-slate-200 rounded-lg p-4 bg-white"
+                                            className={`border rounded-lg p-4 transition-all ${
+                                                module.enabled === false
+                                                    ? 'border-slate-200 bg-slate-50 opacity-60'
+                                                    : 'border-slate-200 bg-white'
+                                            }`}
                                         >
                                             <div className="flex items-start justify-between mb-4">
                                                 <div className="flex items-center gap-2">
@@ -214,12 +227,35 @@ export default function ModulesPage() {
                                                         {module.category}
                                                     </span>
                                                 </div>
-                                                <button
-                                                    onClick={() => removeModule(module.id)}
-                                                    className="p-1.5 hover:bg-red-100 rounded text-slate-400 hover:text-red-500 transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => toggleModuleEnabled(module.id)}
+                                                        className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                                            module.enabled === false
+                                                                ? 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                                                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                        }`}
+                                                        title={module.enabled === false ? 'Enable module' : 'Disable module'}
+                                                    >
+                                                        {module.enabled === false ? (
+                                                            <>
+                                                                <ToggleLeft className="w-4 h-4" />
+                                                                Disabled
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <ToggleRight className="w-4 h-4" />
+                                                                Enabled
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => removeModule(module.id)}
+                                                        className="p-1.5 hover:bg-red-100 rounded text-slate-400 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Module Inputs */}

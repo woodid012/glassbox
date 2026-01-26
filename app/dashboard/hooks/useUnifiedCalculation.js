@@ -303,9 +303,11 @@ export function useUnifiedCalculation({
 
                 if (!template) continue
 
-                // Iterative modules need solvedAt to calculate
+                // Skip disabled modules (return zeros for all outputs)
+                // Also skip iterative modules that haven't been solved yet
+                const isDisabled = mod.enabled === false
                 const isIterative = templateKey === 'iterative_debt_sizing'
-                if (isIterative && !mod.solvedAt) {
+                if (isDisabled || (isIterative && !mod.solvedAt)) {
                     template.outputs.forEach((output, outputIdx) => {
                         const ref = `M${node.index + 1}.${outputIdx + 1}`
                         modOutputs[ref] = new Array(timeline.periods).fill(0)

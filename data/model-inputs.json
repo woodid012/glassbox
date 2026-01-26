@@ -4,7 +4,8 @@
     "startYear": 2027,
     "startMonth": 4,
     "endYear": 2060,
-    "endMonth": 3
+    "endMonth": 3,
+    "zeroThreshold": 0.000001
   },
   "keyPeriods": [
     {
@@ -425,7 +426,7 @@
       "startMonth": 10,
       "endYear": 2045,
       "endMonth": 9,
-      "entryMode": "constant",
+      "entryMode": "series",
       "lookupStartYear": 2042,
       "lookupStartMonth": 10,
       "lookupEndYear": 2045,
@@ -3452,7 +3453,7 @@
       "entryMode": "constant",
       "values": {},
       "formulas": {},
-      "value": 7,
+      "value": 6,
       "valueFrequency": "Y",
       "spreadMethod": null
     },
@@ -3565,6 +3566,20 @@
       "spreadMethod": null
     },
     {
+      "id": 140,
+      "groupId": 100,
+      "subgroupId": null,
+      "name": "A Very Small Number",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 0.000001,
+      "valueFrequency": "Y",
+      "spreadMethod": null,
+      "unit": "",
+      "inputId": "epsilon"
+    },
+    {
       "id": 130,
       "groupId": 8,
       "subgroupId": null,
@@ -3575,7 +3590,10 @@
       "value": 0.29,
       "valueFrequency": "Q",
       "spreadMethod": null,
-      "unit": "$ M"
+      "unit": "$ M",
+      "seriesFrequency": "Q",
+      "seriesPaymentMonth": "3",
+      "seriesAnnualValue": 1.1667
     }
   ],
   "inputType1": [],

@@ -950,7 +950,7 @@
         "period_dscr",
         "cumulative_principal"
       ],
-      "solvedAt": 1769425160584
+      "solvedAt": 1769425737743
     },
     {
       "id": 1769317033954,
@@ -1006,8 +1006,8 @@
         "gstPaidRef": "M3.3",
         "feesRef": "",
         "sizedDebtRef": "M1.1",
-        "gearingCapPct": 65,
-        "interestRatePct": 5,
+        "gearingCapPct": "C1.19",
+        "interestRatePct": "C1.20",
         "drawdownMethod": "prorata",
         "constructionFlagRef": "F1"
       },
@@ -1033,7 +1033,7 @@
       "inputs": {
         "taxableIncomeRef": "R17",
         "opsFlagRef": "F2",
-        "taxRatePct": "30"
+        "taxRatePct": "C1.11"
       },
       "outputs": [
         "taxable_income_before_losses",
@@ -1044,7 +1044,8 @@
         "net_taxable_income",
         "tax_payable"
       ],
-      "solvedAt": null
+      "solvedAt": null,
+      "enabled": false
     },
     {
       "id": 1769408407252,
@@ -1057,8 +1058,8 @@
         "gstPaidRef": "R61",
         "feesRef": "",
         "sizedDebtRef": "M1.1",
-        "gearingCapPct": 65,
-        "interestRatePct": 5,
+        "gearingCapPct": "C1.19",
+        "interestRatePct": "C1.20",
         "drawdownMethod": "prorata",
         "constructionFlagRef": "F1"
       },

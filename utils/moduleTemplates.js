@@ -21,7 +21,7 @@
 export const MODULE_TEMPLATES = {
     construction_funding: {
         type: 'construction_funding',
-        name: 'Construction Funding (Gold Standard)',
+        name: 'Construction Funding',
         description: 'Construction funding waterfall with IDC equity-funded',
         inputs: [
             { key: 'constructionCostsRef', label: 'Construction Costs (cumulative)', type: 'reference', refType: 'any', required: true },
@@ -119,7 +119,7 @@ export const MODULE_TEMPLATES = {
     },
     gst_receivable: {
         type: 'gst_receivable',
-        name: 'GST Paid/Received (Gold Standard)',
+        name: 'GST Paid/Received',
         description: 'GST ledger with configurable receipt delay using CUMSUM pattern',
         inputs: [
             { key: 'gstBaseRef', label: 'GST Base Amount (e.g., Capex)', type: 'reference', refType: 'any', required: true },
@@ -148,7 +148,7 @@ export const MODULE_TEMPLATES = {
     },
     tax_losses: {
         type: 'tax_losses',
-        name: 'Tax & Tax Losses (Gold Standard)',
+        name: 'Tax & Tax Losses',
         description: 'Tax calculation with loss carry-forward using CUMSUM pattern',
         inputs: [
             { key: 'taxableIncomeRef', label: 'Taxable Income Before Losses', type: 'reference', refType: 'any', required: true },
@@ -176,7 +176,7 @@ export const MODULE_TEMPLATES = {
     },
     depreciation_amortization: {
         type: 'depreciation_amortization',
-        name: 'Depreciation & Amortization (Gold Standard)',
+        name: 'Depreciation & Amortization',
         description: 'CUMSUM-based ledger pattern - no circular dependencies',
         inputs: [
             // Capital additions reference (e.g., V1 for CAPEX)
@@ -358,9 +358,25 @@ function calculateConstructionFunding(inputs, arrayLength, context) {
         ? context[constructionFlagRef]
         : new Array(arrayLength).fill(0)
 
-    // Rates
-    const gearingCap = (parseFloat(gearingCapPct) || 65) / 100
-    const monthlyRate = (parseFloat(interestRatePct) || 5) / 100 / 12
+    // Helper to resolve value (can be number or reference like "C1.19")
+    const resolveValue = (value, defaultVal) => {
+        if (typeof value === 'number') return value
+        if (typeof value === 'string') {
+            // Check if it's a reference (e.g., "C1.19")
+            if (context[value]) {
+                const arr = context[value]
+                return arr.find(v => v !== 0) || arr[0] || defaultVal
+            }
+            // Try parsing as a number string
+            const parsed = parseFloat(value)
+            return isNaN(parsed) ? defaultVal : parsed
+        }
+        return defaultVal
+    }
+
+    // Rates - support both direct values and references
+    const gearingCap = resolveValue(gearingCapPct, 0) / 100
+    const monthlyRate = resolveValue(interestRatePct, 0) / 100 / 12
 
     // Find construction period
     const consStart = constructionFlag.findIndex(f => f === 1 || f === true)
@@ -831,13 +847,38 @@ function calculateTaxLosses(inputs, arrayLength, context) {
         ? context[taxableIncomeRef]
         : new Array(arrayLength).fill(0)
 
+    // Debug: Log what value Tax module is receiving for taxableIncomeRef
+    if (taxableIncomeRef) {
+        const firstNonZero = incomeArray.findIndex(v => v !== 0)
+        if (firstNonZero >= 0) {
+            console.log(`[TaxModule] ${taxableIncomeRef} first non-zero at period ${firstNonZero}: ${incomeArray[firstNonZero].toFixed(4)}`)
+        }
+    }
+
     // Get operations flag array
     const opsFlag = opsFlagRef && context[opsFlagRef]
         ? context[opsFlagRef]
         : new Array(arrayLength).fill(1) // Default to always active
 
-    // Tax rate as decimal
-    const taxRate = (parseFloat(taxRatePct) || 30) / 100
+    // Helper to resolve value (can be number or reference like "C1.11")
+    const resolveValue = (value, defaultVal) => {
+        if (typeof value === 'number') return value
+        if (typeof value === 'string') {
+            // Check if it's a reference (e.g., "C1.11")
+            if (context[value]) {
+                const arr = context[value]
+                // Get first non-zero value (constants are typically constant across periods)
+                return arr.find(v => v !== 0) || arr[0] || defaultVal
+            }
+            // Try parsing as a number string
+            const parsed = parseFloat(value)
+            return isNaN(parsed) ? defaultVal : parsed
+        }
+        return defaultVal
+    }
+
+    // Tax rate as decimal - supports both direct values and references
+    const taxRate = resolveValue(taxRatePct, 0) / 100
 
     // Step 1: Calculate Generated and Potential for each period
     const generated = new Array(arrayLength).fill(0)
@@ -1428,9 +1469,11 @@ function calculateIterativeDebtSizing(inputs, arrayLength, context) {
     }
 
     const useNewFormat = contractedCfadsRef || merchantCfadsRef
-    const parsedContractedDSCR = resolveDSCR(contractedDSCR, 1.35)
-    const parsedMerchantDSCR = resolveDSCR(merchantDSCR, 1.50)
-    const parsedTargetDSCR = resolveDSCR(targetDSCR, 1.4)
+    // Resolve all numeric inputs - supports refs like C1.25, no hardcoded defaults
+    const parsedContractedDSCR = resolveDSCR(contractedDSCR, 0)
+    const parsedMerchantDSCR = resolveDSCR(merchantDSCR, 0)
+    const parsedTargetDSCR = resolveDSCR(targetDSCR, 0)
+    const parsedMaxGearing = resolveDSCR(maxGearingPct, 0)
 
     for (let i = 0; i < arrayLength; i++) {
         if (useNewFormat) {
@@ -1494,7 +1537,7 @@ function calculateIterativeDebtSizing(inputs, arrayLength, context) {
 
     // Binary search for optimal debt (no IDC added - IDC is equity-funded)
     let lowerBound = 0
-    let upperBound = totalFunding * (maxGearingPct / 100)
+    let upperBound = totalFunding * (parsedMaxGearing / 100)
     let bestDebt = 0
     let bestSchedule = null
 
