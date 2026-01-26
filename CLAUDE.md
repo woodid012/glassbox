@@ -117,6 +117,99 @@ Calculations derive their tab from their group's `tabId`. This means:
 - Change only the group's `tabId`
 - All calculations in that group move automatically
 
+## Creating Time Series Inputs (The Linking Pattern)
+
+When you need a new recurring input (e.g., maintenance capex, debt service, revenue stream), think abstractly about linking three components:
+
+```
+Key Period (WHEN)  →  Input Group (HOW)  →  Input (WHAT)
+     ↓                      ↓                    ↓
+ Start/End dates      Frequency (M/Q/Y)      Values/Amount
+```
+
+### Step 1: Define the Time Window (Key Period)
+
+Create a Key Period in `keyPeriods` array that defines WHEN the series is active:
+
+```json
+{
+  "id": 12,
+  "name": "Maintenance",
+  "startYear": 2042, "startMonth": 10,
+  "endYear": 2045, "endMonth": 9,
+  "periods": 36
+}
+```
+
+Key periods can also link to other periods (e.g., "starts 1 month after Construction ends").
+
+### Step 2: Define the Entry Pattern (Input Group)
+
+Create an Input Group in `inputGlassGroups` that defines HOW values are entered:
+
+```json
+{
+  "id": 8,
+  "name": "Maintenance",
+  "linkedKeyPeriodId": "12",
+  "frequency": "Q",
+  "groupType": "combined",
+  "entryMode": "constant"
+}
+```
+
+| Field | Purpose |
+|-------|---------|
+| `linkedKeyPeriodId` | Links to key period for start/end dates |
+| `frequency` | `M` (monthly), `Q` (quarterly), `Y` (annual) |
+| `entryMode` | `constant` (same value), `values` (manual each period), `lookup` (reference another) |
+
+### Step 3: Add the Input (What Value)
+
+Create an Input in `inputGlass` that defines WHAT the actual values are:
+
+```json
+{
+  "id": 130,
+  "groupId": 8,
+  "name": "Base Maintenance",
+  "entryMode": "constant",
+  "value": 0.29,
+  "valueFrequency": "Q",
+  "unit": "$ M"
+}
+```
+
+### Step 4: Reference in Calculations or Modules
+
+The input automatically expands to monthly periods and can be referenced:
+- In formulas: `S1.19` (if in OPEX group) or appropriate prefix
+- In modules: Set `maintenanceRef: "S1.19"` as module input
+
+### Complete Example: Adding Quarterly Maintenance
+
+**Goal:** $0.29M quarterly maintenance from Oct 2042 to Sep 2045
+
+1. **Key Period** (id: 12) → Oct 2042 - Sep 2045 (36 months)
+2. **Input Group** (id: 8) → Quarterly frequency, linked to key period 12
+3. **Input** (id: 130) → $0.29M constant value
+4. **Module** (MRA) → References the input, calculates look-forward reserve target
+
+### Why This Pattern Matters
+
+- **Separation of concerns:** Time window, entry pattern, and values are independent
+- **Reusability:** Same key period can be used by multiple input groups
+- **Flexibility:** Change frequency without recreating inputs
+- **Auditability:** Clear traceability from output back to input assumptions
+
+### For Escalation (CPI, etc.)
+
+Don't add escalation to the input itself. Instead:
+1. Create a calculation that applies escalation: `S1.19 * I2` (where I2 is CPI index)
+2. Reference the escalated calculation in downstream formulas
+
+This keeps escalation logic visible and auditable in the calculation chain.
+
 ## Formula Reference System
 
 **All references are ID-based for stability.**
