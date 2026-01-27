@@ -431,27 +431,24 @@ export default function ModulesPage() {
                                                                     (() => {
                                                                         const inputValue = module.inputs[inputDef.key] ?? inputDef.default ?? ''
                                                                         const formatted = formatInputDisplay(inputValue, { allRefs, inputGlass, keyPeriods, calculations, indices })
+                                                                        const showFormatted = formatted && formatted.type !== 'number' && formatted.type !== 'unknown'
                                                                         return (
-                                                                            <div>
-                                                                                <DeferredInput
-                                                                                    type="text"
-                                                                                    value={inputValue}
-                                                                                    onChange={(val) => updateInputValue(module.id, inputDef.key, val)}
-                                                                                    placeholder="e.g., 1000 or V1.1 or V1 * 0.08"
-                                                                                    className="w-full text-sm font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                                                />
-                                                                                {formatted && formatted.type !== 'number' && formatted.type !== 'unknown' && (
-                                                                                    <div className={`mt-0.5 text-[10px] truncate ${
-                                                                                        formatted.type === 'constant' ? 'text-purple-600' :
-                                                                                        formatted.type === 'flag' ? 'text-emerald-600' :
-                                                                                        formatted.type === 'calculation' ? 'text-blue-600' :
-                                                                                        formatted.type === 'index' ? 'text-amber-600' :
-                                                                                        'text-slate-500'
-                                                                                    }`}>
-                                                                                        {formatted.display}
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
+                                                                            <DeferredInput
+                                                                                type="text"
+                                                                                value={inputValue}
+                                                                                displayValue={showFormatted ? formatted.display : undefined}
+                                                                                onChange={(val) => updateInputValue(module.id, inputDef.key, val)}
+                                                                                placeholder="e.g., 1000 or V1.1 or V1 * 0.08"
+                                                                                className={`w-full text-sm font-mono bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                                                    showFormatted
+                                                                                        ? formatted.type === 'constant' ? 'text-purple-600' :
+                                                                                          formatted.type === 'flag' ? 'text-emerald-600' :
+                                                                                          formatted.type === 'calculation' ? 'text-blue-600' :
+                                                                                          formatted.type === 'index' ? 'text-amber-600' :
+                                                                                          'text-slate-500'
+                                                                                        : 'text-slate-700'
+                                                                                }`}
+                                                                            />
                                                                         )
                                                                     })()
                                                                 )}
