@@ -218,8 +218,9 @@ export const InlineCell = forwardRef(function InlineCell({ value, onChange, onNa
 
 // Read-only display cell for aggregated views
 export function DisplayCell({ value, category, isTimeline = false }) {
+    const isNegative = typeof value === 'number' && value < 0
     return (
-        <div className={`cell-display text-right tabular-nums text-slate-900 text-[11px] px-1 py-0.5 bg-slate-200/60 ${category === 'flag' ? 'flex items-center justify-center' : ''}`}>
+        <div className={`cell-display text-right tabular-nums ${isNegative ? 'text-red-600' : 'text-slate-900'} text-[11px] px-1 py-0.5 bg-slate-200/60 ${category === 'flag' ? 'flex items-center justify-center' : ''}`}>
             {category === 'flag' ? (
                 <span className="text-slate-700">{value === 1 ? '1' : '0'}</span>
             ) : (
