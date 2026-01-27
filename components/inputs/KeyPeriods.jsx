@@ -42,7 +42,6 @@ export default function KeyPeriods({
     const [dragOverIndex, setDragOverIndex] = useState(null)
     const [expandedStartLinks, setExpandedStartLinks] = useState(new Set())
     const [expandedEndLinks, setExpandedEndLinks] = useState(new Set())
-    const [advancedMode, setAdvancedMode] = useState(false)
 
     // Organize periods for display: respect original order, inject children after their parent group
     const { displayPeriods, groupsMap } = useMemo(() => {
@@ -450,45 +449,18 @@ export default function KeyPeriods({
         <div className="space-y-4">
             {editMode && (
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                {/* Simple/Advanced Toggle */}
-                <div className="flex justify-end px-2 py-1">
-                    <div className="flex items-center gap-0.5 bg-slate-100 rounded p-0.5">
-                        <button
-                            onClick={() => setAdvancedMode(false)}
-                            className={cn(
-                                "px-1.5 py-0.5 text-[10px] font-medium rounded transition-colors",
-                                !advancedMode
-                                    ? "bg-white text-slate-700 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-700"
-                            )}
-                        >
-                            Simple
-                        </button>
-                        <button
-                            onClick={() => setAdvancedMode(true)}
-                            className={cn(
-                                "px-1.5 py-0.5 text-[10px] font-medium rounded transition-colors",
-                                advancedMode
-                                    ? "bg-white text-slate-700 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-700"
-                            )}
-                        >
-                            Advanced
-                        </button>
-                    </div>
-                </div>
-                <table className="text-sm" style={{ tableLayout: 'fixed' }}>
+                <table className="text-sm w-full" style={{ tableLayout: 'fixed' }}>
                     <colgroup>
                         <col style={{ width: '24px' }} />
                         <col style={{ width: '140px' }} />
                         <col style={{ width: '50px' }} />
                         <col style={{ width: '45px' }} />
                         <col style={{ width: '95px' }} />
-                        {advancedMode && <col style={{ width: '110px' }} />}
-                        {advancedMode && <col style={{ width: '50px' }} />}
+                        <col style={{ width: '110px' }} />
+                        <col style={{ width: '50px' }} />
                         <col style={{ width: '95px' }} />
-                        {advancedMode && <col style={{ width: '110px' }} />}
-                        {advancedMode && <col style={{ width: '50px' }} />}
+                        <col style={{ width: '110px' }} />
+                        <col style={{ width: '50px' }} />
                         <col style={{ width: '60px' }} />
                         <col style={{ width: '24px' }} />
                     </colgroup>
@@ -507,29 +479,21 @@ export default function KeyPeriods({
                             <th className="px-1.5 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase">
                                 Start
                             </th>
-                            {advancedMode && (
                                 <th className="px-1.5 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase">
                                     Link To
                                 </th>
-                            )}
-                            {advancedMode && (
                                 <th className="px-1.5 py-1 text-center text-[10px] font-semibold text-slate-500 uppercase">
                                     Offset
                                 </th>
-                            )}
                             <th className="px-1.5 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase">
                                 End
                             </th>
-                            {advancedMode && (
                                 <th className="px-1.5 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase">
                                     Link To
                                 </th>
-                            )}
-                            {advancedMode && (
                                 <th className="px-1.5 py-1 text-center text-[10px] font-semibold text-slate-500 uppercase">
                                     Offset
                                 </th>
-                            )}
                             <th className="px-1 py-1 text-center text-[10px] font-semibold text-slate-500 uppercase">
                                 Group
                             </th>
@@ -561,16 +525,12 @@ export default function KeyPeriods({
                                     compact
                                 />
                             </td>
-                            {advancedMode && (
                                 <td className="px-1.5 py-1">
                                     <span className="text-[10px] text-slate-400">—</span>
                                 </td>
-                            )}
-                            {advancedMode && (
                                 <td className="px-1.5 py-1 text-center">
                                     <span className="text-[10px] text-slate-400">—</span>
                                 </td>
-                            )}
                             <td className="px-1.5 py-1">
                                 <YearMonthInput
                                     year={config.endYear}
@@ -583,16 +543,12 @@ export default function KeyPeriods({
                                     compact
                                 />
                             </td>
-                            {advancedMode && (
                                 <td className="px-1.5 py-1">
                                     <span className="text-[10px] text-slate-400">—</span>
                                 </td>
-                            )}
-                            {advancedMode && (
                                 <td className="px-1.5 py-1 text-center">
                                     <span className="text-[10px] text-slate-400">—</span>
                                 </td>
-                            )}
                             <td className="px-1 py-1"></td>
                             <td className="px-1 py-1"></td>
                         </tr>
@@ -714,13 +670,9 @@ export default function KeyPeriods({
                                                         disabled={hasStartLink}
                                                         compact
                                                     />
-                                                    {!advancedMode && hasStartLink && (
-                                                        <Link2 className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-                                                    )}
                                                 </div>
                                             )}
                                         </td>
-                                        {advancedMode && (
                                             <td className="px-1.5 py-1">
                                                 {isGroup ? (
                                                     <span className="text-[10px] text-slate-400">—</span>
@@ -749,8 +701,6 @@ export default function KeyPeriods({
                                                     </div>
                                                 )}
                                             </td>
-                                        )}
-                                        {advancedMode && (
                                             <td className="px-1.5 py-1 text-center">
                                                 {isGroup ? (
                                                     <span className="text-[10px] text-slate-400">—</span>
@@ -763,7 +713,6 @@ export default function KeyPeriods({
                                                     <span className="text-[10px] text-slate-400">—</span>
                                                 )}
                                             </td>
-                                        )}
                                         <td className="px-1.5 py-1">
                                             {isGroup ? (
                                                 <div className="flex gap-0.5">
@@ -783,13 +732,9 @@ export default function KeyPeriods({
                                                         disabled={hasEndLink}
                                                         compact
                                                     />
-                                                    {!advancedMode && hasEndLink && (
-                                                        <Link2 className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-                                                    )}
                                                 </div>
                                             )}
                                         </td>
-                                        {advancedMode && (
                                             <td className="px-1.5 py-1">
                                                 {isGroup ? (
                                                     <span className="text-[10px] text-slate-400">—</span>
@@ -818,8 +763,6 @@ export default function KeyPeriods({
                                                     </div>
                                                 )}
                                             </td>
-                                        )}
-                                        {advancedMode && (
                                             <td className="px-1.5 py-1 text-center">
                                                 {isGroup ? (
                                                     <span className="text-[10px] text-slate-400">—</span>
@@ -832,7 +775,6 @@ export default function KeyPeriods({
                                                     <span className="text-[10px] text-slate-400">—</span>
                                                 )}
                                             </td>
-                                        )}
                                         {/* Group actions column */}
                                         <td className="px-1 py-1">
                                             <div className="flex items-center justify-center gap-0.5">
@@ -920,7 +862,7 @@ export default function KeyPeriods({
                 <h3 className="text-xs font-semibold text-slate-600 mb-2">Timeline</h3>
                 <div className="relative" style={{ minHeight: `${(keyPeriods.length + 1) * 28 + 36}px` }}>
                     {/* Timeline axis with year markers */}
-                    <div className="relative ml-24 mb-6" style={{ height: '24px' }}>
+                    <div className="relative mb-6" style={{ height: '24px', marginLeft: 'calc(96px + 52px + 52px + 32px)' }}>
                         <div className="absolute left-0 top-0 w-full h-px bg-slate-300"></div>
                         {(() => {
                             const modelStartTotal = config.startYear * 12 + config.startMonth
@@ -949,9 +891,18 @@ export default function KeyPeriods({
                         })()}
                     </div>
 
+                    {/* Column headers */}
+                    <div className="flex items-center mb-1" style={{ height: '18px' }}>
+                        <div className="w-24 flex-shrink-0"></div>
+                        <div className="w-[52px] flex-shrink-0 text-[9px] font-semibold text-slate-400 uppercase text-center">Start</div>
+                        <div className="w-[52px] flex-shrink-0 text-[9px] font-semibold text-slate-400 uppercase text-center">End</div>
+                        <div className="w-[32px] flex-shrink-0 text-[9px] font-semibold text-slate-400 uppercase text-center">Mths</div>
+                        <div className="flex-1"></div>
+                    </div>
+
                     {/* Period bars */}
                     {[
-                        { id: 'default', name: 'Model', startYear: config.startYear, startMonth: config.startMonth, endYear: config.endYear, endMonth: config.endMonth },
+                        { id: 'default', name: 'Model', startYear: config.startYear, startMonth: config.startMonth, endYear: config.endYear, endMonth: config.endMonth, periods: defaultPeriods },
                         ...keyPeriods
                     ].map((period, index) => {
                         const modelStartTotal = config.startYear * 12 + config.startMonth
@@ -960,17 +911,29 @@ export default function KeyPeriods({
 
                         const periodStartTotal = period.startYear * 12 + period.startMonth
                         const periodEndTotal = period.endYear * 12 + period.endMonth
+                        const periodMonths = periodEndTotal - periodStartTotal + 1
                         const startPos = ((periodStartTotal - modelStartTotal) / totalMonths) * 100
                         const endPos = ((periodEndTotal - modelStartTotal + 1) / totalMonths) * 100
                         const width = Math.max(0.5, endPos - startPos)
                         const color = period.id === 'default' ? '#94A3B8' : getPeriodColor(index - 1)
+                        const startLabel = `${String(period.startMonth).padStart(2, '0')}/${period.startYear}`
+                        const endLabel = `${String(period.endMonth).padStart(2, '0')}/${period.endYear}`
 
                         return (
-                            <div key={period.id} className="relative mb-1" style={{ height: '24px' }}>
-                                <div className="absolute left-0 top-0 w-20 text-[10px] font-medium text-slate-600 pr-1 text-right truncate" style={{ lineHeight: '20px' }}>
+                            <div key={period.id} className="flex items-center mb-1" style={{ height: '24px' }}>
+                                <div className="w-24 flex-shrink-0 text-[10px] font-medium text-slate-600 pr-1 text-right truncate" style={{ lineHeight: '20px' }}>
                                     {period.name}
                                 </div>
-                                <div className="relative ml-24" style={{ height: '24px' }}>
+                                <div className="w-[52px] flex-shrink-0 text-[9px] text-slate-400 text-center whitespace-nowrap" style={{ lineHeight: '20px' }}>
+                                    {startLabel}
+                                </div>
+                                <div className="w-[52px] flex-shrink-0 text-[9px] text-slate-400 text-center whitespace-nowrap" style={{ lineHeight: '20px' }}>
+                                    {endLabel}
+                                </div>
+                                <div className="w-[32px] flex-shrink-0 text-[9px] text-slate-400 text-center whitespace-nowrap" style={{ lineHeight: '20px' }}>
+                                    {periodMonths}
+                                </div>
+                                <div className="relative flex-1" style={{ height: '24px' }}>
                                     <div
                                         className="absolute top-0 rounded h-5 flex items-center justify-center text-[9px] font-medium text-white"
                                         style={{
@@ -979,7 +942,7 @@ export default function KeyPeriods({
                                             backgroundColor: color,
                                             minWidth: '16px',
                                         }}
-                                        title={period.name}
+                                        title={`${period.name}: ${startLabel} – ${endLabel} (${periodMonths} months)`}
                                     >
                                         {width > 8 && (
                                             <span className="px-1 truncate">{period.name}</span>
