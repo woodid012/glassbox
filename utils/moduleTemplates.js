@@ -1911,10 +1911,13 @@ function calculateDistributions(inputs, arrayLength, context) {
 
         // Individual test results (1 = pass, 0 = fail)
         // DSCR test: periodic DSCR >= threshold
-        const dscrOk = !dscrTestOn || (dscr[i] >= dscrThresh)
+        // Auto-pass when no debt service (DSCR=0 means debt fully repaid, no covenant to test)
+        const noDebtService = (debtService[i] || 0) === 0
+        const dscrOk = !dscrTestOn || noDebtService || (dscr[i] >= dscrThresh)
         outputs.dscr_test[i] = (isOps && dscrTestOn) ? (dscrOk ? 1 : 0) : (isOps ? 1 : 0)
 
         // ADSCR test: trailing 12m ratio >= threshold
+        // Auto-pass when trailing debt service is zero (debt fully repaid)
         const adscrOk = !adscrTestOn || (adscr[i] >= adscrThresh)
         outputs.adscr_test[i] = (isOps && adscrTestOn) ? (adscrOk ? 1 : 0) : (isOps ? 1 : 0)
 

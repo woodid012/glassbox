@@ -213,6 +213,51 @@ export function getDefaultState() {
                     { key: 'maxIterations', label: 'Max Iterations', type: 'number', default: 50 }
                 ],
                 outputs: ['sized_debt', 'opening_balance', 'interest_payment', 'principal_payment', 'debt_service', 'closing_balance', 'period_dscr', 'cumulative_principal']
+            },
+            {
+                id: 'distributions',
+                name: 'Distributions',
+                description: 'Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment',
+                category: 'financing',
+                inputs: [
+                    { key: 'availableCashRef', label: 'Available Cashflow (pre-dist)', type: 'reference', default: 'R170' },
+                    { key: 'npatRef', label: 'NPAT', type: 'reference', default: 'R19' },
+                    { key: 'equityContributedRef', label: 'Equity Contributed', type: 'reference', default: 'M4.3' },
+                    { key: 'minCashReserve', label: 'Minimum Cash Reserve', type: 'number_or_ref', default: 0 },
+                    { key: 'opsFlagRef', label: 'Operations Flag', type: 'reference', default: 'F2' },
+                    { key: 'withholdingTaxPct', label: 'Withholding Tax %', type: 'number_or_ref', default: 0 },
+                    { key: 'lockupActive', label: 'Lock-up Active', type: 'boolean', default: true },
+                    { key: 'lockupReleasePeriods', label: 'Release After (Qtrs)', type: 'number_or_ref', default: 2 },
+                    { key: 'dscrTestActive', label: 'DSCR Test Active', type: 'boolean', default: true },
+                    { key: 'dscrRef', label: 'DSCR (periodic)', type: 'reference', default: 'M1.7' },
+                    { key: 'dscrThreshold', label: 'DSCR Threshold', type: 'number_or_ref', default: 1.15 },
+                    { key: 'adscrTestActive', label: 'Historical ADSCR Test Active', type: 'boolean', default: true },
+                    { key: 'cfadsRef', label: 'Total CFADS', type: 'reference', default: 'R205' },
+                    { key: 'debtServiceRef', label: 'Total Debt Service', type: 'reference', default: 'M1.5' },
+                    { key: 'adscrThreshold', label: 'ADSCR Threshold', type: 'number_or_ref', default: 1.15 },
+                    { key: 'dsraTestActive', label: 'DSRA Fully Funded Test', type: 'boolean', default: false },
+                    { key: 'dsraBalanceRef', label: 'DSRA Balance', type: 'reference', default: '' },
+                    { key: 'dsraTargetRef', label: 'DSRA Target', type: 'reference', default: '' },
+                    { key: 'quarterEndFlagRef', label: 'Quarter End Flag', type: 'reference', default: 'T.QE' }
+                ],
+                outputs: ['cash_available', 're_opening', 're_npat', 're_test', 'npat_test', 'dividend_paid', 're_movement', 're_closing', 'sc_opening', 'sc_cash_available', 'sc_repayment', 'sc_closing', 'total_distributions', 'withholding_tax', 'net_to_equity', 'dscr_test', 'adscr_test', 'dsra_test', 'all_tests_pass', 'consec_pass_qtrs', 'lockup_active']
+            },
+            {
+                id: 'dsrf',
+                name: 'DSRF (Debt Service Reserve Facility)',
+                description: 'Standby facility guaranteeing debt service with refinancing schedule',
+                category: 'financing',
+                inputs: [
+                    { key: 'dsrfActiveRef', label: 'DSRF Active', type: 'reference', default: 'C1.50' },
+                    { key: 'debtServiceRef', label: 'Total Debt Service', type: 'reference', default: 'R178' },
+                    { key: 'operationsFlagRef', label: 'Operations Flag', type: 'reference', default: 'F2' },
+                    { key: 'establishmentFeePctRef', label: 'Establishment Fee (%)', type: 'number_or_ref', default: 'C1.51' },
+                    { key: 'commitmentFeePctOfMarginRef', label: 'Commitment Fee (% of Margin)', type: 'number_or_ref', default: 'C1.52' },
+                    { key: 'baseMarginPctRef', label: 'Base Margin (%)', type: 'number_or_ref', default: 'C1.53' },
+                    { key: 'facilityMonthsRef', label: 'Facility Months of DS', type: 'number_or_ref', default: 'C1.54' },
+                    { key: 'refinancingSchedule', label: 'Refinancing Schedule', type: 'array', default: [] }
+                ],
+                outputs: ['facility_limit', 'establishment_fee', 'commitment_fee', 'refi_fees', 'effective_margin', 'total_dsrf_fees', 'total_dsrf_fees_cumulative', 'ds_plus_dsrf', 'adjusted_dscr']
             }
         ],
         calculations: [
