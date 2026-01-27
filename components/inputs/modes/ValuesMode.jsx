@@ -1,8 +1,7 @@
 import React from 'react'
 import { Trash2 } from 'lucide-react'
 import EditableCell from '../shared/EditableCell'
-import GeneratedArrayPreview from '../shared/GeneratedArrayPreview'
-import SubgroupTable, { CollapsedSubgroupView } from '../shared/SubgroupTable'
+import SubgroupTable from '../shared/SubgroupTable'
 import {
     formatPeriodLabel,
     getValuesArray,
@@ -14,9 +13,6 @@ export default function ValuesMode({
     groupInputs,
     periods,
     config,
-    viewMode = 'M',
-    keyPeriods = [],
-    isCollapsed,
     isCellSelected,
     handleCellSelect,
     handleCellShiftSelect,
@@ -27,46 +23,11 @@ export default function ValuesMode({
     onUpdateSubgroup,
     onRemoveSubgroup
 }) {
-    // Collapsed View
-    if (isCollapsed) {
-        return (
-            <CollapsedSubgroupView
-                group={group}
-                groupInputs={groupInputs}
-                periods={periods}
-                config={config}
-                renderPeriodHeaders={() =>
-                    periods.map((p, i) => (
-                        <th key={i} className="text-center py-1 px-0 text-[10px] font-medium text-slate-500 min-w-[45px] w-[45px]">
-                            {formatPeriodLabel(p.year, p.month, group.frequency)}
-                        </th>
-                    ))
-                }
-                renderPeriodCells={(periodTotals, type) =>
-                    periodTotals.map((val, i) => (
-                        <td
-                            key={i}
-                            className={`py-1 px-0.5 text-right text-[11px] min-w-[45px] w-[45px] ${
-                                type === 'subgroup'
-                                    ? 'font-medium text-blue-700 border-r border-blue-100'
-                                    : 'font-semibold text-slate-700 border-r border-slate-100'
-                            }`}
-                        >
-                            {val !== 0 ? val.toLocaleString('en-US', { maximumFractionDigits: 1 }) : ''}
-                        </td>
-                    ))
-                }
-            />
-        )
-    }
-
-    // Expanded View
     let globalRowIndex = 0
 
     return (
-        <>
-            <div className="overflow-x-auto">
-                <SubgroupTable
+        <div className="overflow-x-auto">
+            <SubgroupTable
                     group={group}
                     groupInputs={groupInputs}
                     periods={periods}
@@ -93,17 +54,10 @@ export default function ValuesMode({
                             ))}
                         </tr>
                     )}
-                    renderSubgroupHeaderCells={(sg, sgTotal, sgPeriodTotals) => {
-                        // Calculate period totals for this subgroup
-                        const periodTotals = sg.inputs.reduce((acc, input) => {
-                            const values = getValuesArray(input, periods, group.frequency, group, config)
-                            values.forEach((v, i) => {
-                                acc[i] = (acc[i] || 0) + (parseFloat(v) || 0)
-                            })
-                            return acc
-                        }, new Array(periods.length).fill(0))
-
-                        return periodTotals.map((val, i) => (
+                    renderSubgroupHeaderCells={(sg, sgTotal, sgExtraData, sgPeriodTotals) => {
+                        // sgPeriodTotals is pre-computed by SubgroupSection via useMemo
+                        if (!sgPeriodTotals) return null
+                        return sgPeriodTotals.map((val, i) => (
                             <td key={i} className="py-1 px-0.5 text-right text-[11px] text-blue-700 font-medium border-r border-blue-100 min-w-[45px] w-[45px]">
                                 {val !== 0 ? val.toLocaleString('en-US', { maximumFractionDigits: 1 }) : ''}
                             </td>
@@ -175,32 +129,16 @@ export default function ValuesMode({
                             </tr>
                         )
                     }}
-                    renderGroupTotalCells={(groupGrandTotal) => {
-                        // Calculate group period totals
-                        const periodTotals = groupInputs.reduce((acc, input) => {
-                            const values = getValuesArray(input, periods, group.frequency, group, config)
-                            values.forEach((v, i) => {
-                                acc[i] = (acc[i] || 0) + (parseFloat(v) || 0)
-                            })
-                            return acc
-                        }, new Array(periods.length).fill(0))
-
-                        return periodTotals.map((val, i) => (
+                    renderGroupTotalCells={(groupGrandTotal, groupExtraData, groupPeriodTotals) => {
+                        // groupPeriodTotals is pre-computed by SubgroupTable via useMemo
+                        if (!groupPeriodTotals) return null
+                        return groupPeriodTotals.map((val, i) => (
                             <td key={i} className="py-1 px-0.5 text-right text-[11px] font-semibold text-slate-800 border-r border-slate-300 min-w-[45px] w-[45px]">
                                 {val !== 0 ? val.toLocaleString('en-US', { maximumFractionDigits: 1 }) : ''}
                             </td>
                         ))
                     }}
                 />
-            </div>
-
-            <GeneratedArrayPreview
-                group={group}
-                groupInputs={groupInputs}
-                config={config}
-                viewMode={viewMode}
-                keyPeriods={keyPeriods}
-            />
-        </>
+        </div>
     )
 }

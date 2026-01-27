@@ -16,6 +16,14 @@
     {
       "id": 4,
       "name": "Valuation"
+    },
+    {
+      "id": 5,
+      "name": "B/S"
+    },
+    {
+      "id": 6,
+      "name": "Cashflow"
     }
   ],
   "calculationsGroups": [
@@ -40,22 +48,22 @@
     },
     {
       "id": 30,
-      "tabId": 1,
+      "tabId": 6,
       "name": "Operating CF"
     },
     {
       "id": 31,
-      "tabId": 1,
+      "tabId": 6,
       "name": "Investing CF"
     },
     {
       "id": 32,
-      "tabId": 1,
+      "tabId": 6,
       "name": "Financing CF"
     },
     {
       "id": 13,
-      "tabId": 1,
+      "tabId": 6,
       "name": "Cash Position"
     },
     {
@@ -137,6 +145,26 @@
       "id": 21,
       "tabId": 4,
       "name": "Discount Factors"
+    },
+    {
+      "id": 39,
+      "tabId": 5,
+      "name": "Assets"
+    },
+    {
+      "id": 40,
+      "tabId": 5,
+      "name": "Liabilities"
+    },
+    {
+      "id": 41,
+      "tabId": 5,
+      "name": "Equity"
+    },
+    {
+      "id": 42,
+      "tabId": 5,
+      "name": "B/S Check"
     },
     {
       "id": 23,
@@ -309,8 +337,8 @@
       "tabId": 1,
       "groupId": 4,
       "name": "EBT",
-      "formula": "R15 + R16",
-      "description": "Earnings before taxes"
+      "formula": "R15 + R16 + R174 - R144 - R146",
+      "description": "Earnings before taxes (incl. agency fee, upfront fees, commitment fees)"
     },
     {
       "id": 18,
@@ -449,17 +477,25 @@
       "id": 149,
       "tabId": 3,
       "groupId": 31,
-      "name": "Maintenance Capex",
-      "formula": "-M6.3",
-      "description": "Maintenance capex drawn from MRA (not indexed)"
+      "name": "MRA Drawdown (Maintenance)",
+      "formula": "M6.3",
+      "description": "Cash inflow from MRA to pay maintenance (offsets OPEX in Operating CF)"
+    },
+    {
+      "id": 202,
+      "tabId": 3,
+      "groupId": 31,
+      "name": "GST Received (Construction)",
+      "formula": "M3.8",
+      "description": "GST refund received during construction"
     },
     {
       "id": 28,
       "tabId": 3,
       "groupId": 31,
       "name": "Investing CF",
-      "formula": "R23 + R24 + R25 + R26 + R27 + R149",
-      "description": ""
+      "formula": "R23 + R24 + R25 + R26 + R27 + R149 + R202",
+      "description": "Investing CF subtotal"
     },
     {
       "id": 29,
@@ -534,6 +570,30 @@
       "description": "Placeholder - ongoing DSRA/facility fees"
     },
     {
+      "id": 199,
+      "tabId": 3,
+      "groupId": 32,
+      "name": "Upfront Fees Paid",
+      "formula": "-R144",
+      "description": "Cash outflow for upfront financing fees"
+    },
+    {
+      "id": 200,
+      "tabId": 3,
+      "groupId": 32,
+      "name": "Commitment Fees Paid",
+      "formula": "-R146",
+      "description": "Cash outflow for commitment fees"
+    },
+    {
+      "id": 201,
+      "tabId": 3,
+      "groupId": 32,
+      "name": "IDC Paid",
+      "formula": "-M4.8",
+      "description": "Cash outflow for interest during construction"
+    },
+    {
       "id": 154,
       "tabId": 3,
       "groupId": 32,
@@ -600,7 +660,7 @@
       "groupId": 36,
       "name": "Agency Fees",
       "formula": "CUMSUM(S3 * I2 * F1)",
-      "description": "Cumulative facility agent fee during construction (CPI-indexed)",
+      "description": "Cumulative facility agent fee during construction (CPI-indexed, for S&U)",
       "type": "stock"
     },
     {
@@ -706,7 +766,7 @@
       "tabId": 3,
       "groupId": 32,
       "name": "Financing CF (ex-Dist)",
-      "formula": "R29 + R31 + R32 + R174 + R33 + R34 + R35 + R151 + R152 + R153",
+      "formula": "R29 + R31 + R32 + R174 + R33 + R34 + R35 + R151 + R152 + R153 + R199 + R200 + R201",
       "description": "Financing flows excluding shareholder distributions"
     },
     {
@@ -809,15 +869,6 @@
       "name": "NPAT - Test Result",
       "formula": "M7.5",
       "description": "NPAT test result (from Distributions module)",
-      "type": "stock"
-    },
-    {
-      "id": 125,
-      "tabId": 3,
-      "groupId": 13,
-      "name": "Closing Cash (Post-Distribution)",
-      "formula": "R42",
-      "description": "Final cash position (R42 already includes distributions via R40)",
       "type": "stock"
     },
     {
@@ -1018,6 +1069,14 @@
       "type": "stock"
     },
     {
+      "id": 203,
+      "tabId": 1,
+      "groupId": 16,
+      "name": "Total Capital Additions",
+      "formula": "V1 + M4.8",
+      "description": "Per-period capex + IDC (combined additions for D&A depreciable base)"
+    },
+    {
       "id": 80,
       "tabId": 1,
       "groupId": 16,
@@ -1187,6 +1246,134 @@
       "formula": "L2.2 + C1.33",
       "description": "Base Rate (L2.2) + Operations Margin (C1.33 = 1.75%)",
       "type": "stock"
+    },
+    {
+      "id": 182,
+      "groupId": 39,
+      "name": "Cash & Cash Equivalents",
+      "formula": "R42",
+      "description": "Closing cash position",
+      "type": "stock"
+    },
+    {
+      "id": 196,
+      "groupId": 39,
+      "name": "Construction WIP",
+      "formula": "(CUMSUM(V1 * F1) + R63) * F1",
+      "description": "Capex + capitalised IDC during construction (zero after COD — asset transfers to PP&E via D&A module)",
+      "type": "stock"
+    },
+    {
+      "id": 183,
+      "groupId": 39,
+      "name": "PP&E (Net Book Value)",
+      "formula": "R84",
+      "description": "D&A closing balance (net of accumulated depreciation, post-COD)",
+      "type": "stock"
+    },
+    {
+      "id": 184,
+      "groupId": 39,
+      "name": "Trade Receivables",
+      "formula": "R95",
+      "description": "Tolling + Merchant receivables",
+      "type": "stock"
+    },
+    {
+      "id": 185,
+      "groupId": 39,
+      "name": "GST Receivable",
+      "formula": "M3.6",
+      "description": "GST receivable closing balance from GST module",
+      "type": "stock"
+    },
+    {
+      "id": 186,
+      "groupId": 39,
+      "name": "MRA Balance",
+      "formula": "M6.5",
+      "description": "Maintenance reserve account closing balance",
+      "type": "stock"
+    },
+    {
+      "id": 187,
+      "groupId": 39,
+      "name": "Total Assets",
+      "formula": "R182 + R196 + R183 + R184 + R185 + R186",
+      "description": "Cash + WIP + PP&E + Receivables + GST + MRA",
+      "type": "stock"
+    },
+    {
+      "id": 198,
+      "groupId": 40,
+      "name": "Construction Debt",
+      "formula": "M4.2 * F1",
+      "description": "Cumulative senior debt drawn during construction (M4.2), zero after COD",
+      "type": "stock"
+    },
+    {
+      "id": 188,
+      "groupId": 40,
+      "name": "Operations Debt",
+      "formula": "R74",
+      "description": "Operations debt closing balance (M1.6), active from COD",
+      "type": "stock"
+    },
+    {
+      "id": 189,
+      "groupId": 40,
+      "name": "Trade Payables",
+      "formula": "R96",
+      "description": "OPEX-based payables (30-day terms)",
+      "type": "stock"
+    },
+    {
+      "id": 190,
+      "groupId": 40,
+      "name": "Total Liabilities",
+      "formula": "R198 + R188 + R189",
+      "description": "Construction Debt + Operations Debt + Payables",
+      "type": "stock"
+    },
+    {
+      "id": 191,
+      "groupId": 41,
+      "name": "Share Capital",
+      "formula": "CUMSUM(M4.7) * F1 + M7.12 * F2",
+      "description": "Construction: cumulative equity drawn (M4.7). Operations: SC closing from distributions module (M7.12)",
+      "type": "stock"
+    },
+    {
+      "id": 192,
+      "groupId": 41,
+      "name": "Retained Earnings",
+      "formula": "R141",
+      "description": "Retained earnings closing balance",
+      "type": "stock"
+    },
+    {
+      "id": 193,
+      "groupId": 41,
+      "name": "Total Equity",
+      "formula": "R191 + R192",
+      "description": "Share capital + retained earnings",
+      "type": "stock"
+    },
+    {
+      "id": 194,
+      "groupId": 42,
+      "name": "Total L + E",
+      "formula": "R190 + R193",
+      "description": "Total liabilities plus total equity",
+      "type": "stock"
+    },
+    {
+      "id": 195,
+      "groupId": 42,
+      "name": "Balance Check",
+      "formula": "R187 - R194",
+      "description": "Should be zero if B/S balances (Total Assets - Total L&E)",
+      "type": "stock"
     }
   ],
   "modules": [
@@ -1229,7 +1416,7 @@
       "description": "CUMSUM-based ledger pattern - no circular dependencies",
       "category": "accounting",
       "inputs": {
-        "additionsRef": "V1",
+        "additionsRef": "R203",
         "opsFlagRef": "F2",
         "lifeYears": "C1.24",
         "method": "straight_line",
@@ -1277,7 +1464,7 @@
       "category": "financing",
       "inputs": {
         "constructionCostsRef": "R60",
-        "gstPaidRef": "M3.3",
+        "gstPaidRef": "R61",
         "feesRef": "R173",
         "sizedDebtRef": "M1.1",
         "gearingCapPct": "C1.19",

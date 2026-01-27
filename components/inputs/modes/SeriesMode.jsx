@@ -1,8 +1,7 @@
 import React from 'react'
 import { Trash2 } from 'lucide-react'
 import EditableCell from '../shared/EditableCell'
-import GeneratedArrayPreview from '../shared/GeneratedArrayPreview'
-import SubgroupTable, { CollapsedSubgroupView } from '../shared/SubgroupTable'
+import SubgroupTable from '../shared/SubgroupTable'
 import { formatPeriodLabel } from '../utils/inputHelpers'
 
 // Helper to calculate count for an input
@@ -34,9 +33,6 @@ export default function SeriesMode({
     groupInputs,
     periods,
     config,
-    viewMode = 'M',
-    keyPeriods = [],
-    isCollapsed,
     onAddInput,
     onUpdateInput,
     onRemoveInput,
@@ -44,44 +40,9 @@ export default function SeriesMode({
     onUpdateSubgroup,
     onRemoveSubgroup
 }) {
-    // Collapsed View
-    if (isCollapsed) {
-        return (
-            <CollapsedSubgroupView
-                group={group}
-                groupInputs={groupInputs}
-                periods={periods}
-                config={config}
-                renderPeriodHeaders={() =>
-                    periods.map((p, i) => (
-                        <th key={i} className="text-center py-1 px-0 text-[10px] font-medium text-slate-500 min-w-[45px] w-[45px]">
-                            {formatPeriodLabel(p.year, p.month, group.frequency)}
-                        </th>
-                    ))
-                }
-                renderPeriodCells={(periodTotals, type) =>
-                    periodTotals.map((val, i) => (
-                        <td
-                            key={i}
-                            className={`py-1 px-0.5 text-right text-[11px] min-w-[45px] w-[45px] ${
-                                type === 'subgroup'
-                                    ? 'font-medium text-blue-700 border-r border-blue-100'
-                                    : 'font-semibold text-slate-700 border-r border-slate-100'
-                            }`}
-                        >
-                            {val !== 0 ? val.toLocaleString('en-US', { maximumFractionDigits: 1 }) : ''}
-                        </td>
-                    ))
-                }
-            />
-        )
-    }
-
-    // Expanded View
     return (
-        <>
-            <div className="overflow-x-auto">
-                <SubgroupTable
+        <div className="overflow-x-auto">
+            <SubgroupTable
                     group={group}
                     groupInputs={groupInputs}
                     periods={periods}
@@ -322,15 +283,6 @@ export default function SeriesMode({
                         </>
                     )}
                 />
-            </div>
-
-            <GeneratedArrayPreview
-                group={group}
-                groupInputs={groupInputs}
-                config={config}
-                viewMode={viewMode}
-                keyPeriods={keyPeriods}
-            />
-        </>
+        </div>
     )
 }

@@ -7,6 +7,7 @@ import { useDashboard } from '../context/DashboardContext'
 export default function KeyPeriodsPage() {
     const {
         viewMode,
+        inputsEditMode,
         appState,
         setters,
         handlers
@@ -44,6 +45,7 @@ export default function KeyPeriodsPage() {
                     <KeyPeriods
                         config={config}
                         keyPeriods={keyPeriods}
+                        editMode={inputsEditMode}
                         collapsedKeyPeriodGroups={collapsedKeyPeriodGroups || new Set()}
                         onAddPeriod={addKeyPeriod}
                         onUpdatePeriod={updateKeyPeriod}

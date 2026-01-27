@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useCallback, useRef } from 'react'
-import { processArrayFunctions, evaluateSafeExpression } from '@/utils/formulaEvaluator'
+import { processArrayFunctions, evaluateSafeExpression, extractShiftTargets, evaluateClusterPeriodByPeriod } from '@/utils/formulaEvaluator'
 
 // Module-level regex cache (shared across all hook instances)
 const globalRegexCache = new Map()
@@ -235,6 +235,96 @@ export function useCalculationEngine({
             }
         }
 
+        // Detect SHIFT-based soft cycles
+        const shiftNodeToCluster = new Map()
+        const shiftClusters = new Map()
+        let nextClusterId = 0
+
+        // Build forward adjacency for reachability checks
+        const isReachable = (startId, targetId) => {
+            if (startId === targetId) return true
+            const visited = new Set()
+            const q = [startId]
+            visited.add(startId)
+            while (q.length > 0) {
+                const current = q.shift()
+                const deps = dependencies[current]
+                if (!deps) continue
+                for (const dep of deps) {
+                    if (dep === targetId) return true
+                    if (!visited.has(dep)) {
+                        visited.add(dep)
+                        q.push(dep)
+                    }
+                }
+            }
+            return false
+        }
+
+        const allCycleNodeSets = []
+        calculations.forEach(calc => {
+            const shiftTargets = extractShiftTargets(calc.formula)
+            for (const target of shiftTargets) {
+                const targetId = parseInt(target.replace('R', ''))
+                if (!allIds.has(targetId)) continue
+                if (isReachable(targetId, calc.id)) {
+                    // Soft cycle: calc uses SHIFT(target), target depends on calc
+                    const cycleNodes = new Set([calc.id, targetId])
+                    // Include intermediate nodes
+                    for (const id of allIds) {
+                        if (isReachable(targetId, id) && isReachable(id, calc.id)) {
+                            cycleNodes.add(id)
+                        }
+                    }
+                    allCycleNodeSets.push(cycleNodes)
+                }
+            }
+        })
+
+        // Merge overlapping sets
+        const mergedSets = []
+        for (const nodeSet of allCycleNodeSets) {
+            let mergedInto = null
+            for (let i = 0; i < mergedSets.length; i++) {
+                for (const node of nodeSet) {
+                    if (mergedSets[i].has(node)) { mergedInto = i; break }
+                }
+                if (mergedInto !== null) break
+            }
+            if (mergedInto !== null) {
+                for (const node of nodeSet) mergedSets[mergedInto].add(node)
+            } else {
+                mergedSets.push(new Set(nodeSet))
+            }
+        }
+
+        // Build cluster structures
+        const evalOrderPosition = new Map()
+        evalOrder.forEach((id, idx) => evalOrderPosition.set(id, idx))
+
+        for (const nodeSet of mergedSets) {
+            const clusterId = nextClusterId++
+            const members = []
+            for (const id of nodeSet) {
+                shiftNodeToCluster.set(id, clusterId)
+                const calc = calcById.get(id)
+                if (calc) members.push(calc)
+            }
+            const internalOrder = members
+                .map(c => `R${c.id}`)
+                .sort((a, b) => {
+                    const aId = parseInt(a.replace('R', ''))
+                    const bId = parseInt(b.replace('R', ''))
+                    return (evalOrderPosition.get(aId) ?? 0) - (evalOrderPosition.get(bId) ?? 0)
+                })
+            shiftClusters.set(clusterId, { members, internalOrder })
+        }
+
+        if (shiftClusters.size > 0) {
+            console.log(`[CalcEngine] Detected ${shiftClusters.size} SHIFT cycle cluster(s):`,
+                [...shiftClusters.entries()].map(([id, c]) => `Cluster ${id}: ${c.internalOrder.join(', ')}`).join('; '))
+        }
+
         // Evaluate in topological order
         if (evalOrder.length !== calculations.length) {
             // Cycle detected - identify which calculations are in the cycle
@@ -243,11 +333,26 @@ export function useCalculationEngine({
             const cycleCalcs = [...inCycle].map(id => `R${id}`).join(', ')
 
             // Evaluate non-cyclic calculations first
+            const evaluatedClusters = new Set()
             for (const id of evalOrder) {
-                const calc = calcById.get(id)
-                const { values, error } = evalSingleFormula(calc.formula, results)
-                results[`R${id}`] = values
-                if (error) errors[`R${id}`] = error
+                const clusterId = shiftNodeToCluster.get(id)
+                if (clusterId !== undefined) {
+                    if (evaluatedClusters.has(clusterId)) continue
+                    evaluatedClusters.add(clusterId)
+                    const cluster = shiftClusters.get(clusterId)
+                    const context = { ...referenceMap, ...moduleOutputs, ...results }
+                    const clusterResults = evaluateClusterPeriodByPeriod(
+                        cluster.members, cluster.internalOrder, context, timeline
+                    )
+                    Object.entries(clusterResults).forEach(([nodeId, values]) => {
+                        results[nodeId] = values
+                    })
+                } else {
+                    const calc = calcById.get(id)
+                    const { values, error } = evalSingleFormula(calc.formula, results)
+                    results[`R${id}`] = values
+                    if (error) errors[`R${id}`] = error
+                }
             }
 
             // Mark cyclic calculations with error
@@ -256,11 +361,26 @@ export function useCalculationEngine({
                 errors[`R${id}`] = `Circular dependency detected: ${cycleCalcs}`
             }
         } else {
+            const evaluatedClusters = new Set()
             for (const id of evalOrder) {
-                const calc = calcById.get(id)
-                const { values, error } = evalSingleFormula(calc.formula, results)
-                results[`R${id}`] = values
-                if (error) errors[`R${id}`] = error
+                const clusterId = shiftNodeToCluster.get(id)
+                if (clusterId !== undefined) {
+                    if (evaluatedClusters.has(clusterId)) continue
+                    evaluatedClusters.add(clusterId)
+                    const cluster = shiftClusters.get(clusterId)
+                    const context = { ...referenceMap, ...moduleOutputs, ...results }
+                    const clusterResults = evaluateClusterPeriodByPeriod(
+                        cluster.members, cluster.internalOrder, context, timeline
+                    )
+                    Object.entries(clusterResults).forEach(([nodeId, values]) => {
+                        results[nodeId] = values
+                    })
+                } else {
+                    const calc = calcById.get(id)
+                    const { values, error } = evalSingleFormula(calc.formula, results)
+                    results[`R${id}`] = values
+                    if (error) errors[`R${id}`] = error
+                }
             }
         }
 

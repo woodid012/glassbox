@@ -110,7 +110,8 @@ export default function ModulesPage() {
         appState,
         derived,
         uiState,
-        setters
+        setters,
+        inputsEditMode
     } = useDashboard()
 
     const { modules, moduleTemplates, keyPeriods, inputGlass, calculations, indices } = appState
@@ -244,7 +245,8 @@ export default function ModulesPage() {
                 </div>
 
                 <div className="p-6">
-                    {/* Pre-built Templates Section */}
+                    {/* Pre-built Templates Section - only in edit mode */}
+                    {inputsEditMode && (
                     <div className="mb-8">
                         <h3 className="text-sm font-semibold text-slate-700 mb-4">Pre-built Templates</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -275,6 +277,7 @@ export default function ModulesPage() {
                             ))}
                         </div>
                     </div>
+                    )}
 
                     {/* Active Modules Section */}
                     <div>
@@ -311,12 +314,16 @@ export default function ModulesPage() {
                                                     <span className="text-xs px-1.5 py-0.5 rounded font-medium text-orange-600 bg-orange-100">
                                                         M{moduleIndex + 1}
                                                     </span>
-                                                    <DeferredInput
-                                                        type="text"
-                                                        value={module.name}
-                                                        onChange={(val) => updateModuleName(module.id, val)}
-                                                        className="text-sm font-semibold text-slate-900 bg-slate-100 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                    />
+                                                    {inputsEditMode ? (
+                                                        <DeferredInput
+                                                            type="text"
+                                                            value={module.name}
+                                                            onChange={(val) => updateModuleName(module.id, val)}
+                                                            className="text-sm font-semibold text-slate-900 bg-slate-100 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                        />
+                                                    ) : (
+                                                        <span className="text-sm font-semibold text-slate-900">{module.name}</span>
+                                                    )}
                                                     <span className={`text-xs px-1.5 py-0.5 rounded ${
                                                         module.category === 'financing' ? 'bg-blue-100 text-blue-700' :
                                                         module.category === 'accounting' ? 'bg-purple-100 text-purple-700' :
@@ -325,6 +332,7 @@ export default function ModulesPage() {
                                                         {module.category}
                                                     </span>
                                                 </div>
+                                                {inputsEditMode && (
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => toggleModuleEnabled(module.id)}
@@ -354,10 +362,11 @@ export default function ModulesPage() {
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
+                                                )}
                                             </div>
 
-                                            {/* Module Inputs */}
-                                            {template && (
+                                            {/* Module Inputs - only in edit mode */}
+                                            {inputsEditMode && template && (
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                                     {template.inputs.map(inputDef => {
                                                         // Hide DB Multiplier when Straight Line is selected
@@ -452,8 +461,8 @@ export default function ModulesPage() {
                                                 </div>
                                             )}
 
-                                            {/* Solve Button for iterative modules */}
-                                            {module.templateId === 'iterative_debt_sizing' && (
+                                            {/* Solve Button for iterative modules - only in edit mode */}
+                                            {inputsEditMode && module.templateId === 'iterative_debt_sizing' && (
                                                 <div className="flex items-center gap-3 mb-4">
                                                     <button
                                                         onClick={() => solveModule(module.id)}

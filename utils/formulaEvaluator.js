@@ -391,6 +391,235 @@ export function processArrayFunctions(formula, allRefs, timeline) {
 }
 
 /**
+ * Extract R-refs that appear inside SHIFT() calls in a formula
+ * Used to detect "soft cycles" where SHIFT creates a lagged dependency
+ * @param {string} formula - The formula string
+ * @returns {string[]} Array of R-ref strings (e.g., ["R84"])
+ */
+export function extractShiftTargets(formula) {
+    if (!formula) return []
+    const targets = new Set()
+    const shiftRegex = /SHIFT\s*\(\s*([^,]+)\s*,\s*\d+\s*\)/gi
+    let match
+    while ((match = shiftRegex.exec(formula)) !== null) {
+        const innerExpr = match[1]
+        const rPattern = /\bR(\d+)(?!\d)/g
+        let rMatch
+        while ((rMatch = rPattern.exec(innerExpr)) !== null) {
+            targets.add(`R${rMatch[1]}`)
+        }
+    }
+    return [...targets]
+}
+
+/**
+ * Evaluate a cluster of formulas period-by-period to resolve SHIFT-based cycles.
+ *
+ * When formulas form a cycle through SHIFT (e.g., Opening = SHIFT(Closing, 1),
+ * Closing = Opening + Addition - Reduction), array-at-once evaluation fails because
+ * the SHIFT target hasn't been computed yet. This function evaluates all cluster
+ * formulas for period 0, then period 1, etc., so SHIFT(RX, n) can read RX[i-n].
+ *
+ * @param {Object[]} clusterCalcs - Array of calculation objects { id, formula }
+ * @param {string[]} internalOrder - Node IDs in evaluation order (e.g., ["R81", "R80", "R82", "R84"])
+ * @param {Object} context - Reference map with all external refs already resolved as arrays
+ * @param {Object} timeline - Timeline object with .periods and .year
+ * @returns {Object} Map of nodeId -> result array
+ */
+export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, context, timeline) {
+    const periods = timeline.periods
+    const calcMap = new Map()
+    clusterCalcs.forEach(calc => calcMap.set(`R${calc.id}`, calc))
+
+    // Pre-allocate result arrays and add them to context so SHIFT can read them
+    const results = {}
+    for (const nodeId of internalOrder) {
+        results[nodeId] = new Array(periods).fill(0)
+        context[nodeId] = results[nodeId]
+    }
+
+    // Pre-parse each formula: identify SHIFT calls, CUMSUM calls, and regular refs
+    const parsedFormulas = new Map()
+
+    for (const nodeId of internalOrder) {
+        const calc = calcMap.get(nodeId)
+        if (!calc || !calc.formula || !calc.formula.trim()) {
+            parsedFormulas.set(nodeId, null)
+            continue
+        }
+
+        const formula = calc.formula
+        const parsed = {
+            originalFormula: formula,
+            shiftCalls: [],     // { placeholder, targetRef, offset, innerExpr }
+            cumsumCalls: [],    // { placeholder, innerExpr, accumulator }
+            cumprodCalls: [],   // { placeholder, innerExpr, accumulator }
+            countCalls: [],     // { placeholder, innerExpr, accumulator }
+            processedFormula: formula,
+            refs: []            // { ref, regex }
+        }
+
+        let placeholderIdx = 0
+
+        // Extract SHIFT calls
+        let processedF = parsed.processedFormula
+        const shiftRegex = /SHIFT\s*\(\s*([^,]+)\s*,\s*(\d+)\s*\)/gi
+        let match
+        while ((match = shiftRegex.exec(processedF)) !== null) {
+            const placeholder = `__CLSHIFT${placeholderIdx++}__`
+            parsed.shiftCalls.push({
+                placeholder,
+                innerExpr: match[1].trim(),
+                offset: parseInt(match[2]) || 1,
+                original: match[0]
+            })
+            processedF = processedF.replace(match[0], placeholder)
+            shiftRegex.lastIndex = 0
+        }
+
+        // Extract CUMSUM calls
+        const cumsumRegex = /CUMSUM\s*\(([^)]+)\)/gi
+        while ((match = cumsumRegex.exec(processedF)) !== null) {
+            const placeholder = `__CLCUMSUM${placeholderIdx++}__`
+            parsed.cumsumCalls.push({
+                placeholder,
+                innerExpr: match[1].trim(),
+                accumulator: 0,
+                original: match[0]
+            })
+            processedF = processedF.replace(match[0], placeholder)
+            cumsumRegex.lastIndex = 0
+        }
+
+        // Extract CUMPROD calls
+        const cumprodRegex = /CUMPROD\s*\(([^)]+)\)/gi
+        while ((match = cumprodRegex.exec(processedF)) !== null) {
+            const placeholder = `__CLCUMPROD${placeholderIdx++}__`
+            parsed.cumprodCalls.push({
+                placeholder,
+                innerExpr: match[1].trim(),
+                accumulator: 1,
+                original: match[0]
+            })
+            processedF = processedF.replace(match[0], placeholder)
+            cumprodRegex.lastIndex = 0
+        }
+
+        // Extract COUNT calls
+        const countRegex = /COUNT\s*\(([^)]+)\)/gi
+        while ((match = countRegex.exec(processedF)) !== null) {
+            const placeholder = `__CLCOUNT${placeholderIdx++}__`
+            parsed.countCalls.push({
+                placeholder,
+                innerExpr: match[1].trim(),
+                accumulator: 0,
+                original: match[0]
+            })
+            processedF = processedF.replace(match[0], placeholder)
+            countRegex.lastIndex = 0
+        }
+
+        parsed.processedFormula = processedF
+
+        // Collect all refs used in the processed formula (excluding placeholders)
+        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*|T\.[A-Za-z]+)\b/g
+        const refs = [...new Set([...processedF.matchAll(refPattern)].map(m => m[1]))]
+            .filter(ref => context[ref])
+            .sort((a, b) => b.length - a.length)
+        parsed.refs = refs.map(ref => ({
+            ref,
+            regex: getCachedRegex(ref)
+        }))
+
+        parsedFormulas.set(nodeId, parsed)
+    }
+
+    // Helper: evaluate a simple expression at period i, substituting refs from context
+    function evalExprAtPeriod(expr, i) {
+        // Sort context refs by length (longer first)
+        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*|T\.[A-Za-z]+)\b/g
+        const exprRefs = [...new Set([...expr.matchAll(refPattern)].map(m => m[1]))]
+            .filter(ref => context[ref])
+            .sort((a, b) => b.length - a.length)
+
+        let substituted = expr
+        for (const ref of exprRefs) {
+            const value = context[ref]?.[i] ?? 0
+            const regex = getCachedRegex(ref)
+            regex.lastIndex = 0
+            substituted = substituted.replace(regex, value < 0 ? `(${value})` : value.toString())
+        }
+
+        // Replace any remaining unresolved R-references with 0
+        substituted = substituted.replace(/\bR\d+\b/g, '0')
+
+        return evaluateSafeExpression(substituted)
+    }
+
+    // Period-by-period evaluation
+    for (let i = 0; i < periods; i++) {
+        for (const nodeId of internalOrder) {
+            const parsed = parsedFormulas.get(nodeId)
+            if (!parsed) {
+                results[nodeId][i] = 0
+                continue
+            }
+
+            let expr = parsed.processedFormula
+
+            // Resolve SHIFT placeholders
+            for (const sc of parsed.shiftCalls) {
+                const srcPeriod = i - sc.offset
+                let value = 0
+                if (srcPeriod >= 0) {
+                    // Evaluate the inner expression at the source period
+                    value = evalExprAtPeriod(sc.innerExpr, srcPeriod)
+                }
+                expr = expr.replace(sc.placeholder, value < 0 ? `(${value})` : value.toString())
+            }
+
+            // Resolve CUMSUM placeholders
+            for (const cs of parsed.cumsumCalls) {
+                const innerVal = evalExprAtPeriod(cs.innerExpr, i)
+                cs.accumulator += innerVal
+                expr = expr.replace(cs.placeholder, cs.accumulator < 0 ? `(${cs.accumulator})` : cs.accumulator.toString())
+            }
+
+            // Resolve CUMPROD placeholders
+            for (const cp of parsed.cumprodCalls) {
+                const innerVal = evalExprAtPeriod(cp.innerExpr, i)
+                cp.accumulator *= innerVal
+                expr = expr.replace(cp.placeholder, cp.accumulator < 0 ? `(${cp.accumulator})` : cp.accumulator.toString())
+            }
+
+            // Resolve COUNT placeholders
+            for (const ct of parsed.countCalls) {
+                const innerVal = evalExprAtPeriod(ct.innerExpr, i)
+                if (innerVal !== 0) ct.accumulator++
+                expr = expr.replace(ct.placeholder, ct.accumulator.toString())
+            }
+
+            // Substitute regular refs at period i
+            for (const { ref, regex } of parsed.refs) {
+                const value = context[ref]?.[i] ?? 0
+                regex.lastIndex = 0
+                expr = expr.replace(regex, value < 0 ? `(${value})` : value.toString())
+            }
+
+            // Replace any remaining unresolved R-references with 0
+            expr = expr.replace(/\bR\d+\b/g, '0')
+
+            // Evaluate the scalar expression
+            const value = evaluateSafeExpression(expr)
+            results[nodeId][i] = value
+            // context[nodeId] already points to results[nodeId], so it's updated automatically
+        }
+    }
+
+    return results
+}
+
+/**
  * Evaluate a single period's expression
  * @param {string} expr - Expression with references already substituted
  * @returns {number} Evaluated result

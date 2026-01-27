@@ -7,12 +7,15 @@ const DashboardContext = createContext(null)
 
 export function DashboardProvider({ children }) {
     const [viewMode, setViewMode] = useState('Y')
+    const [inputsEditMode, setInputsEditMode] = useState(true)
 
     const dashboardState = useDashboardState(viewMode)
 
     const value = {
         viewMode,
         setViewMode,
+        inputsEditMode,
+        setInputsEditMode,
         ...dashboardState
     }
 

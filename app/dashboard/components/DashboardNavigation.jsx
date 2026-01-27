@@ -14,7 +14,6 @@ const NAV_CONFIG = [
     { id: 'outputs', label: 'Outputs', href: '/dashboard/outputs' },
     { id: 'validation', label: 'Validation', href: '/dashboard/validation' },
     { id: 'array-view', label: 'Array View', href: '/dashboard/array-view' },
-    { id: 'notes', label: 'Notes', href: '/dashboard/notes' },
 ]
 
 export default function DashboardNavigation() {
@@ -113,7 +112,7 @@ export default function DashboardNavigation() {
             <div className="max-w-[1800px] mx-auto px-6 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     {/* Navigation Links */}
-                    <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-300">
+                    <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                         {NAV_CONFIG.map(item => (
                             <Link
                                 key={item.id}
@@ -192,7 +191,7 @@ export default function DashboardNavigation() {
                     </button>
 
                     {/* Export Buttons */}
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 border border-slate-200">
+                    <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
                         <span className="text-xs text-slate-500 mr-1">Export:</span>
                         <button
                             onClick={() => handleExport('python')}

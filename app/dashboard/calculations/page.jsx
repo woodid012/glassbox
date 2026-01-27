@@ -165,6 +165,7 @@ const CalcRow = memo(function CalcRow({
 export default function CalculationsPage() {
     const {
         viewMode,
+        inputsEditMode,
         appState,
         setters,
         derived,
@@ -478,6 +479,7 @@ export default function CalculationsPage() {
                         <div>
                             <h2 className="text-lg font-semibold text-slate-900">Calculations</h2>
                             <p className="text-sm text-slate-500">Build formulas using input references</p>
+                            {inputsEditMode && (
                             <div className="flex items-center gap-4 mt-2 text-xs text-slate-600">
                                 <span className="font-medium text-slate-700">Syntax:</span>
                                 <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">V1 + S1</code> Addition</span>
@@ -485,11 +487,13 @@ export default function CalculationsPage() {
                                 <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">C1 * T1.1</code> Stock × Timing = Flow</span>
                                 <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">R1 + R2</code> Chain calculations</span>
                             </div>
+                            )}
                         </div>
+                        {inputsEditMode && (
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={addCalculationsGroup}
-                                className="flex items-center gap-2 px-3 py-2 text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
                             >
                                 <FolderPlus className="w-4 h-4" />
                                 Add Group
@@ -502,11 +506,12 @@ export default function CalculationsPage() {
                                 Add Calculation
                             </button>
                         </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Generated Time Series Preview */}
-                {calculations && calculations.length > 0 && (
+                {/* Generated Time Series Preview - only in view mode */}
+                {!inputsEditMode && calculations && calculations.length > 0 && (
                     <CalculationsTimeSeriesPreview
                         calculations={calculations}
                         calculationsGroups={calculationsGroups}
@@ -520,6 +525,7 @@ export default function CalculationsPage() {
                     />
                 )}
 
+                {inputsEditMode && (
                 <div className="flex">
                     {/* Available References Panel */}
                     <div className="w-72 border-r border-slate-200 bg-slate-50 p-4">
@@ -937,7 +943,7 @@ export default function CalculationsPage() {
 
                                     return (
                                         <div className="border border-slate-200 rounded-lg overflow-hidden">
-                                            <div className="px-4 py-3 bg-slate-100 border-b border-slate-200">
+                                            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
                                                 <span className="text-sm font-semibold text-slate-700">Ungrouped</span>
                                                 <span className="text-xs text-slate-500 ml-2">({ungroupedCalcs.length})</span>
                                             </div>
@@ -980,7 +986,7 @@ export default function CalculationsPage() {
                                         <div key={group.id} className="border border-slate-200 rounded-lg overflow-hidden">
                                             {/* Group Header */}
                                             <div
-                                                className="flex items-center justify-between px-4 py-3 bg-slate-100 border-b border-slate-200 cursor-pointer hover:bg-slate-150"
+                                                className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200 cursor-pointer hover:bg-slate-100"
                                                 onClick={() => toggleGroupCollapse(group.id)}
                                             >
                                                 <div className="flex items-center gap-3">
@@ -1069,6 +1075,7 @@ export default function CalculationsPage() {
                         </div>
                     </div>
                 </div>
+                )}
 
             </div>
         </main>
@@ -1186,22 +1193,25 @@ const CalculationPreview = memo(function CalculationPreview({ calc, timeline, vi
 const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPreview({ calculations, calculationsGroups, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap, activeTabId, calculationsTabs }) {
     const viewModeLabel = getViewModeLabel(viewMode)
 
-    // Determine column header based on active tab
-    const columnHeader = activeTabId === 'all'
+    // Local tab state for preview browsing (independent of editor tabs)
+    const [previewTabId, setPreviewTabId] = useState('all')
+
+    // Determine column header based on preview tab
+    const columnHeader = previewTabId === 'all'
         ? 'ALL'
-        : (calculationsTabs || []).find(t => t.id === activeTabId)?.name || 'Calculation'
+        : (calculationsTabs || []).find(t => t.id === previewTabId)?.name || 'Calculation'
 
-    // Filter calculations and groups based on active tab
+    // Filter calculations and groups based on preview tab
     const firstTabId = (calculationsTabs || [])[0]?.id
-    const isFirstTab = activeTabId === firstTabId
+    const isFirstTab = previewTabId === firstTabId
 
-    const filteredGroups = activeTabId === 'all'
+    const filteredGroups = previewTabId === 'all'
         ? calculationsGroups
-        : getTabItems(calculationsGroups, activeTabId, isFirstTab)
+        : getTabItems(calculationsGroups, previewTabId, isFirstTab)
 
-    const filteredCalcs = activeTabId === 'all'
+    const filteredCalcs = previewTabId === 'all'
         ? calculations
-        : getTabItems(calculations, activeTabId, isFirstTab, calculationsGroups)
+        : getTabItems(calculations, previewTabId, isFirstTab, calculationsGroups)
 
     // Memoize grand total calculation to avoid recalculating on every render
     const { grandTotalByPeriod, overallTotal } = useMemo(() => {
@@ -1227,8 +1237,35 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
 
     return (
         <div className="border-t border-slate-200 pt-4 pb-4 px-6">
-            <div className="text-xs font-semibold text-slate-500 uppercase mb-3">
-                Generated Time Series Preview ({viewModeLabel})
+            <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-semibold text-slate-500 uppercase">
+                    Generated Time Series Preview ({viewModeLabel})
+                </div>
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={() => setPreviewTabId('all')}
+                        className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                            previewTabId === 'all'
+                                ? 'bg-indigo-100 text-indigo-700'
+                                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                        }`}
+                    >
+                        ALL
+                    </button>
+                    {(calculationsTabs || []).map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setPreviewTabId(tab.id)}
+                            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                                previewTabId === tab.id
+                                    ? 'bg-indigo-100 text-indigo-700'
+                                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                            }`}
+                        >
+                            {tab.name}
+                        </button>
+                    ))}
+                </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="text-sm table-fixed">

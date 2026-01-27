@@ -434,6 +434,7 @@ export function useInputManagement({
             lookupEndMonth: config.endMonth,
             selectedInputIds: {}  // Maps subgroupId (or 'root') to selected inputId
         }])
+        return newId
     }, [inputGlassGroups, config.startYear, config.startMonth, config.endYear, config.endMonth, setInputGlassGroups])
 
     const updateInputGlassGroup = useCallback((groupId, field, value) => {

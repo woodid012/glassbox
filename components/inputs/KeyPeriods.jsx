@@ -21,6 +21,7 @@ function OffsetInput({ value, onCommit }) {
 export default function KeyPeriods({
     config,
     keyPeriods,
+    editMode = true,
     collapsedKeyPeriodGroups = new Set(),
     onAddPeriod,
     onUpdatePeriod,
@@ -447,6 +448,7 @@ export default function KeyPeriods({
 
     return (
         <div className="space-y-4">
+            {editMode && (
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {/* Simple/Advanced Toggle */}
                 <div className="flex justify-end px-2 py-1">
@@ -911,6 +913,7 @@ export default function KeyPeriods({
                     </button>
                 </div>
             </div>
+            )}
 
             {/* Timeline Chart */}
             <div className="bg-white rounded-lg border border-slate-200 p-4">

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo, useMemo } from 'react'
 import {
     formatPeriodLabel,
     getValuesArray,
@@ -10,8 +10,9 @@ import {
 /**
  * Shared Generated Array Preview component for ValuesMode, SeriesMode, and ConstantMode
  * Displays input values at the selected viewMode frequency
+ * Memoized to prevent re-renders when parent state changes but preview inputs are the same.
  */
-export default function GeneratedArrayPreview({
+const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
     group,
     groupInputs,
     config,
@@ -19,15 +20,79 @@ export default function GeneratedArrayPreview({
     keyPeriods = []
 }) {
     // Generate preview periods at viewMode frequency using shared function
-    const previewPeriods = generatePeriods(group, config, keyPeriods, viewMode)
+    const previewPeriods = useMemo(
+        () => generatePeriods(group, config, keyPeriods, viewMode),
+        [group, config, keyPeriods, viewMode]
+    )
 
-    const subgroupedInputs = groupInputsBySubgroup(groupInputs, group)
-    const previewGroupTotals = calculatePeriodTotals(groupInputs, previewPeriods, viewMode, group, config)
-    const previewGrandTotal = previewGroupTotals.reduce((sum, v) => sum + v, 0)
+    const subgroupedInputs = useMemo(
+        () => groupInputsBySubgroup(groupInputs, group),
+        [groupInputs, group]
+    )
+
+    const previewGroupTotals = useMemo(
+        () => calculatePeriodTotals(groupInputs, previewPeriods, viewMode, group, config),
+        [groupInputs, previewPeriods, viewMode, group, config]
+    )
+
+    const previewGrandTotal = useMemo(
+        () => previewGroupTotals.reduce((sum, v) => sum + v, 0),
+        [previewGroupTotals]
+    )
+
+    const isConstant = group.entryMode === 'constant'
 
     const viewModeLabel = viewMode === 'M' ? 'Monthly' :
                           viewMode === 'Q' ? 'Quarterly' :
                           viewMode === 'Y' ? 'Yearly' : 'Financial Year'
+
+    // Constants mode: show only label + constant value, no time periods
+    if (isConstant) {
+        return (
+            <div className="mt-4 border-t border-slate-200 pt-3">
+                <div className="overflow-x-auto">
+                    <table className="text-sm">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="w-6 min-w-[24px] bg-slate-50"></th>
+                                <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-80 min-w-[320px] bg-slate-50">
+                                    Label
+                                </th>
+                                <th className="text-center py-1.5 px-3 text-xs font-semibold text-slate-500 uppercase w-28 min-w-[112px] bg-slate-50">
+                                    Constant
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {subgroupedInputs.map(sg => (
+                                <React.Fragment key={sg.id ?? 'root'}>
+                                    {sg.id && (
+                                        <tr className="bg-blue-50 border-b border-blue-100">
+                                            <td className="w-6 min-w-[24px] bg-blue-50"></td>
+                                            <td colSpan={2} className="py-1 px-3 text-xs font-semibold text-blue-700 bg-blue-50">
+                                                {sg.name}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {sg.inputs.map(input => (
+                                        <tr key={input.id} className="border-b border-slate-100 hover:bg-blue-50/30 h-7">
+                                            <td className="w-6 min-w-[24px] bg-white"></td>
+                                            <td className={`py-0 px-3 text-xs text-slate-700 w-80 min-w-[320px] bg-white ${sg.id ? 'pl-6' : ''}`}>
+                                                {input.name}
+                                            </td>
+                                            <td className="py-0 px-3 text-center text-xs font-medium text-slate-900 w-28 min-w-[112px]">
+                                                {(input.value ?? 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </React.Fragment>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="mt-4 border-t border-slate-200 pt-3">
@@ -132,4 +197,6 @@ export default function GeneratedArrayPreview({
             </div>
         </div>
     )
-}
+})
+
+export default GeneratedArrayPreview

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Plus, Trash2, FolderPlus } from 'lucide-react'
 import EditableCell from './EditableCell'
 import {
@@ -16,6 +16,7 @@ import {
  * - periods: Array of period objects
  * - config: App config
  * - colSpan: Total number of columns (for colspan on buttons)
+ * - hideTotal: If true, hides total cells and group total row
  * - onAddInput: (groupId, subgroupId) => void
  * - onRemoveInput: (inputId) => void
  * - onAddSubgroup: (groupId) => void
@@ -36,6 +37,7 @@ export default function SubgroupTable({
     periods,
     config,
     colSpan,
+    hideTotal,
     onAddInput,
     onRemoveInput,
     onAddSubgroup,
@@ -48,9 +50,21 @@ export default function SubgroupTable({
     getSubgroupExtraData,
     getGroupExtraData
 }) {
-    const subgroupedInputs = groupInputsBySubgroup(groupInputs, group)
-    const groupPeriodTotals = calculatePeriodTotals(groupInputs, periods, group.frequency, group, config)
-    const groupGrandTotal = groupPeriodTotals.reduce((sum, v) => sum + v, 0)
+    const subgroupedInputs = useMemo(
+        () => groupInputsBySubgroup(groupInputs, group),
+        [groupInputs, group]
+    )
+
+    const groupPeriodTotals = useMemo(
+        () => calculatePeriodTotals(groupInputs, periods, group.frequency, group, config),
+        [groupInputs, periods, group, config]
+    )
+
+    const groupGrandTotal = useMemo(
+        () => groupPeriodTotals.reduce((sum, v) => sum + v, 0),
+        [groupPeriodTotals]
+    )
+
     const groupExtraData = getGroupExtraData?.()
 
     return (
@@ -60,55 +74,22 @@ export default function SubgroupTable({
             </thead>
             <tbody>
                 {subgroupedInputs.map((sg, sgIndex) => {
-                    const sgPeriodTotals = calculatePeriodTotals(sg.inputs, periods, group.frequency, group, config)
-                    const sgTotal = sgPeriodTotals.reduce((sum, v) => sum + v, 0)
-                    const sgExtraData = getSubgroupExtraData?.(sg)
-
                     return (
-                        <React.Fragment key={sg.id || 'root'}>
-                            {/* Subgroup header row */}
-                            {sg.id && (
-                                <tr className="bg-blue-50 border-b border-blue-100">
-                                    <td className="py-0 px-1 w-8 min-w-[32px] bg-blue-50">
-                                        <button
-                                            onClick={() => onRemoveSubgroup?.(group.id, sg.id)}
-                                            className="p-1 text-slate-300 hover:text-red-500"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </td>
-                                    <td className="py-1.5 px-3 w-48 min-w-[192px] bg-blue-50">
-                                        <EditableCell
-                                            value={sg.name}
-                                            onChange={(val) => onUpdateSubgroup?.(group.id, sg.id, 'name', val)}
-                                            className="font-semibold text-blue-800"
-                                        />
-                                    </td>
-                                    <td className="py-1.5 px-3 text-right font-semibold text-blue-800 w-24 min-w-[96px] bg-blue-50 border-r border-blue-200">
-                                        {sgTotal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                                    </td>
-                                    {renderSubgroupHeaderCells?.(sg, sgTotal, sgExtraData)}
-                                </tr>
-                            )}
-
-                            {/* Input rows */}
-                            {sg.inputs.map((input, rowIndex) =>
-                                renderInputRow(input, sg, rowIndex)
-                            )}
-
-                            {/* Add row for this subgroup */}
-                            <tr className="bg-slate-50/30">
-                                <td colSpan={colSpan} className={`py-1 ${sg.id ? 'pl-12' : 'pl-10'}`}>
-                                    <button
-                                        onClick={() => onAddInput(group.id, sg.id)}
-                                        className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-600"
-                                    >
-                                        <Plus className="w-3.5 h-3.5" />
-                                        Add row
-                                    </button>
-                                </td>
-                            </tr>
-                        </React.Fragment>
+                        <SubgroupSection
+                            key={sg.id || 'root'}
+                            sg={sg}
+                            group={group}
+                            periods={periods}
+                            config={config}
+                            colSpan={colSpan}
+                            hideTotal={hideTotal}
+                            onAddInput={onAddInput}
+                            onRemoveSubgroup={onRemoveSubgroup}
+                            onUpdateSubgroup={onUpdateSubgroup}
+                            renderSubgroupHeaderCells={renderSubgroupHeaderCells}
+                            renderInputRow={renderInputRow}
+                            getSubgroupExtraData={getSubgroupExtraData}
+                        />
                     )
                 })}
 
@@ -126,18 +107,97 @@ export default function SubgroupTable({
                 </tr>
 
                 {/* Group Subtotal row */}
-                <tr className="bg-slate-200 border-t-2 border-slate-300">
-                    <td className="py-2 px-1 w-8 min-w-[32px] bg-slate-200"></td>
-                    <td className="py-2 px-3 w-48 min-w-[192px] bg-slate-200 font-bold text-slate-800">
-                        {group.name} Total
-                    </td>
-                    <td className="py-2 px-3 text-right font-bold text-slate-900 w-24 min-w-[96px] bg-slate-200 border-r border-slate-300">
-                        {groupGrandTotal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                    </td>
-                    {renderGroupTotalCells?.(groupGrandTotal, groupExtraData)}
-                </tr>
+                {!hideTotal && (
+                    <tr className="bg-slate-200 border-t-2 border-slate-300">
+                        <td className="py-2 px-1 w-8 min-w-[32px] bg-slate-200"></td>
+                        <td className="py-2 px-3 w-48 min-w-[192px] bg-slate-200 font-bold text-slate-800">
+                            {group.name} Total
+                        </td>
+                        <td className="py-2 px-3 text-right font-bold text-slate-900 w-24 min-w-[96px] bg-slate-200 border-r border-slate-300">
+                            {groupGrandTotal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                        </td>
+                        {renderGroupTotalCells?.(groupGrandTotal, groupExtraData, groupPeriodTotals)}
+                    </tr>
+                )}
             </tbody>
         </table>
+    )
+}
+
+// Extracted subgroup section to allow per-subgroup memoization of totals
+function SubgroupSection({
+    sg,
+    group,
+    periods,
+    config,
+    colSpan,
+    hideTotal,
+    onAddInput,
+    onRemoveSubgroup,
+    onUpdateSubgroup,
+    renderSubgroupHeaderCells,
+    renderInputRow,
+    getSubgroupExtraData
+}) {
+    const sgPeriodTotals = useMemo(
+        () => calculatePeriodTotals(sg.inputs, periods, group.frequency, group, config),
+        [sg.inputs, periods, group, config]
+    )
+
+    const sgTotal = useMemo(
+        () => sgPeriodTotals.reduce((sum, v) => sum + v, 0),
+        [sgPeriodTotals]
+    )
+
+    const sgExtraData = getSubgroupExtraData?.(sg)
+
+    return (
+        <React.Fragment>
+            {/* Subgroup header row */}
+            {sg.id && (
+                <tr className="bg-blue-50 border-b border-blue-100">
+                    <td className="py-0 px-1 w-8 min-w-[32px] bg-blue-50">
+                        <button
+                            onClick={() => onRemoveSubgroup?.(group.id, sg.id)}
+                            className="p-1 text-slate-300 hover:text-red-500"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                    </td>
+                    <td className="py-1.5 px-3 w-48 min-w-[192px] bg-blue-50">
+                        <EditableCell
+                            value={sg.name}
+                            onChange={(val) => onUpdateSubgroup?.(group.id, sg.id, 'name', val)}
+                            className="font-semibold text-blue-800"
+                        />
+                    </td>
+                    {!hideTotal && (
+                        <td className="py-1.5 px-3 text-right font-semibold text-blue-800 w-24 min-w-[96px] bg-blue-50 border-r border-blue-200">
+                            {sgTotal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                        </td>
+                    )}
+                    {renderSubgroupHeaderCells?.(sg, sgTotal, sgExtraData, sgPeriodTotals)}
+                </tr>
+            )}
+
+            {/* Input rows */}
+            {sg.inputs.map((input, rowIndex) =>
+                renderInputRow(input, sg, rowIndex)
+            )}
+
+            {/* Add row for this subgroup */}
+            <tr className="bg-slate-50/30">
+                <td colSpan={colSpan} className={`py-1 ${sg.id ? 'pl-12' : 'pl-10'}`}>
+                    <button
+                        onClick={() => onAddInput(group.id, sg.id)}
+                        className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-600"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add row
+                    </button>
+                </td>
+            </tr>
+        </React.Fragment>
     )
 }
 
@@ -153,9 +213,20 @@ export function CollapsedSubgroupView({
     renderPeriodHeaders,
     renderPeriodCells
 }) {
-    const subgroupedInputs = groupInputsBySubgroup(groupInputs, group)
-    const groupPeriodTotals = calculatePeriodTotals(groupInputs, periods, group.frequency, group, config)
-    const groupGrandTotal = groupPeriodTotals.reduce((sum, v) => sum + v, 0)
+    const subgroupedInputs = useMemo(
+        () => groupInputsBySubgroup(groupInputs, group),
+        [groupInputs, group]
+    )
+
+    const groupPeriodTotals = useMemo(
+        () => calculatePeriodTotals(groupInputs, periods, group.frequency, group, config),
+        [groupInputs, periods, group, config]
+    )
+
+    const groupGrandTotal = useMemo(
+        () => groupPeriodTotals.reduce((sum, v) => sum + v, 0),
+        [groupPeriodTotals]
+    )
 
     return (
         <div className="overflow-x-auto">
@@ -172,22 +243,16 @@ export function CollapsedSubgroupView({
                 </thead>
                 <tbody>
                     {/* Subgroup subtotals */}
-                    {subgroupedInputs.filter(sg => sg.id).map(sg => {
-                        const sgPeriodTotals = calculatePeriodTotals(sg.inputs, periods, group.frequency, group, config)
-                        const sgTotal = sgPeriodTotals.reduce((sum, v) => sum + v, 0)
-                        return (
-                            <tr key={sg.id} className="bg-blue-50 border-b border-blue-100">
-                                <td className="w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 bg-blue-50"></td>
-                                <td className="py-1 px-3 text-xs font-medium text-blue-700 w-[192px] min-w-[192px] max-w-[192px] sticky left-[32px] z-20 bg-blue-50">
-                                    {sg.name}
-                                </td>
-                                <td className="py-1 px-3 text-right text-xs font-semibold text-blue-800 w-[96px] min-w-[96px] max-w-[96px] sticky left-[224px] z-10 bg-blue-50 border-r border-blue-200">
-                                    {sgTotal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                                </td>
-                                {renderPeriodCells(sgPeriodTotals, 'subgroup')}
-                            </tr>
-                        )
-                    })}
+                    {subgroupedInputs.filter(sg => sg.id).map(sg => (
+                        <CollapsedSubgroupRow
+                            key={sg.id}
+                            sg={sg}
+                            group={group}
+                            periods={periods}
+                            config={config}
+                            renderPeriodCells={renderPeriodCells}
+                        />
+                    ))}
                     {/* Group total */}
                     <tr className="bg-slate-100">
                         <td className="w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 bg-slate-100"></td>
@@ -202,5 +267,31 @@ export function CollapsedSubgroupView({
                 </tbody>
             </table>
         </div>
+    )
+}
+
+// Extracted to memoize per-subgroup totals in collapsed view
+function CollapsedSubgroupRow({ sg, group, periods, config, renderPeriodCells }) {
+    const sgPeriodTotals = useMemo(
+        () => calculatePeriodTotals(sg.inputs, periods, group.frequency, group, config),
+        [sg.inputs, periods, group, config]
+    )
+
+    const sgTotal = useMemo(
+        () => sgPeriodTotals.reduce((sum, v) => sum + v, 0),
+        [sgPeriodTotals]
+    )
+
+    return (
+        <tr className="bg-blue-50 border-b border-blue-100">
+            <td className="w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 bg-blue-50"></td>
+            <td className="py-1 px-3 text-xs font-medium text-blue-700 w-[192px] min-w-[192px] max-w-[192px] sticky left-[32px] z-20 bg-blue-50">
+                {sg.name}
+            </td>
+            <td className="py-1 px-3 text-right text-xs font-semibold text-blue-800 w-[96px] min-w-[96px] max-w-[96px] sticky left-[224px] z-10 bg-blue-50 border-r border-blue-200">
+                {sgTotal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+            </td>
+            {renderPeriodCells(sgPeriodTotals, 'subgroup')}
+        </tr>
     )
 }

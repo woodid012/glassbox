@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useCallback, useRef } from 'react'
-import { processArrayFunctions, evaluateSafeExpression } from '@/utils/formulaEvaluator'
+import { processArrayFunctions, evaluateSafeExpression, extractShiftTargets, evaluateClusterPeriodByPeriod } from '@/utils/formulaEvaluator'
 import { calculateModuleOutputs, MODULE_TEMPLATES } from '@/utils/moduleTemplates'
 
 // Module-level regex cache (shared across all hook instances)
@@ -114,6 +114,152 @@ function buildUnifiedGraph(calculations, modules) {
     })
 
     return graph
+}
+
+/**
+ * Detect SHIFT-based soft cycles in the dependency graph.
+ * A soft cycle exists when formula A uses SHIFT(B, n) and B transitively depends on A
+ * through regular (non-SHIFT) dependencies.
+ *
+ * Returns cluster information for period-by-period evaluation.
+ * @param {Map} graph - The unified dependency graph
+ * @param {Object[]} calculations - Array of calculation objects
+ * @returns {{ nodeToCluster: Map<string, number>, clusters: Map<number, { members: Object[], internalOrder: string[] }> }}
+ */
+function detectShiftCycles(graph, calculations) {
+    const nodeToCluster = new Map()
+    const clusters = new Map()
+    let nextClusterId = 0
+
+    if (!calculations) return { nodeToCluster, clusters }
+
+    // Build a reverse adjacency map for regular deps (non-SHIFT)
+    // reverseAdj[X] = set of nodes that X depends on (regular deps)
+    const forwardAdj = new Map() // nodeId -> Set of nodes it depends on (regular deps)
+    graph.forEach((node, nodeId) => {
+        forwardAdj.set(nodeId, node.deps)
+    })
+
+    // Check if targetId is reachable from startId via regular deps (BFS)
+    function isReachable(startId, targetId) {
+        if (startId === targetId) return true
+        const visited = new Set()
+        const queue = [startId]
+        visited.add(startId)
+        while (queue.length > 0) {
+            const current = queue.shift()
+            const deps = forwardAdj.get(current)
+            if (!deps) continue
+            for (const dep of deps) {
+                if (dep === targetId) return true
+                if (!visited.has(dep)) {
+                    visited.add(dep)
+                    queue.push(dep)
+                }
+            }
+        }
+        return false
+    }
+
+    // Collect all nodes on the path between two nodes (both directions through regular deps)
+    function collectCycleNodes(shiftSource, shiftTarget) {
+        // shiftSource uses SHIFT(shiftTarget), and shiftTarget depends on shiftSource via regular deps
+        // Collect all nodes on paths from shiftTarget back to shiftSource
+        const cycleNodes = new Set([shiftSource, shiftTarget])
+
+        // BFS from shiftTarget, find all paths to shiftSource
+        // We need all intermediate nodes
+        const visited = new Map() // nodeId -> Set of predecessor nodes leading to it
+        const queue = [shiftTarget]
+        visited.set(shiftTarget, new Set())
+
+        while (queue.length > 0) {
+            const current = queue.shift()
+            const deps = forwardAdj.get(current)
+            if (!deps) continue
+            for (const dep of deps) {
+                if (dep === shiftSource) {
+                    // Found path - trace back
+                    cycleNodes.add(dep)
+                    // Add all nodes from current back to shiftTarget
+                    let trace = current
+                    cycleNodes.add(trace)
+                    continue
+                }
+                if (!visited.has(dep)) {
+                    visited.set(dep, new Set())
+                    queue.push(dep)
+                }
+            }
+        }
+
+        // Simpler approach: include all nodes reachable from shiftTarget that can reach shiftSource
+        graph.forEach((_, nodeId) => {
+            if (nodeId.startsWith('R') && isReachable(shiftTarget, nodeId) && isReachable(nodeId, shiftSource)) {
+                cycleNodes.add(nodeId)
+            }
+        })
+
+        return cycleNodes
+    }
+
+    // For each calculation, find SHIFT targets and check for soft cycles
+    const allCycleNodeSets = []
+
+    calculations.forEach(calc => {
+        const nodeId = `R${calc.id}`
+        const shiftTargets = extractShiftTargets(calc.formula)
+
+        for (const target of shiftTargets) {
+            if (!graph.has(target)) continue
+            // Check: does target transitively depend on nodeId via regular deps?
+            if (isReachable(target, nodeId)) {
+                // Soft cycle found: nodeId uses SHIFT(target), target depends on nodeId
+                const cycleNodes = collectCycleNodes(nodeId, target)
+                allCycleNodeSets.push(cycleNodes)
+            }
+        }
+    })
+
+    if (allCycleNodeSets.length === 0) return { nodeToCluster, clusters }
+
+    // Merge overlapping sets
+    const merged = []
+    for (const nodeSet of allCycleNodeSets) {
+        let mergedInto = null
+        for (let i = 0; i < merged.length; i++) {
+            for (const node of nodeSet) {
+                if (merged[i].has(node)) {
+                    mergedInto = i
+                    break
+                }
+            }
+            if (mergedInto !== null) break
+        }
+        if (mergedInto !== null) {
+            for (const node of nodeSet) merged[mergedInto].add(node)
+        } else {
+            merged.push(new Set(nodeSet))
+        }
+    }
+
+    // Build cluster structures
+    const calcById = new Map()
+    calculations.forEach(c => calcById.set(`R${c.id}`, c))
+
+    for (const nodeSet of merged) {
+        const clusterId = nextClusterId++
+        const members = []
+        for (const nodeId of nodeSet) {
+            nodeToCluster.set(nodeId, clusterId)
+            const calc = calcById.get(nodeId)
+            if (calc) members.push(calc)
+        }
+        // Internal order: preserve topological sort order (will be set later)
+        clusters.set(clusterId, { members, internalOrder: [] })
+    }
+
+    return { nodeToCluster, clusters }
 }
 
 /**
@@ -276,20 +422,56 @@ export function useUnifiedCalculation({
         // Topological sort
         const sortedNodes = topologicalSort(graph)
 
+        // Detect SHIFT-based soft cycles
+        const { nodeToCluster, clusters } = detectShiftCycles(graph, calculations)
+
+        // Set internal order for clusters based on topological sort order
+        if (clusters.size > 0) {
+            const nodePosition = new Map()
+            sortedNodes.forEach((id, idx) => nodePosition.set(id, idx))
+
+            clusters.forEach(cluster => {
+                cluster.internalOrder = cluster.members
+                    .map(c => `R${c.id}`)
+                    .sort((a, b) => (nodePosition.get(a) ?? 0) - (nodePosition.get(b) ?? 0))
+            })
+
+            console.log(`[UnifiedCalc] Detected ${clusters.size} SHIFT cycle cluster(s):`,
+                [...clusters.entries()].map(([id, c]) => `Cluster ${id}: ${c.internalOrder.join(', ')}`).join('; '))
+        }
+
         // Build context with referenceMap as base
         const context = { ...referenceMap, timeline }
 
         // Track evaluation stats
         let calcCount = 0
         let moduleCount = 0
+        const evaluatedClusters = new Set()
 
         // Evaluate in topological order
         for (const nodeId of sortedNodes) {
             const node = graph.get(nodeId)
             if (!node) continue
 
-            if (node.type === 'calc') {
-                // Evaluate calculation
+            const clusterId = nodeToCluster.get(nodeId)
+
+            if (clusterId !== undefined) {
+                // This node belongs to a SHIFT cycle cluster
+                if (evaluatedClusters.has(clusterId)) continue
+                evaluatedClusters.add(clusterId)
+
+                // Evaluate entire cluster period-by-period
+                const cluster = clusters.get(clusterId)
+                const clusterResults = evaluateClusterPeriodByPeriod(
+                    cluster.members, cluster.internalOrder, context, timeline
+                )
+                Object.entries(clusterResults).forEach(([id, values]) => {
+                    calcResults[id] = values
+                    context[id] = values
+                })
+                calcCount += cluster.members.length
+            } else if (node.type === 'calc') {
+                // Evaluate calculation (standard array path)
                 const { values, error } = evaluateSingleCalc(node.item.formula, context, timeline)
                 calcResults[nodeId] = values
                 context[nodeId] = values // Add to context for downstream nodes

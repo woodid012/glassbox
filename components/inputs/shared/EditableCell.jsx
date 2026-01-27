@@ -1,8 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, memo } from 'react'
+
+// Format number with commas for display (not while editing)
+function formatDisplayNumber(val) {
+    const num = parseFloat(val)
+    if (isNaN(num)) return val
+    // Preserve decimal places the user entered
+    const str = String(val)
+    const decimalIdx = str.indexOf('.')
+    const decimals = decimalIdx >= 0 ? str.length - decimalIdx - 1 : 0
+    return num.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: Math.max(decimals, 2)
+    })
+}
 
 // Editable cell that commits on blur or Enter
-export default function EditableCell({ value, onChange, type = 'text', className = '', isSelected, onSelect, onShiftSelect }) {
+const EditableCell = memo(function EditableCell({ value, onChange, type = 'text', className = '', isSelected, onSelect, onShiftSelect }) {
     const [localValue, setLocalValue] = useState(value ?? '')
+    const [isFocused, setIsFocused] = useState(false)
     const inputRef = useRef(null)
 
     useEffect(() => {
@@ -18,13 +33,22 @@ export default function EditableCell({ value, onChange, type = 'text', className
         }
     }
 
+    // For number type: show formatted value when not focused, raw value when editing
+    const displayValue = (type === 'number' && !isFocused && localValue !== '')
+        ? formatDisplayNumber(localValue)
+        : localValue
+
     return (
         <input
             ref={inputRef}
-            type={type}
-            value={localValue}
+            type={isFocused ? type : 'text'}
+            value={displayValue}
             onChange={(e) => setLocalValue(e.target.value)}
-            onBlur={handleCommit}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+                setIsFocused(false)
+                handleCommit()
+            }}
             onClick={(e) => {
                 if (e.shiftKey && onShiftSelect) {
                     onShiftSelect()
@@ -44,4 +68,12 @@ export default function EditableCell({ value, onChange, type = 'text', className
             } ${isSelected ? 'bg-blue-100' : ''} ${className}`}
         />
     )
-}
+}, (prev, next) => {
+    // Only re-render when value, isSelected, or className changes
+    return prev.value === next.value &&
+           prev.isSelected === next.isSelected &&
+           prev.className === next.className &&
+           prev.type === next.type
+})
+
+export default EditableCell

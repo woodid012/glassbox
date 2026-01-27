@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 
 // Import shared components
 import GroupControls from './shared/GroupControls'
+import GeneratedArrayPreview from './shared/GeneratedArrayPreview'
 
 // Import mode components
 import ValuesMode from './modes/ValuesMode'
@@ -25,6 +26,7 @@ export default function ExcelInputs({
     config,
     keyPeriods = [],
     viewMode = 'M',
+    inputsEditMode = true,
     onUpdateGroup,
     onRemoveGroup,
     onAddInput,
@@ -34,12 +36,23 @@ export default function ExcelInputs({
     onUpdateSubgroup,
     onRemoveSubgroup,
     collapsedGroups,
-    setCollapsedGroups
+    setCollapsedGroups,
+    scrollToGroupId,
+    onScrollComplete
 }) {
     // Selection state: { groupId, startRow, startCol, endRow, endCol }
     const [selection, setSelection] = useState(null)
     const [clipboard, setClipboard] = useState(null)
     const containerRef = useRef(null)
+    const groupRefs = useRef({})
+
+    // Scroll to newly added group
+    useEffect(() => {
+        if (scrollToGroupId != null && groupRefs.current[scrollToGroupId]) {
+            groupRefs.current[scrollToGroupId].scrollIntoView({ behavior: 'smooth', block: 'center' })
+            onScrollComplete?.()
+        }
+    }, [scrollToGroupId, groups, onScrollComplete])
 
     const handleCopy = useCallback(() => {
         if (!selection) return
@@ -282,7 +295,7 @@ export default function ExcelInputs({
     return (
         <div className="space-y-6" ref={containerRef}>
             {groups.map(group => {
-                const isCollapsed = collapsedGroups?.has(group.id)
+                const isCollapsed = !inputsEditMode || collapsedGroups?.has(group.id)
                 const groupInputs = inputs.filter(inp => inp.groupId === group.id)
                 const periods = generatePeriods(group, config, keyPeriods)
                 const entryMode = group.entryMode || 'values'
@@ -309,7 +322,7 @@ export default function ExcelInputs({
                 }
 
                 return (
-                    <div key={group.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div key={group.id} ref={el => groupRefs.current[group.id] = el} className="border border-slate-200 rounded-lg overflow-hidden">
                         {/* Group Header */}
                         <GroupControls
                             group={group}
@@ -322,20 +335,31 @@ export default function ExcelInputs({
                             onRemoveGroup={onRemoveGroup}
                         />
 
-                        {/* Render appropriate mode component */}
-                        {entryMode === 'values' && (
+                        {/* Collapsed: show Generated Array Preview for all modes */}
+                        {isCollapsed && (
+                            <GeneratedArrayPreview
+                                group={group}
+                                groupInputs={groupInputs}
+                                config={config}
+                                viewMode={viewMode}
+                                keyPeriods={keyPeriods}
+                            />
+                        )}
+
+                        {/* Expanded: show mode-specific input editor */}
+                        {!isCollapsed && entryMode === 'values' && (
                             <ValuesMode {...modeProps} />
                         )}
 
-                        {entryMode === 'series' && (
+                        {!isCollapsed && entryMode === 'series' && (
                             <SeriesMode {...modeProps} />
                         )}
 
-                        {entryMode === 'constant' && (
+                        {!isCollapsed && entryMode === 'constant' && (
                             <ConstantMode {...modeProps} />
                         )}
 
-                        {(entryMode === 'lookup' || entryMode === 'lookup2') && (
+                        {!isCollapsed && (entryMode === 'lookup' || entryMode === 'lookup2') && (
                             <Lookup2Mode {...modeProps} />
                         )}
                     </div>
