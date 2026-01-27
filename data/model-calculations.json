@@ -64,9 +64,19 @@
       "name": "Working Capital"
     },
     {
-      "id": 14,
+      "id": 36,
       "tabId": 2,
-      "name": "Construction S&U"
+      "name": "S&U: Uses"
+    },
+    {
+      "id": 37,
+      "tabId": 2,
+      "name": "S&U: Sources"
+    },
+    {
+      "id": 38,
+      "tabId": 2,
+      "name": "S&U: Check"
     },
     {
       "id": 15,
@@ -187,11 +197,32 @@
       "description": "Arbitrage revenue (L1.1 annual, /12 for monthly)"
     },
     {
+      "id": 179,
+      "groupId": 28,
+      "name": "Minor Event Revenue",
+      "formula": "C1.1 * C1.43 / C1.44 / T.MiY / 10^6 * F7 * I2",
+      "description": "Minor augmentation event revenue (capacity * $/MW / frequency / 12, CPI-indexed)"
+    },
+    {
+      "id": 180,
+      "groupId": 28,
+      "name": "Major Event Revenue",
+      "formula": "C1.1 * C1.45 / C1.46 / T.MiY / 10^6 * F7 * I2",
+      "description": "Major augmentation event revenue (capacity * $/MW / frequency / 12, CPI-indexed)"
+    },
+    {
+      "id": 181,
+      "groupId": 28,
+      "name": "Market Event Revenue",
+      "formula": "R179 + R180",
+      "description": "Minor + Major event revenue"
+    },
+    {
       "id": 7,
       "groupId": 28,
       "name": "Merchant Revenue",
-      "formula": "R5 + R6",
-      "description": "FCAS + Arbitrage"
+      "formula": "R5 + R6 + R181",
+      "description": "FCAS + Arbitrage + Market Events"
     },
     {
       "id": 8,
@@ -199,7 +230,7 @@
       "groupId": 4,
       "name": "Total Revenue",
       "formula": "R4 + R7",
-      "description": "Revenue group sum"
+      "description": "Tolling + Merchant"
     },
     {
       "id": 9,
@@ -359,12 +390,20 @@
       "description": "Negative of NWC increase (increase uses cash)"
     },
     {
+      "id": 174,
+      "tabId": 3,
+      "groupId": 32,
+      "name": "Agency Fee",
+      "formula": "-S3 * I2",
+      "description": "Facility agent fee (indexed by CPI)"
+    },
+    {
       "id": 22,
       "tabId": 3,
       "groupId": 30,
       "name": "Operating CF",
       "formula": "R20 + R21",
-      "description": ""
+      "description": "EBITDA + WC Movement"
     },
     {
       "id": 23,
@@ -387,8 +426,8 @@
       "tabId": 3,
       "groupId": 31,
       "name": "GST Received (Operations)",
-      "formula": "M3.5 * F2",
-      "description": "GST receipts during operations (delayed from construction and ongoing)"
+      "formula": "M3.9",
+      "description": "GST receipts during operations (from module construction/operations split)"
     },
     {
       "id": 26,
@@ -445,6 +484,14 @@
       "name": "Interest Paid",
       "formula": "-R71",
       "description": "From Operations Debt"
+    },
+    {
+      "id": 178,
+      "tabId": 3,
+      "groupId": 32,
+      "name": "Total Debt Service",
+      "formula": "R31 + R32 + R174",
+      "description": "Principal + Interest + Agency Fee"
     },
     {
       "id": 33,
@@ -505,79 +552,88 @@
     {
       "id": 60,
       "tabId": 3,
-      "groupId": 14,
+      "groupId": 36,
       "name": "Capex + Contingency",
       "formula": "CUMSUM(R3 * F1)",
       "description": "Cumulative capex with contingency during construction",
       "type": "stock"
     },
     {
-      "id": 61,
-      "tabId": 3,
-      "groupId": 14,
-      "name": "GST Paid",
-      "formula": "CUMSUM(R24)",
-      "description": "Cumulative of R24 (GST Paid on Capex)",
-      "type": "stock"
-    },
-    {
       "id": 63,
       "tabId": 3,
-      "groupId": 14,
+      "groupId": 36,
       "name": "IDC",
       "formula": "M4.5",
       "description": "From Construction Funding module",
       "type": "stock"
     },
     {
+      "id": 144,
+      "tabId": 3,
+      "groupId": 36,
+      "name": "Upfront Fees",
+      "formula": "(M1.1 * C1.34 / 100 + C1.35) * F1.Start",
+      "description": "Establishment fee (1.35% of limit) + upfront fees ($2M) at financial close",
+      "type": "flow"
+    },
+    {
+      "id": 146,
+      "tabId": 3,
+      "groupId": 36,
+      "name": "Commitment Fees",
+      "formula": "M1.1 * C1.33 / 100 * C1.36 / 100 / T.MiY * F1",
+      "description": "Commitment fee on undrawn ops facility during construction (40% of 1.75% margin)",
+      "type": "flow"
+    },
+    {
+      "id": 173,
+      "tabId": 3,
+      "groupId": 36,
+      "name": "Financing Fees",
+      "formula": "CUMSUM(R144 + R146)",
+      "description": "Cumulative upfront fees + commitment fees",
+      "type": "stock"
+    },
+    {
+      "id": 147,
+      "tabId": 3,
+      "groupId": 36,
+      "name": "Agency Fees",
+      "formula": "CUMSUM(S3 * I2 * F1)",
+      "description": "Cumulative facility agent fee during construction (CPI-indexed)",
+      "type": "stock"
+    },
+    {
       "id": 62,
       "tabId": 3,
-      "groupId": 14,
+      "groupId": 36,
       "name": "MRA Funding",
       "formula": "CUMSUM(M6.2)",
       "description": "MRA funded at end of construction (from MRA module)",
       "type": "stock"
     },
     {
-      "id": 144,
+      "id": 61,
       "tabId": 3,
-      "groupId": 14,
-      "name": "Upfront Fees",
-      "formula": "0",
-      "description": "Placeholder - arrangement/legal fees at financial close",
-      "type": "flow"
+      "groupId": 36,
+      "name": "GST Paid",
+      "formula": "CUMSUM(R24)",
+      "description": "Cumulative of R24 (GST Paid on Capex)",
+      "type": "stock"
     },
     {
       "id": 145,
       "tabId": 3,
-      "groupId": 14,
+      "groupId": 36,
       "name": "DSRF Initial Funding",
       "formula": "0",
       "description": "Placeholder - Debt Service Reserve Fund initial funding",
       "type": "flow"
     },
     {
-      "id": 146,
-      "tabId": 3,
-      "groupId": 14,
-      "name": "Commitment Fees",
-      "formula": "0",
-      "description": "Placeholder - undrawn commitment fees during construction",
-      "type": "flow"
-    },
-    {
-      "id": 147,
-      "tabId": 3,
-      "groupId": 14,
-      "name": "Agency Fees",
-      "formula": "0",
-      "description": "Placeholder - facility agent fees",
-      "type": "flow"
-    },
-    {
       "id": 148,
       "tabId": 3,
-      "groupId": 14,
+      "groupId": 36,
       "name": "Construction Cash Reserving",
       "formula": "0",
       "description": "Placeholder",
@@ -586,26 +642,26 @@
     {
       "id": 64,
       "tabId": 3,
-      "groupId": 14,
+      "groupId": 36,
       "name": "Total Uses",
-      "formula": "M4.1 + R62 + R144 + R145 + R146 + R147 + R148",
-      "description": "Construction Funding (incl IDC) + MRA + Fees + Reserves",
+      "formula": "R60 + R63 + R173 + R147 + R62 + R61",
+      "description": "Capex + IDC + Financing Fees + Agency Fees + MRA + GST Paid",
       "type": "stock"
     },
     {
       "id": 65,
       "tabId": 3,
-      "groupId": 14,
+      "groupId": 37,
       "name": "GST Received",
-      "formula": "CUMSUM(M3.5 * F1)",
-      "description": "GST received during construction (1-month delay)",
+      "formula": "CUMSUM(M3.8)",
+      "description": "GST received during construction (1-month delay, from module split)",
       "type": "stock"
     },
     {
       "id": 66,
       "tabId": 3,
-      "groupId": 14,
-      "name": "Construction Debt",
+      "groupId": 37,
+      "name": "Senior Debt",
       "formula": "M4.2",
       "description": "From Construction Funding module",
       "type": "stock"
@@ -613,28 +669,28 @@
     {
       "id": 67,
       "tabId": 3,
-      "groupId": 14,
-      "name": "Construction Equity",
-      "formula": "M4.3",
-      "description": "From Construction Funding module",
+      "groupId": 37,
+      "name": "Committed Equity",
+      "formula": "R64 - R65 - R66",
+      "description": "Equity is the residual: Total Uses - GST Received - Senior Debt",
       "type": "stock"
     },
     {
       "id": 68,
       "tabId": 3,
-      "groupId": 14,
+      "groupId": 37,
       "name": "Total Sources",
-      "formula": "R65 + R66 + R67 + R62",
-      "description": "GST Received + Debt + Equity + MRA Funding",
+      "formula": "R65 + R66 + R67",
+      "description": "GST Received + Senior Debt + Committed Equity",
       "type": "stock"
     },
     {
       "id": 69,
       "tabId": 3,
-      "groupId": 14,
+      "groupId": 38,
       "name": "Sources = Uses Check",
       "formula": "R68 - R64",
-      "description": "Should be 0 (or near 0). Positive = excess sources, Negative = shortfall",
+      "description": "Should be 0. Positive = excess sources, Negative = shortfall",
       "type": "stock"
     },
     {
@@ -650,7 +706,7 @@
       "tabId": 3,
       "groupId": 32,
       "name": "Financing CF (ex-Dist)",
-      "formula": "R29 + R31 + R32 + R33 + R34 + R35 + R151 + R152 + R153",
+      "formula": "R29 + R31 + R32 + R174 + R33 + R34 + R35 + R151 + R152 + R153",
       "description": "Financing flows excluding shareholder distributions"
     },
     {
@@ -883,8 +939,8 @@
       "tabId": 4,
       "groupId": 26,
       "name": "Terminal Value",
-      "formula": "R13 * T.MiY * C1.30 * F2.End",
-      "description": "EBITDA multiple at project end (inflow)"
+      "formula": "C1.30 * I2 * F5",
+      "description": "Fixed terminal value ($17.5M) indexed by CPI at TV period"
     },
     {
       "id": 137,
@@ -1005,12 +1061,39 @@
       "type": "stock"
     },
     {
+      "id": 175,
+      "tabId": 3,
+      "groupId": 18,
+      "name": "Tolling Quarterly Accrual",
+      "formula": "R4 + SHIFT(R4,1)*(1-SHIFT(T.QE,1)) + SHIFT(R4,2)*(1-SHIFT(T.QE,2))*(1-SHIFT(T.QE,1))",
+      "description": "Rolling quarterly sum of tolling revenue (resets after each QE)",
+      "type": "stock"
+    },
+    {
+      "id": 176,
+      "tabId": 3,
+      "groupId": 18,
+      "name": "Tolling Receivable",
+      "formula": "R175 * (1 - T.QE)",
+      "description": "Tolling AR - accrues monthly, collected at quarter end",
+      "type": "stock"
+    },
+    {
+      "id": 177,
+      "tabId": 3,
+      "groupId": 18,
+      "name": "Merchant Receivable",
+      "formula": "R7 * C1.13 / 30",
+      "description": "Merchant revenue receivable (days-based)",
+      "type": "stock"
+    },
+    {
       "id": 95,
       "tabId": 3,
       "groupId": 18,
       "name": "Receivables",
-      "formula": "R8 * C1.13 / 30",
-      "description": "Revenue * Receivable Days / Days Per Month",
+      "formula": "R176 + R177",
+      "description": "Tolling (quarterly) + Merchant (days-based)",
       "type": "stock"
     },
     {
@@ -1088,6 +1171,22 @@
       "name": "Tax Expense",
       "formula": "M5.7",
       "description": "From Tax module"
+    },
+    {
+      "id": 171,
+      "groupId": 27,
+      "name": "All-in Interest Rate - Construction (%)",
+      "formula": "L2.2 + C1.32",
+      "description": "Base Rate (L2.2) + Construction Margin (C1.32 = 1.8%)",
+      "type": "stock"
+    },
+    {
+      "id": 172,
+      "groupId": 27,
+      "name": "All-in Interest Rate - Operations (%)",
+      "formula": "L2.2 + C1.33",
+      "description": "Base Rate (L2.2) + Operations Margin (C1.33 = 1.75%)",
+      "type": "stock"
     }
   ],
   "modules": [
@@ -1105,7 +1204,7 @@
         "debtFlagRef": "F8",
         "totalFundingRef": "R60",
         "maxGearingPct": "C1.19",
-        "interestRatePct": "C1.21",
+        "interestRatePct": "R172",
         "tenorYears": "C1.27",
         "debtPeriod": "Q",
         "tolerance": 0.1,
@@ -1154,7 +1253,9 @@
         "gstBaseRef": "R112",
         "activeFlagRef": "F1",
         "gstRatePct": "C1.15",
-        "receiptDelayMonths": "C1.31"
+        "receiptDelayMonths": "C1.31",
+        "constructionFlagRef": "F1",
+        "operationsFlagRef": "F2"
       },
       "outputs": [
         "gst_base",
@@ -1163,7 +1264,9 @@
         "receivable_opening",
         "gst_received",
         "receivable_closing",
-        "net_gst_cashflow"
+        "net_gst_cashflow",
+        "gst_received_construction",
+        "gst_received_operations"
       ]
     },
     {
@@ -1175,10 +1278,10 @@
       "inputs": {
         "constructionCostsRef": "R60",
         "gstPaidRef": "M3.3",
-        "feesRef": "",
+        "feesRef": "R173",
         "sizedDebtRef": "M1.1",
         "gearingCapPct": "C1.19",
-        "interestRatePct": "C1.20",
+        "interestRatePct": "R171",
         "drawdownMethod": "prorata",
         "constructionFlagRef": "F1"
       },
@@ -1644,67 +1747,6 @@
         "closing_balance",
         "period_dscr",
         "cumulative_principal"
-      ]
-    },
-    {
-      "id": "distributions",
-      "name": "Distributions",
-      "description": "Shareholder distributions waterfall with RE test and share capital repayment",
-      "category": "financing",
-      "inputs": [
-        {
-          "key": "availableCashRef",
-          "label": "Available Cashflow (pre-dist)",
-          "type": "reference",
-          "default": "R170"
-        },
-        {
-          "key": "npatRef",
-          "label": "NPAT",
-          "type": "reference",
-          "default": "R19"
-        },
-        {
-          "key": "equityContributedRef",
-          "label": "Equity Contributed",
-          "type": "reference",
-          "default": "M4.3"
-        },
-        {
-          "key": "minCashReserve",
-          "label": "Minimum Cash Reserve",
-          "type": "number_or_ref",
-          "default": "C1.28"
-        },
-        {
-          "key": "opsFlagRef",
-          "label": "Operations Flag",
-          "type": "reference",
-          "default": "F2"
-        },
-        {
-          "key": "withholdingTaxPct",
-          "label": "Withholding Tax %",
-          "type": "number_or_ref",
-          "default": "C1.29"
-        }
-      ],
-      "outputs": [
-        "cash_available",
-        "re_opening",
-        "re_npat",
-        "re_test",
-        "npat_test",
-        "dividend_paid",
-        "re_movement",
-        "re_closing",
-        "sc_opening",
-        "sc_cash_available",
-        "sc_repayment",
-        "sc_closing",
-        "total_distributions",
-        "withholding_tax",
-        "net_to_equity"
       ]
     }
   ]

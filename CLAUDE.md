@@ -91,6 +91,24 @@ The app reads from and writes to the JSON files directly via `/api/model-state`.
 
 **NEVER search or read `data/glass-inputs-autosave.json`** - it's a legacy file, too large and outdated.
 
+### Constants Quick Reference
+
+**ALWAYS check `_constantsReference` in `model-calculations.json` FIRST** when looking for constants. This provides a quick lookup of constant names and IDs without digging through the large `model-inputs.json` file.
+
+```json
+// In model-calculations.json
+"_constantsReference": {
+  "C1.19": { "id": 118, "name": "Max Gearing (%)" },
+  "C1.25": { "id": 124, "name": "Contracted DSCR Target" },
+  ...
+}
+```
+
+**Workflow for constants:**
+1. Check `_constantsReference` in `model-calculations.json` for name/ID
+2. Only go to `model-inputs.json` if you need the actual value or to add a new constant
+3. When adding new constants, update BOTH files (add to `model-inputs.json`, add reference to `_constantsReference`)
+
 ### Calculation Groups & Tabs Structure
 
 **Groups own the tab assignment, not calculations.**
@@ -395,6 +413,38 @@ Indexation references also use the index's ID:
 - Depreciation life, debt term → use C1.xx constants
 - Any business assumption that an analyst might want to change
 
+## Model Design Decisions
+
+### Tax Treatment (0% at Project Level)
+
+The Tax module (M5) is **intentionally disabled**. The model assumes a flow-through entity structure (e.g., unit trust or partnership) where:
+- Tax is borne at the **investor level**, not the project level
+- Project-level NPAT = EBT (no corporate tax deduction)
+- Investor Tax (R135) captures withholding tax on distributions using C1.29
+
+**To enable corporate tax treatment:**
+1. Set M5 `enabled: true` in model-calculations.json
+2. Verify `taxRatePct` references C1.11 (30%)
+3. R18 (Tax Expense) will then show `-M5.7` values
+
+### Dividend Lock-up (RE Test)
+
+Dividends (R124) include a **retained earnings test**:
+```
+(R123 - SHIFT(R123, 1)) * F2 * (R142 > 0)
+```
+
+This ensures:
+- Dividends only paid when **prior period RE > 0** (R142)
+- Prevents distributions when the project has accumulated losses
+- Capital returns (R143) handle distributions when RE ≤ 0
+
+**Rationale:** Mirrors legal requirements that dividends must come from profits, not capital. Prevents illegal dividends and maintains equity integrity.
+
+**Future enhancements to consider:**
+- DSCR lock-up: `* (R118 > 1.20)` - no dividends if DSCR below threshold
+- DSRA lock-up: `* (DSRA_Balance >= Target)` - no dividends until DSRA funded
+
 ## Ledger Pattern (Gold Standard)
 
 Ledger-style calculations (Opening → Addition → Reduction → Closing) create circular dependencies because Opening depends on prior Closing, and Closing depends on Opening. The gold standard solution uses CUMSUM to eliminate these cycles entirely.
@@ -424,6 +474,30 @@ SHIFT-based solutions have evaluation order issues and are fragile.
 ```
 
 SHIFT only works for referencing ALREADY CALCULATED values (e.g., `SHIFT(R70, 1)` where R70 is evaluated before this formula).
+
+### Negative Value Substitution
+
+When substituting values into formulas, **negative values must be wrapped in parentheses** to avoid JavaScript syntax errors.
+
+```
+❌ WRONG - Creates syntax error:
+   Formula: -R98
+   R98 value: -2.32
+   Substituted: --2.32  ← JavaScript sees this as pre-decrement operator!
+   Result: 0 (error caught, returns 0)
+
+✓ CORRECT - Wrap negatives in parentheses:
+   Formula: -R98
+   R98 value: -2.32
+   Substituted: -(-2.32)
+   Result: 2.32
+```
+
+This fix is applied in all formula evaluators:
+- `utils/formulaEvaluator.js`
+- `app/dashboard/hooks/useCalculationEngine.js`
+- `app/dashboard/hooks/useUnifiedCalculation.js`
+- `app/dashboard/hooks/useModuleEngine.js`
 
 ### The Solution: Calculate Closing First
 

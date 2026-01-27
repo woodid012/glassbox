@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { RotateCcw, Check, Loader2, Camera, CheckCircle, FileSpreadsheet, Code } from 'lucide-react'
+import { RotateCcw, Check, Loader2, Camera, CheckCircle, FileSpreadsheet, Code, RefreshCw, Save } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 
 const NAV_CONFIG = [
@@ -21,16 +21,41 @@ export default function DashboardNavigation() {
     const pathname = usePathname()
     const [snapshotStatus, setSnapshotStatus] = useState(null)
     const [exportStatus, setExportStatus] = useState(null)
+    const [manualSaveStatus, setManualSaveStatus] = useState(null)
 
     const {
         derived,
         handlers,
-        autoSaveState
+        autoSaveState,
+        appState
     } = useDashboard()
 
     const { timeline } = derived
     const { handleRevertToOriginal } = handlers
     const { saveStatus } = autoSaveState
+
+    const handleManualSave = async () => {
+        setManualSaveStatus('saving')
+        try {
+            const { serializeState } = await import('@/utils/glassInputsState')
+            const serialized = serializeState(appState)
+            const response = await fetch('/api/model-state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(serialized)
+            })
+            if (response.ok) {
+                setManualSaveStatus('saved')
+                setTimeout(() => setManualSaveStatus(null), 2000)
+            } else {
+                throw new Error('Save failed')
+            }
+        } catch (err) {
+            console.error('Manual save error:', err)
+            setManualSaveStatus('error')
+            setTimeout(() => setManualSaveStatus(null), 3000)
+        }
+    }
 
     const handleSnapshot = async () => {
         setSnapshotStatus('saving')
@@ -135,11 +160,36 @@ export default function DashboardNavigation() {
                             </>
                         ) : (
                             <>
-                                <Check className="w-4 h-4 text-slate-400" />
-                                <span className="text-xs text-slate-400">Auto-save on</span>
+                                <Check className="w-4 h-4 text-amber-500" />
+                                <span className="text-xs text-amber-600 font-medium">Auto-save OFF</span>
                             </>
                         )}
                     </div>
+
+                    {/* Manual Save Button */}
+                    <button
+                        onClick={handleManualSave}
+                        disabled={manualSaveStatus === 'saving'}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
+                            manualSaveStatus === 'saved'
+                                ? 'bg-green-50 border-green-300 text-green-700'
+                                : manualSaveStatus === 'error'
+                                ? 'bg-red-50 border-red-300 text-red-700'
+                                : 'bg-blue-50 border-blue-300 hover:bg-blue-100 text-blue-700'
+                        }`}
+                        title="Save current state to JSON files"
+                    >
+                        {manualSaveStatus === 'saving' ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Save className="w-4 h-4" />
+                        )}
+                        <span className="text-xs font-medium">
+                            {manualSaveStatus === 'saving' ? 'Saving...' :
+                             manualSaveStatus === 'saved' ? 'Saved!' :
+                             manualSaveStatus === 'error' ? 'Error' : 'Save'}
+                        </span>
+                    </button>
 
                     {/* Export Buttons */}
                     <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 border border-slate-200">

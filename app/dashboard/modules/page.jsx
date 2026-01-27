@@ -576,10 +576,10 @@ export default function ModulesPage() {
                                                         <table className="text-sm table-fixed w-full">
                                                             <thead>
                                                                 <tr className="bg-slate-50 border-b border-slate-200">
-                                                                    <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-[180px] min-w-[180px] sticky left-0 z-10 bg-slate-50">
+                                                                    <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-[240px] min-w-[240px] sticky left-0 z-10 bg-slate-50">
                                                                         Output
                                                                     </th>
-                                                                    <th className="text-right py-1 px-2 text-xs font-semibold text-slate-500 uppercase w-[80px] min-w-[80px] sticky left-[180px] z-10 bg-slate-50 border-r border-slate-300">
+                                                                    <th className="text-right py-1 px-3 text-xs font-semibold text-slate-500 uppercase w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-slate-50 border-r border-slate-300">
                                                                         Total
                                                                     </th>
                                                                     {displayPeriods.map((period, i) => (
@@ -612,21 +612,23 @@ export default function ModulesPage() {
 
                                                                         rows.push(
                                                                             <tr key={`input-${inputIdx}`} className="border-b border-slate-100 bg-indigo-50/30 hover:bg-indigo-50/50">
-                                                                                <td className="py-1.5 px-3 text-xs sticky left-0 z-10 bg-indigo-50/30">
+                                                                                <td className="py-1.5 px-3 text-xs w-[240px] min-w-[240px] sticky left-0 z-10 bg-indigo-50/30">
                                                                                     <span className="text-indigo-600 font-medium">{refValue}</span>
                                                                                     <span className="text-slate-500 ml-2">{inputDef.label}</span>
                                                                                     <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-indigo-100 text-indigo-600">
                                                                                         input
                                                                                     </span>
                                                                                 </td>
-                                                                                <td className="py-1 px-2 text-right text-xs font-medium text-slate-900 sticky left-[180px] z-10 bg-indigo-50/30 border-r border-slate-200">
-                                                                                    {formatValue(total, { emptyValue: '' })}
+                                                                                <td className={`py-1 px-3 text-right text-xs font-medium w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-indigo-50/30 border-r border-slate-200 ${
+                                                                                    total < 0 ? 'text-red-600' : 'text-slate-900'
+                                                                                }`}>
+                                                                                    {formatValue(total, { accounting: true, emptyValue: '' })}
                                                                                 </td>
                                                                                 {displayValues.map((val, i) => (
                                                                                     <td key={i} className={`py-1 px-0.5 text-right text-[11px] min-w-[55px] w-[55px] border-r border-slate-100 ${
-                                                                                        val !== 0 ? 'text-indigo-700' : 'text-slate-300'
+                                                                                        val < 0 ? 'text-red-600' : val !== 0 ? 'text-indigo-700' : 'text-slate-300'
                                                                                     }`}>
-                                                                                        {formatValue(val, { emptyValue: '' })}
+                                                                                        {formatValue(val, { accounting: true, emptyValue: '' })}
                                                                                     </td>
                                                                                 ))}
                                                                             </tr>
@@ -670,7 +672,7 @@ export default function ModulesPage() {
 
                                                                         rows.push(
                                                                             <tr key={`output-${outputIdx}`} className="border-b border-slate-100 hover:bg-orange-50/30">
-                                                                                <td className="py-1.5 px-3 text-xs sticky left-0 z-10 bg-white">
+                                                                                <td className="py-1.5 px-3 text-xs w-[240px] min-w-[240px] sticky left-0 z-10 bg-white">
                                                                                     <span className="text-orange-600 font-medium">{ref}</span>
                                                                                     <span className="text-slate-500 ml-2">{output.label}</span>
                                                                                     <span className={`ml-1 text-[9px] px-1 py-0.5 rounded ${
@@ -679,14 +681,16 @@ export default function ModulesPage() {
                                                                                         {outputType === 'stock_start' ? 'stock (start)' : outputType}
                                                                                     </span>
                                                                                 </td>
-                                                                                <td className="py-1 px-2 text-right text-xs font-medium text-slate-900 sticky left-[180px] z-10 bg-white border-r border-slate-200">
-                                                                                    {formatValue(total, { emptyValue: '' })}
+                                                                                <td className={`py-1 px-3 text-right text-xs font-medium w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-white border-r border-slate-200 ${
+                                                                                    total < 0 ? 'text-red-600' : 'text-slate-900'
+                                                                                }`}>
+                                                                                    {formatValue(total, { accounting: true, emptyValue: '' })}
                                                                                 </td>
                                                                                 {displayValues.map((val, i) => (
                                                                                     <td key={i} className={`py-1 px-0.5 text-right text-[11px] min-w-[55px] w-[55px] border-r border-slate-100 ${
-                                                                                        val !== 0 ? 'text-slate-700' : 'text-slate-300'
+                                                                                        val < 0 ? 'text-red-600' : val !== 0 ? 'text-slate-700' : 'text-slate-300'
                                                                                     }`}>
-                                                                                        {formatValue(val, { emptyValue: '' })}
+                                                                                        {formatValue(val, { accounting: true, emptyValue: '' })}
                                                                                     </td>
                                                                                 ))}
                                                                             </tr>

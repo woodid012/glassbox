@@ -505,6 +505,21 @@ export default function CalculationsPage() {
                     </div>
                 </div>
 
+                {/* Generated Time Series Preview */}
+                {calculations && calculations.length > 0 && (
+                    <CalculationsTimeSeriesPreview
+                        calculations={calculations}
+                        calculationsGroups={calculationsGroups}
+                        calculationResults={calculationResults}
+                        calculationTypes={calculationTypes}
+                        viewHeaders={viewHeaders}
+                        viewMode={viewMode}
+                        calcIndexMap={calcIndexMap}
+                        activeTabId={activeTabId}
+                        calculationsTabs={calculationsTabs}
+                    />
+                )}
+
                 <div className="flex">
                     {/* Available References Panel */}
                     <div className="w-72 border-r border-slate-200 bg-slate-50 p-4">
@@ -1055,29 +1070,6 @@ export default function CalculationsPage() {
                     </div>
                 </div>
 
-                {/* Help Text */}
-                <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
-                    <div className="flex items-center gap-6 text-xs text-slate-600">
-                        <span className="font-medium text-slate-700">Formula syntax:</span>
-                        <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">V1 + S1</code> Addition</span>
-                        <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">V1 * F1</code> Multiply by flag</span>
-                        <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">V1.1 - V1.2</code> Sub-item math</span>
-                        <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">R1 + R2</code> Chain calculations</span>
-                    </div>
-                </div>
-
-                {/* Generated Time Series Preview */}
-                {calculations && calculations.length > 0 && (
-                    <CalculationsTimeSeriesPreview
-                        calculations={calculations}
-                        calculationsGroups={calculationsGroups}
-                        calculationResults={calculationResults}
-                        calculationTypes={calculationTypes}
-                        viewHeaders={viewHeaders}
-                        viewMode={viewMode}
-                        calcIndexMap={calcIndexMap}
-                    />
-                )}
             </div>
         </main>
     )
@@ -1191,13 +1183,30 @@ const CalculationPreview = memo(function CalculationPreview({ calc, timeline, vi
 })
 
 // Memoized time series preview table
-const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPreview({ calculations, calculationsGroups, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap }) {
+const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPreview({ calculations, calculationsGroups, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap, activeTabId, calculationsTabs }) {
     const viewModeLabel = getViewModeLabel(viewMode)
+
+    // Determine column header based on active tab
+    const columnHeader = activeTabId === 'all'
+        ? 'ALL'
+        : (calculationsTabs || []).find(t => t.id === activeTabId)?.name || 'Calculation'
+
+    // Filter calculations and groups based on active tab
+    const firstTabId = (calculationsTabs || [])[0]?.id
+    const isFirstTab = activeTabId === firstTabId
+
+    const filteredGroups = activeTabId === 'all'
+        ? calculationsGroups
+        : getTabItems(calculationsGroups, activeTabId, isFirstTab)
+
+    const filteredCalcs = activeTabId === 'all'
+        ? calculations
+        : getTabItems(calculations, activeTabId, isFirstTab, calculationsGroups)
 
     // Memoize grand total calculation to avoid recalculating on every render
     const { grandTotalByPeriod, overallTotal } = useMemo(() => {
         const totals = viewHeaders.map((header) => {
-            return calculations.reduce((sum, calc) => {
+            return filteredCalcs.reduce((sum, calc) => {
                 const calcRef = `R${calcIndexMap.get(calc.id)}`
                 const resultArray = calculationResults[calcRef] || []
                 const calcType = calculationTypes?.[calcRef] || 'flow'
@@ -1214,7 +1223,7 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
         })
         const total = totals.reduce((sum, v) => sum + v, 0)
         return { grandTotalByPeriod: totals, overallTotal: total }
-    }, [calculations, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap])
+    }, [filteredCalcs, calculationResults, calculationTypes, viewHeaders, viewMode, calcIndexMap])
 
     return (
         <div className="border-t border-slate-200 pt-4 pb-4 px-6">
@@ -1226,7 +1235,7 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                     <thead>
                         <tr className="bg-slate-50 border-b border-slate-200">
                             <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-[240px] min-w-[240px] sticky left-0 z-20 bg-slate-50">
-                                Calculation
+                                {columnHeader}
                             </th>
                             <th className="text-right py-1 px-3 text-xs font-semibold text-slate-500 uppercase w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-slate-50 border-r border-slate-300">
                                 Total
@@ -1240,15 +1249,15 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                     </thead>
                     <tbody>
                         {/* Grouped calculations - group header without totals */}
-                        {(calculationsGroups || []).map((group) => {
-                            const groupCalcs = calculations.filter(c => c.groupId === group.id)
+                        {(filteredGroups || []).map((group) => {
+                            const groupCalcs = filteredCalcs.filter(c => c.groupId === group.id)
                             if (groupCalcs.length === 0) return null
 
                             return (
                                 <React.Fragment key={group.id}>
-                                    {/* Group header row - no totals */}
+                                    {/* Group header row */}
                                     <tr className="bg-rose-50 border-b border-rose-200">
-                                        <td colSpan={2 + viewHeaders.length} className="py-1.5 px-3 text-xs font-semibold text-rose-800 sticky left-0 z-20 bg-rose-50">
+                                        <td colSpan={2 + viewHeaders.length} className="py-1 px-3 text-[10px] text-rose-700 font-semibold uppercase tracking-wide sticky left-0 z-20 bg-rose-50">
                                             {group.name}
                                         </td>
                                     </tr>
@@ -1290,8 +1299,8 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
 
                         {/* Ungrouped calculations */}
                         {(() => {
-                            const ungroupedCalcs = calculations.filter(c =>
-                                !c.groupId || !(calculationsGroups || []).some(g => g.id === c.groupId)
+                            const ungroupedCalcs = filteredCalcs.filter(c =>
+                                !c.groupId || !(filteredGroups || []).some(g => g.id === c.groupId)
                             )
                             if (ungroupedCalcs.length === 0) return null
 
@@ -1299,7 +1308,7 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                                 <React.Fragment>
                                     {/* Ungrouped header row */}
                                     <tr className="bg-rose-50 border-b border-rose-200">
-                                        <td colSpan={2 + viewHeaders.length} className="py-1.5 px-3 text-xs font-semibold text-rose-800 sticky left-0 z-20 bg-rose-50">
+                                        <td colSpan={2 + viewHeaders.length} className="py-1 px-3 text-[10px] text-rose-700 font-semibold uppercase tracking-wide sticky left-0 z-20 bg-rose-50">
                                             Ungrouped
                                         </td>
                                     </tr>

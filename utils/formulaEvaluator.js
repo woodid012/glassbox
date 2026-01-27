@@ -118,7 +118,9 @@ export function evalExprForAllPeriods(expr, allRefs, periods, options = {}) {
         for (const { ref, regex, values } of compiledRefs) {
             const value = values?.[i] ?? 0
             regex.lastIndex = 0 // Reset regex state for global patterns
-            periodExpr = periodExpr.replace(regex, value.toString())
+            // Wrap negative values in parentheses to avoid syntax errors like --2.32
+            const valueStr = value < 0 ? `(${value})` : value.toString()
+            periodExpr = periodExpr.replace(regex, valueStr)
         }
 
         // Track unresolved R-references before replacing with 0 (only on first period to avoid duplicates)

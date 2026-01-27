@@ -83,6 +83,7 @@ export function getAggregatedValueForArray(arr, indices, type = 'flow', category
 
 /**
  * Format a numeric value for display with smart rounding:
+ * - Values below zeroThreshold: treated as zero
  * - Large numbers (>=1000): whole numbers, no decimals
  * - Small decimals (<1): 2 significant figures (e.g., 0.00456 → 0.0046)
  * - Medium numbers (1-999): up to 2 decimal places
@@ -92,15 +93,16 @@ export function getAggregatedValueForArray(arr, indices, type = 'flow', category
  * @param {boolean} [options.compact=false] - Use compact notation (e.g., 1.5k)
  * @param {number} [options.decimals=2] - Max decimal places for medium numbers
  * @param {string} [options.emptyValue=''] - Value to return for zero/null/undefined
+ * @param {number} [options.zeroThreshold=0.000001] - Values with abs below this are treated as 0
  * @returns {string} Formatted string representation
  */
 export function formatValue(val, options = false) {
     // Backward compatibility: if options is a boolean, treat as compact flag
     const opts = typeof options === 'boolean'
-        ? { compact: options, accounting: false, decimals: 2, emptyValue: '–' }
-        : { compact: false, accounting: false, decimals: 2, emptyValue: '', ...options }
+        ? { compact: options, accounting: false, decimals: 2, emptyValue: '–', zeroThreshold: 0.000001 }
+        : { compact: false, accounting: false, decimals: 2, emptyValue: '', zeroThreshold: 0.000001, ...options }
 
-    const { compact, accounting, decimals, emptyValue } = opts
+    const { compact, accounting, decimals, emptyValue, zeroThreshold } = opts
 
     // Handle zero/null/undefined - return emptyValue ('' for accounting/explicit, '–' for default)
     if (val === 0 || val === null || val === undefined) {
@@ -109,6 +111,11 @@ export function formatValue(val, options = false) {
     if (typeof val !== 'number' || isNaN(val)) return '–'
 
     const absVal = Math.abs(val)
+
+    // Treat very small values as zero
+    if (absVal < zeroThreshold) {
+        return emptyValue || '0'
+    }
     let formatted
 
     if (compact && absVal >= 1000) {

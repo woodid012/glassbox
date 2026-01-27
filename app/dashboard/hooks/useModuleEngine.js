@@ -172,12 +172,6 @@ export function useModuleEngine({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [calcVersion, timeline.periods, cachedResults])
 
-    // Merge all module outputs
-    const allModuleOutputs = useMemo(() => ({
-        ...regularModuleOutputs,
-        ...postCalcModuleOutputs
-    }), [regularModuleOutputs, postCalcModuleOutputs])
-
     // Second pass: Re-evaluate calculations that reference module outputs
     // This is needed because calculationResults is computed before modules,
     // so any calc referencing M*.* would get zeros in the first pass
@@ -303,11 +297,11 @@ export function useModuleEngine({
                         for (const { arr, regex } of refArrays) {
                             const value = arr?.[i] ?? 0
                             regex.lastIndex = 0  // Reset regex state
-                            expr = expr.replace(regex, value.toString())
+                            expr = expr.replace(regex, value < 0 ? `(${value})` : value.toString())
                         }
 
                         for (const [placeholder, arr] of arrayFnEntries) {
-                            expr = expr.replace(placeholder, arr[i].toString())
+                            expr = expr.replace(placeholder, arr[i] < 0 ? `(${arr[i]})` : arr[i].toString())
                         }
 
                         resultArray[i] = evaluateSafeExpression(expr)
@@ -340,9 +334,186 @@ export function useModuleEngine({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [calcVersion, postCalcModuleOutputs, timeline.periods, cachedResults])
 
+    // Third pass: Re-evaluate modules that depend on calculations that were re-evaluated
+    // This handles the case where:
+    //   1. Module A (e.g., Depreciation) outputs M2.3
+    //   2. Calculation R14 = -M2.3 (needs second pass)
+    //   3. Calculation R17 = R15 + R16, where R15 depends on R14 (also needs second pass)
+    //   4. Module B (e.g., Tax) uses R17 as input - needs THIRD pass with corrected R17
+    const finalModuleOutputs = useMemo(() => {
+        // On initial load or no recalc needed
+        if (calcVersion === 0 || !modules || modules.length === 0) {
+            return postCalcModuleOutputs
+        }
+
+        // Check if finalCalculationResults differs from calculationResults
+        // If no changes, no need for third pass
+        const calcResultKeys = Object.keys(calculationResults)
+        let hasChanges = false
+        for (const key of calcResultKeys) {
+            const orig = calculationResults[key]
+            const final = finalCalculationResults[key]
+            if (orig !== final) {
+                // Check if arrays actually differ
+                if (!orig || !final || orig.length !== final.length) {
+                    hasChanges = true
+                    break
+                }
+                for (let i = 0; i < orig.length; i++) {
+                    if (Math.abs((orig[i] || 0) - (final[i] || 0)) > 1e-10) {
+                        hasChanges = true
+                        break
+                    }
+                }
+                if (hasChanges) break
+            }
+        }
+
+        if (!hasChanges) {
+            console.log('[ModuleEngine] Third pass skipped - no changes detected between first and second pass')
+            return postCalcModuleOutputs
+        }
+
+        // Log which calculations changed
+        const changedCalcs = []
+        for (const key of calcResultKeys) {
+            const orig = calculationResults[key]
+            const final = finalCalculationResults[key]
+            if (orig && final) {
+                for (let i = 0; i < Math.min(orig.length, final.length); i++) {
+                    if (Math.abs((orig[i] || 0) - (final[i] || 0)) > 1e-10) {
+                        changedCalcs.push(key)
+                        break
+                    }
+                }
+            }
+        }
+        console.log('[ModuleEngine] Third pass running - changed calcs:', changedCalcs.slice(0, 10))
+
+        const thirdPassStart = performance.now()
+
+        // Re-run modules with finalCalculationResults instead of calculationResults
+        const outputs = {}
+
+        // Build dependency graph (same as in postCalcModuleOutputs)
+        const moduleRefs = new Map()
+        const dependentsOf = new Map()
+        const modulePattern = /M(\d+)\.\d+/g
+
+        modules.forEach((_, idx) => {
+            moduleRefs.set(idx, new Set())
+            dependentsOf.set(idx, new Set())
+        })
+
+        modules.forEach((module, moduleIdx) => {
+            const deps = moduleRefs.get(moduleIdx)
+            const inputs = module.inputs || {}
+
+            Object.values(inputs).forEach(value => {
+                if (typeof value === 'string') {
+                    let match
+                    while ((match = modulePattern.exec(value)) !== null) {
+                        const depModuleNum = parseInt(match[1], 10)
+                        const depModuleIdx = depModuleNum - 1
+                        if (depModuleIdx !== moduleIdx && depModuleIdx >= 0 && depModuleIdx < modules.length) {
+                            deps.add(depModuleIdx)
+                            dependentsOf.get(depModuleIdx).add(moduleIdx)
+                        }
+                    }
+                    modulePattern.lastIndex = 0
+                }
+            })
+        })
+
+        // Topological sort
+        const inDegree = new Map()
+        modules.forEach((_, idx) => {
+            inDegree.set(idx, moduleRefs.get(idx).size)
+        })
+
+        const queue = []
+        modules.forEach((_, idx) => {
+            if (inDegree.get(idx) === 0) queue.push(idx)
+        })
+
+        const sortedOrder = []
+        while (queue.length > 0) {
+            const idx = queue.shift()
+            sortedOrder.push(idx)
+
+            for (const dependentIdx of dependentsOf.get(idx)) {
+                const newDegree = inDegree.get(dependentIdx) - 1
+                inDegree.set(dependentIdx, newDegree)
+                if (newDegree === 0) queue.push(dependentIdx)
+            }
+        }
+
+        if (sortedOrder.length !== modules.length) {
+            modules.forEach((_, idx) => { if (!sortedOrder.includes(idx)) sortedOrder.push(idx) })
+        }
+
+        // Calculate modules using FINAL calculation results
+        sortedOrder.forEach(moduleIdx => {
+            const module = modules[moduleIdx]
+            const templateKey = module.templateId
+            const template = MODULE_TEMPLATES[templateKey]
+            if (!template) return
+
+            const isIterative = templateKey === 'iterative_debt_sizing'
+            if (isIterative && !module.solvedAt) {
+                template.outputs.forEach((output, outputIdx) => {
+                    const ref = `M${moduleIdx + 1}.${outputIdx + 1}`
+                    outputs[ref] = new Array(timeline.periods).fill(0)
+                })
+                return
+            }
+
+            // Use finalCalculationResults instead of calculationResults
+            const context = { ...referenceMap, ...finalCalculationResults, ...outputs, timeline }
+
+            const moduleInstance = {
+                moduleType: templateKey,
+                inputs: module.inputs || {}
+            }
+
+            const calculatedOutputs = calculateModuleOutputs(
+                moduleInstance,
+                timeline.periods,
+                context
+            )
+
+            template.outputs.forEach((output, outputIdx) => {
+                const ref = `M${moduleIdx + 1}.${outputIdx + 1}`
+                outputs[ref] = calculatedOutputs[output.key] || new Array(timeline.periods).fill(0)
+            })
+        })
+
+        console.log(`[ModuleEngine] Third pass re-computed ${modules.length} modules in ${(performance.now() - thirdPassStart).toFixed(0)}ms`)
+
+        return outputs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [calcVersion, finalCalculationResults, postCalcModuleOutputs, timeline.periods])
+
+    // Merge all module outputs (priority: finalModuleOutputs > postCalcModuleOutputs > regularModuleOutputs)
+    // finalModuleOutputs has third-pass results (modules recalculated with correct calc values)
+    // postCalcModuleOutputs has second-pass results (modules with first-pass calc values)
+    // regularModuleOutputs has just placeholders (zeros)
+    const allModuleOutputs = useMemo(() => {
+        const hasFinalOutputs = Object.keys(finalModuleOutputs).length > 0
+        const hasPostCalcOutputs = Object.keys(postCalcModuleOutputs).length > 0
+
+        if (hasFinalOutputs) {
+            return { ...regularModuleOutputs, ...finalModuleOutputs }
+        } else if (hasPostCalcOutputs) {
+            return { ...regularModuleOutputs, ...postCalcModuleOutputs }
+        }
+        return regularModuleOutputs
+    }, [regularModuleOutputs, postCalcModuleOutputs, finalModuleOutputs])
+
     return {
         regularModuleOutputs,
         postCalcModuleOutputs,
+        finalModuleOutputs,
         allModuleOutputs,
         finalCalculationResults
     }

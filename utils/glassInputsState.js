@@ -111,7 +111,7 @@ export function getDefaultState() {
         moduleTemplates: [
             {
                 id: 'construction_funding',
-                name: 'Construction Funding (Gold Standard)',
+                name: 'Construction Funding',
                 description: 'Construction funding waterfall with IDC equity-funded',
                 category: 'financing',
                 inputs: [
@@ -131,7 +131,7 @@ export function getDefaultState() {
             },
             {
                 id: 'reserve_account',
-                name: 'Reserve Account (Gold Standard)',
+                name: 'Reserve Account',
                 description: 'Reserve account (MRA/DSRA) with funding and drawdown using CUMSUM pattern',
                 category: 'financing',
                 inputs: [
@@ -145,7 +145,7 @@ export function getDefaultState() {
             },
             {
                 id: 'gst_receivable',
-                name: 'GST Paid/Received (Gold Standard)',
+                name: 'GST Paid/Received',
                 description: 'GST ledger with configurable receipt delay using CUMSUM pattern',
                 category: 'accounting',
                 inputs: [
@@ -158,7 +158,7 @@ export function getDefaultState() {
             },
             {
                 id: 'tax_losses',
-                name: 'Tax & Tax Losses (Gold Standard)',
+                name: 'Tax & Tax Losses',
                 description: 'Tax calculation with loss carry-forward using CUMSUM pattern',
                 category: 'accounting',
                 inputs: [
@@ -170,7 +170,7 @@ export function getDefaultState() {
             },
             {
                 id: 'depreciation_amortization',
-                name: 'Depreciation & Amortization (Gold Standard)',
+                name: 'Depreciation & Amortization',
                 description: 'CUMSUM-based ledger pattern - no circular dependencies',
                 category: 'accounting',
                 inputs: [

@@ -72,7 +72,29 @@
       "Bash(node -c:*)",
       "Bash(npm test)",
       "Bash(sort:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(git rm:*)",
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(node scripts/validate-formulas.js:*)",
+      "Bash(node scripts/check-circular-deps.js:*)",
+      "Bash(node scripts/check-modules.js:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint)",
+      "Bash(unzip:*)",
+      "Bash(python3:*)",
+      "Bash(git -C \"C:\\\\Projects\\\\glassbox\" status)",
+      "Bash(git -C \"C:\\\\Projects\\\\glassbox\" diff --stat)",
+      "WebSearch",
+      "WebFetch(domain:pivotal180.com)",
+      "WebFetch(domain:edbodmer.com)",
+      "Bash(node scripts/benchmark-unified-calc.js:*)",
+      "Bash(node check-modules.js:*)",
+      "Bash(git -C C:/Projects/glassbox diff data/model-calculations.json)",
+      "Bash(git -C C:/Projects/glassbox checkout:*)",
+      "Bash(node:*)",
+      "Bash(git -C C:/Projects/glassbox show HEAD:data/model-inputs.json)"
     ]
   }
 }

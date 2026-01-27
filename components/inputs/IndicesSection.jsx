@@ -11,8 +11,8 @@ export default function IndicesSection({
     onUpdateIndex,
     onRemoveIndex
 }) {
-    // Generate year options based on config
-    const startYear = config?.startYear || 2024
+    // Generate year options - extend 5 years before model start for indexation base years
+    const startYear = (config?.startYear || 2024) - 5
     const endYear = config?.endYear || 2030
     const years = []
     for (let y = startYear; y <= endYear; y++) {

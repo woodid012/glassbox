@@ -218,11 +218,11 @@ function evaluateSingleCalc(formula, context, timeline) {
             for (const { arr, regex } of refArrays) {
                 const value = arr?.[i] ?? 0
                 regex.lastIndex = 0
-                expr = expr.replace(regex, value.toString())
+                expr = expr.replace(regex, value < 0 ? `(${value})` : value.toString())
             }
 
             for (const [placeholder, arr] of arrayFnEntries) {
-                expr = expr.replace(placeholder, arr[i].toString())
+                expr = expr.replace(placeholder, arr[i] < 0 ? `(${arr[i]})` : arr[i].toString())
             }
 
             resultArray[i] = evaluateSafeExpression(expr)

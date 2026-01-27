@@ -174,14 +174,24 @@ export function formatPeriod(year, month, format = 'short') {
 
 /**
  * Smart number formatting:
+ * - Values below zeroThreshold: treated as zero
  * - Large numbers (>=1000): whole numbers, no decimals
  * - Small decimals (<1): 2 significant figures (e.g., 0.00456 → 0.0046)
  * - Medium numbers (1-999): up to 2 decimal places
+ *
+ * @param {number} val - Value to format
+ * @param {number} decimals - Max decimal places for medium numbers
+ * @param {number} zeroThreshold - Values with abs below this are treated as 0 (default: 0.000001)
  */
-export function formatNumber(val, decimals = 2) {
+export function formatNumber(val, decimals = 2, zeroThreshold = 0.000001) {
     if (val === null || val === undefined || isNaN(val)) return '-'
 
     const absVal = Math.abs(val)
+
+    // Treat very small values as zero
+    if (absVal < zeroThreshold) {
+        return '0'
+    }
 
     // Large numbers: no decimals
     if (absVal >= 1000) {

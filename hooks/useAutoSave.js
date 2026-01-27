@@ -9,6 +9,9 @@ import { serializeState, deserializeState, getDefaultState } from '@/utils/glass
 // Debounce delay for auto-save (in milliseconds)
 const AUTOSAVE_DEBOUNCE_MS = 1500
 
+// Set to true to disable auto-save (useful when Claude is editing JSON files directly)
+const AUTOSAVE_DISABLED = true
+
 /**
  * Hook for managing auto-save and auto-load functionality
  * @param {Object} appState - Current application state
@@ -104,6 +107,7 @@ export function useAutoSave(appState, setAppState) {
     // Debounced auto-save to server on every state change
     useEffect(() => {
         if (!hasLoadedFromStorage) return
+        if (AUTOSAVE_DISABLED) return // Skip auto-save when disabled
 
         // Clear any existing timer
         if (saveTimerRef.current) {

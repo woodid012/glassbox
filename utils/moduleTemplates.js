@@ -31,6 +31,33 @@ function resolveModuleInput(value, context, defaultVal = 0) {
 }
 
 /**
+ * Resolves a module input to a full array (for time-series inputs like interest rates).
+ * If the input is a number, returns an array filled with that value.
+ * If the input is a reference, returns the referenced array.
+ *
+ * @param {any} value - The input value (number, string number, or reference)
+ * @param {Object} context - The reference map containing resolved arrays
+ * @param {number} arrayLength - The expected length of the output array
+ * @param {number} defaultVal - Fallback value if resolution fails
+ * @returns {number[]} The resolved array of values
+ */
+function resolveModuleInputArray(value, context, arrayLength, defaultVal = 0) {
+    // If it's a reference string and exists in context, return the array
+    if (typeof value === 'string' && context && context[value]) {
+        return context[value]
+    }
+
+    // If it's a number or can be parsed as one, return a filled array
+    const numValue = typeof value === 'number' ? value : parseFloat(value)
+    if (!isNaN(numValue)) {
+        return new Array(arrayLength).fill(numValue)
+    }
+
+    // Default: return array filled with default value
+    return new Array(arrayLength).fill(defaultVal)
+}
+
+/**
  * Module Template Structure:
  * {
  *   type: 'iterative_debt_sizing',
@@ -154,7 +181,9 @@ export const MODULE_TEMPLATES = {
             { key: 'gstBaseRef', label: 'GST Base Amount (e.g., Capex)', type: 'reference', refType: 'any', required: true },
             { key: 'activeFlagRef', label: 'Active Period Flag', type: 'reference', refType: 'flag', required: true },
             { key: 'gstRatePct', label: 'GST Rate (%)', type: 'number', required: true, default: 10 },
-            { key: 'receiptDelayMonths', label: 'Receipt Delay (months)', type: 'number', required: false, default: 1 }
+            { key: 'receiptDelayMonths', label: 'Receipt Delay (months)', type: 'number', required: false, default: 1 },
+            { key: 'constructionFlagRef', label: 'Construction Period Flag', type: 'reference', refType: 'flag', required: false },
+            { key: 'operationsFlagRef', label: 'Operations Period Flag', type: 'reference', refType: 'flag', required: false }
         ],
         outputs: [
             { key: 'gst_base', label: 'GST Base Amount', type: 'flow' },
@@ -163,7 +192,9 @@ export const MODULE_TEMPLATES = {
             { key: 'receivable_opening', label: 'GST Receivable - Opening', type: 'stock_start' },
             { key: 'gst_received', label: 'GST Received (Inflow)', type: 'flow' },
             { key: 'receivable_closing', label: 'GST Receivable - Closing', type: 'stock' },
-            { key: 'net_gst_cashflow', label: 'Net GST Cash Flow', type: 'flow' }
+            { key: 'net_gst_cashflow', label: 'Net GST Cash Flow', type: 'flow' },
+            { key: 'gst_received_construction', label: 'GST Received (Construction)', type: 'flow' },
+            { key: 'gst_received_operations', label: 'GST Received (Operations)', type: 'flow' }
         ],
         outputFormulas: {
             gst_base: '{gstBaseRef}',
@@ -172,7 +203,9 @@ export const MODULE_TEMPLATES = {
             receivable_opening: 'SHIFT(receivable_closing, 1)',
             gst_received: 'SHIFT(CUMSUM(-gst_paid), {receiptDelayMonths}) - SHIFT(CUMSUM(-gst_paid), {receiptDelayMonths}+1)',
             receivable_closing: 'CUMSUM(-gst_paid) - CUMSUM(gst_received)',
-            net_gst_cashflow: 'gst_paid + gst_received'
+            net_gst_cashflow: 'gst_paid + gst_received',
+            gst_received_construction: 'gst_received × {constructionFlagRef}',
+            gst_received_operations: 'gst_received × {operationsFlagRef}'
         }
     },
     tax_losses: {
@@ -438,7 +471,8 @@ function calculateConstructionFunding(inputs, arrayLength, context) {
 
     // Rates - support both direct values and references using shared resolver
     const gearingCap = resolveModuleInput(gearingCapPct, context, 0) / 100
-    const monthlyRate = resolveModuleInput(interestRatePct, context, 0) / 100 / 12
+    // Interest rate as time-series array (supports time-varying rates like R171)
+    const interestRateArray = resolveModuleInputArray(interestRatePct, context, arrayLength, 0)
 
     // Find construction period
     const consStart = constructionFlag.findIndex(f => f === 1 || f === true)
@@ -509,9 +543,10 @@ function calculateConstructionFunding(inputs, arrayLength, context) {
             cumDebtDrawdown += periodDebt
             outputs.debt_drawdown[i] = periodDebt
 
-            // IDC = opening debt balance × monthly rate
+            // IDC = opening debt balance × monthly rate (period-specific)
             // Opening debt = cumulative drawdown at start of period
             const openingDebt = cumDebtDrawdown - periodDebt
+            const monthlyRate = (interestRateArray[i] || 0) / 100 / 12
             const periodIDC = openingDebt * monthlyRate
             cumIDC += periodIDC
             outputs.idc[i] = periodIDC
@@ -793,7 +828,9 @@ function calculateGstReceivable(inputs, arrayLength, context) {
         gstBaseRef = null,
         activeFlagRef = null,
         gstRatePct = 10,
-        receiptDelayMonths = 1
+        receiptDelayMonths = 1,
+        constructionFlagRef = null,
+        operationsFlagRef = null
     } = inputs
 
     // Initialize outputs
@@ -804,7 +841,9 @@ function calculateGstReceivable(inputs, arrayLength, context) {
         receivable_opening: new Array(arrayLength).fill(0),
         gst_received: new Array(arrayLength).fill(0),
         receivable_closing: new Array(arrayLength).fill(0),
-        net_gst_cashflow: new Array(arrayLength).fill(0)
+        net_gst_cashflow: new Array(arrayLength).fill(0),
+        gst_received_construction: new Array(arrayLength).fill(0),
+        gst_received_operations: new Array(arrayLength).fill(0)
     }
 
     // Get base amount array
@@ -867,6 +906,25 @@ function calculateGstReceivable(inputs, arrayLength, context) {
 
         // Net GST Cash Flow = GST Paid + GST Received (paid is negative, received is positive)
         outputs.net_gst_cashflow[i] = outputs.gst_paid[i] + outputs.gst_received[i]
+    }
+
+    // Split GST received by construction/operations flags
+    const constructionFlag = constructionFlagRef && context[constructionFlagRef]
+        ? context[constructionFlagRef]
+        : null
+    const operationsFlag = operationsFlagRef && context[operationsFlagRef]
+        ? context[operationsFlagRef]
+        : null
+
+    if (constructionFlag || operationsFlag) {
+        for (let i = 0; i < arrayLength; i++) {
+            if (constructionFlag) {
+                outputs.gst_received_construction[i] = outputs.gst_received[i] * (constructionFlag[i] || 0)
+            }
+            if (operationsFlag) {
+                outputs.gst_received_operations[i] = outputs.gst_received[i] * (operationsFlag[i] || 0)
+            }
+        }
     }
 
     return outputs
@@ -1189,12 +1247,12 @@ function getMonthsPerPeriod(debtPeriod) {
  * @param {Array} totalCfads - Total CFADS (for DSCR reporting)
  * @param {number} start - Debt start period index
  * @param {number} end - Debt end period index
- * @param {number} monthlyRate - Monthly interest rate
+ * @param {Array<number>} interestRateArray - Interest rate (%) for each period (time-series)
  * @param {number} len - Array length
  * @param {string} debtPeriod - 'M', 'Q', or 'Y'
  * @param {Object} timeline - Timeline context for period end detection
  */
-function generateCapacitySchedule(totalDebt, debtServiceCapacity, totalCfads, start, end, monthlyRate, len, debtPeriod, timeline) {
+function generateCapacitySchedule(totalDebt, debtServiceCapacity, totalCfads, start, end, interestRateArray, len, debtPeriod, timeline) {
     const outputs = {
         sized_debt: new Array(len).fill(0),
         opening_balance: new Array(len).fill(0),
@@ -1230,6 +1288,8 @@ function generateCapacitySchedule(totalDebt, debtServiceCapacity, totalCfads, st
         outputs.opening_balance[i] = balance
 
         // Accrue interest monthly (on opening balance of each month)
+        // Use period-specific rate from time-series array
+        const monthlyRate = (interestRateArray[i] || 0) / 100 / 12
         const monthlyInterest = balance * monthlyRate
         accruedInterest += monthlyInterest
 
@@ -1506,7 +1566,8 @@ function calculateIterativeDebtSizing(inputs, arrayLength, context) {
     const parsedMerchantDSCR = resolveModuleInput(merchantDSCR, context, 0)
     const parsedTargetDSCR = resolveModuleInput(targetDSCR, context, 0)
     const parsedMaxGearing = resolveModuleInput(maxGearingPct, context, 0)
-    const parsedInterestRate = resolveModuleInput(interestRatePct, context, 0)
+    // Interest rate as time-series array (supports time-varying rates like R172)
+    const interestRateArray = resolveModuleInputArray(interestRatePct, context, arrayLength, 0)
     const parsedTenorYears = resolveModuleInput(tenorYears, context, 0)
     const parsedTolerance = resolveModuleInput(tolerance, context, 0.1)
     const parsedMaxIterations = Math.round(resolveModuleInput(maxIterations, context, 50))
@@ -1568,9 +1629,6 @@ function calculateIterativeDebtSizing(inputs, arrayLength, context) {
     const tenorMonths = parsedTenorYears * 12
     const debtEnd = Math.min(debtStart + tenorMonths - 1, debtFlagEnd, arrayLength - 1)
 
-    // Monthly interest rate
-    const monthlyRate = parsedInterestRate / 100 / 12
-
     // Binary search for optimal debt (no IDC added - IDC is equity-funded)
     let lowerBound = 0
     let upperBound = totalFunding * (parsedMaxGearing / 100)
@@ -1590,7 +1648,7 @@ function calculateIterativeDebtSizing(inputs, arrayLength, context) {
             totalCfads,
             debtStart,
             debtEnd,
-            monthlyRate,
+            interestRateArray,
             arrayLength,
             debtPeriod,
             timeline
