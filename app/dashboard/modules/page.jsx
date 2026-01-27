@@ -7,6 +7,104 @@ import { MODULE_TEMPLATES } from '@/utils/moduleTemplates'
 import { formatValue } from '@/utils/valueAggregation'
 import { useMemo, useState } from 'react'
 
+/**
+ * Format a module input value for display.
+ * - For constants (C1.X): shows "1.4 (C1.25)"
+ * - For flags (F1, F2): shows "Construction (F1)"
+ * - For calculations (R123): shows "CFADS (R115)"
+ * - For indices (I2): shows "CPI (I2)"
+ * - For module outputs (M1.1): shows the ref as-is
+ * - For plain numbers: shows the number
+ */
+function formatInputDisplay(value, { allRefs, inputGlass, keyPeriods, calculations, indices }) {
+    if (value === undefined || value === null || value === '') return null
+
+    // Plain number
+    if (typeof value === 'number') {
+        return { display: value.toString(), type: 'number' }
+    }
+
+    const strValue = String(value).trim()
+
+    // Check if it's a reference pattern
+    const constantMatch = strValue.match(/^C1\.(\d+)$/)
+    if (constantMatch) {
+        // Constant reference - get value from allRefs and name from inputGlass
+        const constNum = parseInt(constantMatch[1])
+        const constId = constNum + 99 // C1.19 = id 118
+        const constant = (inputGlass || []).find(inp => inp.id === constId && inp.groupId === 100)
+        const refArray = allRefs[strValue]
+        const resolvedValue = refArray ? (refArray.find(v => v !== 0) || refArray[0] || 0) : null
+
+        if (resolvedValue !== null) {
+            const displayVal = typeof resolvedValue === 'number'
+                ? (Math.abs(resolvedValue) >= 1000 ? resolvedValue.toLocaleString() : resolvedValue.toString())
+                : resolvedValue
+            return {
+                display: `${displayVal} (${strValue})`,
+                name: constant?.name,
+                type: 'constant'
+            }
+        }
+        return { display: strValue, name: constant?.name, type: 'constant' }
+    }
+
+    const flagMatch = strValue.match(/^F(\d+)(\.Start|\.End)?$/)
+    if (flagMatch) {
+        // Flag reference - get name from keyPeriods
+        const flagId = parseInt(flagMatch[1])
+        const suffix = flagMatch[2] || ''
+        const keyPeriod = (keyPeriods || []).find(kp => kp.id === flagId)
+        const name = keyPeriod?.name || `Flag ${flagId}`
+        return {
+            display: `${name}${suffix ? ' ' + suffix.slice(1) : ''} (${strValue})`,
+            name,
+            type: 'flag'
+        }
+    }
+
+    const calcMatch = strValue.match(/^R(\d+)$/)
+    if (calcMatch) {
+        // Calculation reference - get name from calculations
+        const calcId = parseInt(calcMatch[1])
+        const calc = (calculations || []).find(c => c.id === calcId)
+        const name = calc?.name || `Calc ${calcId}`
+        return {
+            display: `${name} (${strValue})`,
+            name,
+            type: 'calculation'
+        }
+    }
+
+    const moduleMatch = strValue.match(/^M(\d+)\.(\d+)$/)
+    if (moduleMatch) {
+        // Module output reference - just show as-is
+        return { display: strValue, type: 'module' }
+    }
+
+    const indexMatch = strValue.match(/^I(\d+)$/)
+    if (indexMatch) {
+        // Index reference - get name from indices
+        const indexId = parseInt(indexMatch[1])
+        const index = (indices || []).find(idx => idx.id === indexId)
+        const name = index?.name || `Index ${indexId}`
+        return {
+            display: `${name} (${strValue})`,
+            name,
+            type: 'index'
+        }
+    }
+
+    // Check if it's a parseable number string
+    const parsed = parseFloat(strValue)
+    if (!isNaN(parsed)) {
+        return { display: strValue, type: 'number' }
+    }
+
+    // Unknown format - return as-is
+    return { display: strValue, type: 'unknown' }
+}
+
 export default function ModulesPage() {
     const {
         appState,
@@ -15,7 +113,7 @@ export default function ModulesPage() {
         setters
     } = useDashboard()
 
-    const { modules, moduleTemplates, keyPeriods } = appState
+    const { modules, moduleTemplates, keyPeriods, inputGlass, calculations, indices } = appState
     const { moduleOutputs, timeline, viewHeaders, calculationResults, referenceMap } = derived
     const { viewMode } = uiState
     const { setAppState } = setters
@@ -321,13 +419,32 @@ export default function ModulesPage() {
                                                                     />
                                                                 ) : (
                                                                     /* Unified formula input - accepts numbers, references, or formulas */
-                                                                    <DeferredInput
-                                                                        type="text"
-                                                                        value={module.inputs[inputDef.key] ?? inputDef.default ?? ''}
-                                                                        onChange={(val) => updateInputValue(module.id, inputDef.key, val)}
-                                                                        placeholder="e.g., 1000 or V1.1 or V1 * 0.08"
-                                                                        className="w-full text-sm font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                                    />
+                                                                    (() => {
+                                                                        const inputValue = module.inputs[inputDef.key] ?? inputDef.default ?? ''
+                                                                        const formatted = formatInputDisplay(inputValue, { allRefs, inputGlass, keyPeriods, calculations, indices })
+                                                                        return (
+                                                                            <div>
+                                                                                <DeferredInput
+                                                                                    type="text"
+                                                                                    value={inputValue}
+                                                                                    onChange={(val) => updateInputValue(module.id, inputDef.key, val)}
+                                                                                    placeholder="e.g., 1000 or V1.1 or V1 * 0.08"
+                                                                                    className="w-full text-sm font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                                                />
+                                                                                {formatted && formatted.type !== 'number' && formatted.type !== 'unknown' && (
+                                                                                    <div className={`mt-0.5 text-[10px] truncate ${
+                                                                                        formatted.type === 'constant' ? 'text-purple-600' :
+                                                                                        formatted.type === 'flag' ? 'text-emerald-600' :
+                                                                                        formatted.type === 'calculation' ? 'text-blue-600' :
+                                                                                        formatted.type === 'index' ? 'text-amber-600' :
+                                                                                        'text-slate-500'
+                                                                                    }`}>
+                                                                                        {formatted.display}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        )
+                                                                    })()
                                                                 )}
                                                             </div>
                                                         )
@@ -434,10 +551,19 @@ export default function ModulesPage() {
                                                             {template.inputs.map(inputDef => {
                                                                 const value = module.inputs[inputDef.key]
                                                                 if (value === undefined || value === null || value === '') return null
+                                                                const formatted = formatInputDisplay(value, { allRefs, inputGlass, keyPeriods, calculations, indices })
                                                                 return (
                                                                     <span key={inputDef.key} className="text-slate-600">
                                                                         <span className="text-slate-400">{inputDef.label}:</span>{' '}
-                                                                        <span className="font-medium text-slate-800">{value}</span>
+                                                                        <span className={`font-medium ${
+                                                                            formatted?.type === 'constant' ? 'text-purple-700' :
+                                                                            formatted?.type === 'flag' ? 'text-emerald-700' :
+                                                                            formatted?.type === 'calculation' ? 'text-blue-700' :
+                                                                            formatted?.type === 'index' ? 'text-amber-700' :
+                                                                            'text-slate-800'
+                                                                        }`}>
+                                                                            {formatted?.display || value}
+                                                                        </span>
                                                                     </span>
                                                                 )
                                                             })}
@@ -518,8 +644,21 @@ export default function ModulesPage() {
                                                                         )
                                                                     }
 
-                                                                    // Add OUTPUT rows
+                                                                    // Add OUTPUT rows with section headers
+                                                                    let currentSection = null
                                                                     actualTemplate.outputs.forEach((output, outputIdx) => {
+                                                                        // Insert section header when section changes
+                                                                        if (output.section && output.section !== currentSection) {
+                                                                            currentSection = output.section
+                                                                            rows.push(
+                                                                                <tr key={`section-${outputIdx}`} className="bg-slate-50 border-b border-slate-200">
+                                                                                    <td colSpan={2 + displayPeriods.length} className="py-1 px-3 text-[10px] text-slate-500 font-semibold uppercase tracking-wide">
+                                                                                        {currentSection}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            )
+                                                                        }
+
                                                                         const ref = `M${moduleIndex + 1}.${outputIdx + 1}`
                                                                         const monthlyValues = moduleOutputs[ref] || []
                                                                         const outputType = output.type || 'flow'

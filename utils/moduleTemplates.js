@@ -2,6 +2,35 @@
 // Each module takes inputs and generates multiple output time series
 
 /**
+ * Universal input resolver for module calculations.
+ * Converts any input (number, string, or reference) to a numeric value.
+ * Use this for ALL numeric module inputs to ensure refs like "C1.21" work.
+ *
+ * @param {any} value - The input value (number, string number, or reference)
+ * @param {Object} context - The reference map containing resolved arrays
+ * @param {number} defaultVal - Fallback value if resolution fails
+ * @returns {number} The resolved numeric value
+ */
+function resolveModuleInput(value, context, defaultVal = 0) {
+    // Already a number - use directly
+    if (typeof value === 'number') return value
+
+    if (typeof value === 'string') {
+        // Check if it's a reference (C1.X, R123, etc.) in context
+        if (context && context[value]) {
+            const arr = context[value]
+            // Get first non-zero value (constants are same across periods)
+            return arr.find(v => v !== 0) || arr[0] || defaultVal
+        }
+        // Try parsing as a number string ("5" -> 5)
+        const parsed = parseFloat(value)
+        return isNaN(parsed) ? defaultVal : parsed
+    }
+
+    return defaultVal
+}
+
+/**
  * Module Template Structure:
  * {
  *   type: 'iterative_debt_sizing',
@@ -212,6 +241,53 @@ export const MODULE_TEMPLATES = {
             closing: 'MAX(0, CUMSUM({additionsRef}) - CUMSUM({additionsRef}) / {lifeYears} / T.MiY × CUMSUM({opsFlagRef}))'
         }
     },
+    distributions: {
+        type: 'distributions',
+        name: 'Distributions',
+        description: 'Shareholder distributions waterfall with RE test and share capital repayment',
+        inputs: [
+            { key: 'availableCashRef', label: 'Available Cashflow (pre-dist)', type: 'reference', refType: 'any', required: true },
+            { key: 'npatRef', label: 'NPAT', type: 'reference', refType: 'any', required: true },
+            { key: 'equityContributedRef', label: 'Equity Contributed', type: 'reference', refType: 'any', required: true },
+            { key: 'minCashReserve', label: 'Minimum Cash Reserve', type: 'number_or_ref', required: false, default: 0 },
+            { key: 'opsFlagRef', label: 'Operations Flag', type: 'reference', refType: 'flag', required: true },
+            { key: 'withholdingTaxPct', label: 'Withholding Tax %', type: 'number_or_ref', required: false, default: 0 }
+        ],
+        outputs: [
+            { key: 'cash_available', label: 'Cash Available for Dist', type: 'flow', section: 'Cash Available' },
+            { key: 're_opening', label: 'RE - Opening', type: 'stock_start', section: 'Retained Earnings' },
+            { key: 're_npat', label: 'RE - NPAT', type: 'flow', section: 'Retained Earnings' },
+            { key: 're_test', label: 'RE Test', type: 'stock', section: 'Retained Earnings' },
+            { key: 'npat_test', label: 'NPAT Test', type: 'stock', section: 'Retained Earnings' },
+            { key: 'dividend_paid', label: 'Dividend Paid', type: 'flow', section: 'Retained Earnings' },
+            { key: 're_movement', label: 'RE - Movement', type: 'flow', section: 'Retained Earnings' },
+            { key: 're_closing', label: 'RE - Closing', type: 'stock', section: 'Retained Earnings' },
+            { key: 'sc_opening', label: 'SC - Opening', type: 'stock_start', section: 'Share Capital' },
+            { key: 'sc_cash_available', label: 'Post-SC Cash Available', type: 'flow', section: 'Share Capital' },
+            { key: 'sc_repayment', label: 'SC - Repayment', type: 'flow', section: 'Share Capital' },
+            { key: 'sc_closing', label: 'SC - Closing', type: 'stock', section: 'Share Capital' },
+            { key: 'total_distributions', label: 'Total Distributions', type: 'flow', section: 'Totals' },
+            { key: 'withholding_tax', label: 'Withholding Tax', type: 'flow', section: 'Totals' },
+            { key: 'net_to_equity', label: 'Net to Equity', type: 'flow', section: 'Totals' }
+        ],
+        outputFormulas: {
+            cash_available: 'MAX(0, CUMSUM({availableCashRef}) - {minCashReserve}) × {opsFlagRef} - prior cumulative',
+            re_opening: 'CUMSUM(NPAT) - NPAT - (CUMSUM(dividends) - dividends)',
+            re_npat: '{npatRef}',
+            re_test: '(re_opening + NPAT) > 0 ? 1 : 0',
+            npat_test: 'NPAT > 0 ? 1 : 0',
+            dividend_paid: 'MAX(0, incremental_cash) × opsFlag × re_test × npat_test',
+            re_movement: 'NPAT - dividend_paid',
+            re_closing: 'CUMSUM(re_movement)',
+            sc_opening: '{equityContributedRef} (constant)',
+            sc_cash_available: 'MAX(0, incremental_cash - dividend_paid)',
+            sc_repayment: 'MIN(CUMSUM(sc_cash_available), sc_opening) - prior cumulative',
+            sc_closing: 'sc_opening - cumulative_sc_repayment',
+            total_distributions: 'dividend_paid + sc_repayment',
+            withholding_tax: 'total_distributions × {withholdingTaxPct}/100',
+            net_to_equity: 'total_distributions - withholding_tax'
+        }
+    },
     iterative_debt_sizing: {
         type: 'iterative_debt_sizing',
         name: 'Iterative Debt Sizing (DSCR Sculpted)',
@@ -291,6 +367,8 @@ export function calculateModuleOutputs(moduleInstance, arrayLength, context) {
             return calculateDepreciationAmortization(inputs, arrayLength, context)
         case 'iterative_debt_sizing':
             return calculateIterativeDebtSizing(inputs, arrayLength, context)
+        case 'distributions':
+            return calculateDistributions(inputs, arrayLength, context)
         default:
             return outputs
     }
@@ -358,25 +436,9 @@ function calculateConstructionFunding(inputs, arrayLength, context) {
         ? context[constructionFlagRef]
         : new Array(arrayLength).fill(0)
 
-    // Helper to resolve value (can be number or reference like "C1.19")
-    const resolveValue = (value, defaultVal) => {
-        if (typeof value === 'number') return value
-        if (typeof value === 'string') {
-            // Check if it's a reference (e.g., "C1.19")
-            if (context[value]) {
-                const arr = context[value]
-                return arr.find(v => v !== 0) || arr[0] || defaultVal
-            }
-            // Try parsing as a number string
-            const parsed = parseFloat(value)
-            return isNaN(parsed) ? defaultVal : parsed
-        }
-        return defaultVal
-    }
-
-    // Rates - support both direct values and references
-    const gearingCap = resolveValue(gearingCapPct, 0) / 100
-    const monthlyRate = resolveValue(interestRatePct, 0) / 100 / 12
+    // Rates - support both direct values and references using shared resolver
+    const gearingCap = resolveModuleInput(gearingCapPct, context, 0) / 100
+    const monthlyRate = resolveModuleInput(interestRatePct, context, 0) / 100 / 12
 
     // Find construction period
     const consStart = constructionFlag.findIndex(f => f === 1 || f === true)
@@ -653,9 +715,9 @@ function calculateMraReserve(inputs, arrayLength, context) {
         ? context[releaseFlagRef]
         : new Array(arrayLength).fill(0)
 
-    // Parse parameters
-    const reservePeriod = parseInt(reservePeriodMonths) || 12
-    const portionPct = (parseFloat(reservePortion) || 100) / 100
+    // Parse parameters using shared resolver - supports refs like C1.X
+    const reservePeriod = Math.round(resolveModuleInput(reservePeriodMonths, context, 12))
+    const portionPct = resolveModuleInput(reservePortion, context, 100) / 100
 
     // Step 1: Calculate look-forward target for each period
     // Target[i] = sum of maintenance from period i to (i + reservePeriod - 1)
@@ -755,9 +817,9 @@ function calculateGstReceivable(inputs, arrayLength, context) {
         ? context[activeFlagRef]
         : new Array(arrayLength).fill(1)
 
-    // GST rate as decimal
-    const gstRate = (parseFloat(gstRatePct) || 10) / 100
-    const delay = parseInt(receiptDelayMonths) || 1
+    // GST rate and delay - support both direct values and references using shared resolver
+    const gstRate = resolveModuleInput(gstRatePct, context, 10) / 100
+    const delay = Math.round(resolveModuleInput(receiptDelayMonths, context, 1))
 
     // Step 1: Calculate GST amounts and paid for each period
     const gstPaidAmounts = new Array(arrayLength).fill(0)
@@ -860,25 +922,8 @@ function calculateTaxLosses(inputs, arrayLength, context) {
         ? context[opsFlagRef]
         : new Array(arrayLength).fill(1) // Default to always active
 
-    // Helper to resolve value (can be number or reference like "C1.11")
-    const resolveValue = (value, defaultVal) => {
-        if (typeof value === 'number') return value
-        if (typeof value === 'string') {
-            // Check if it's a reference (e.g., "C1.11")
-            if (context[value]) {
-                const arr = context[value]
-                // Get first non-zero value (constants are typically constant across periods)
-                return arr.find(v => v !== 0) || arr[0] || defaultVal
-            }
-            // Try parsing as a number string
-            const parsed = parseFloat(value)
-            return isNaN(parsed) ? defaultVal : parsed
-        }
-        return defaultVal
-    }
-
-    // Tax rate as decimal - supports both direct values and references
-    const taxRate = resolveValue(taxRatePct, 0) / 100
+    // Tax rate as decimal - supports both direct values and references using shared resolver
+    const taxRate = resolveModuleInput(taxRatePct, context, 0) / 100
 
     // Step 1: Calculate Generated and Potential for each period
     const generated = new Array(arrayLength).fill(0)
@@ -992,6 +1037,10 @@ function calculateDepreciationAmortization(inputs, arrayLength, context) {
         ? context[opsFlagRef]
         : new Array(arrayLength).fill(0)
 
+    // Resolve numeric inputs using shared resolver
+    const resolvedLifeYears = resolveModuleInput(lifeYears, context, 25)
+    const resolvedDbMultiplier = resolveModuleInput(dbMultiplier, context, 2.0)
+
     // Calculate cumulative additions (total capex over time)
     const cumsumAdditions = new Array(arrayLength).fill(0)
     let runningTotal = 0
@@ -1024,7 +1073,7 @@ function calculateDepreciationAmortization(inputs, arrayLength, context) {
         // No iteration needed - each period calculated independently
 
         // Annual rate = multiplier / life (e.g., 2/25 = 8% for DDB with 25-year life)
-        const annualRate = (parseFloat(dbMultiplier) || 2.0) / lifeYears
+        const annualRate = resolvedDbMultiplier / resolvedLifeYears
         const monthlyDbRate = annualRate / 12
 
         // Retention factor per period
@@ -1065,7 +1114,7 @@ function calculateDepreciationAmortization(inputs, arrayLength, context) {
     } else {
         // Straight Line Method (Gold Standard - CUMSUM pattern)
         // Rate = TotalCapital / Life / 12
-        const monthlyRate = lifeYears > 0 ? totalCapitalAtCOD / lifeYears / 12 : 0
+        const monthlyRate = resolvedLifeYears > 0 ? totalCapitalAtCOD / resolvedLifeYears / 12 : 0
 
         for (let i = 0; i < arrayLength; i++) {
             const isOps = opsFlag[i] === 1 || opsFlag[i] === true
@@ -1451,29 +1500,16 @@ function calculateIterativeDebtSizing(inputs, arrayLength, context) {
     const debtServiceCapacity = new Array(arrayLength).fill(0)
     const totalCfads = new Array(arrayLength).fill(0)
 
-    // Helper to resolve DSCR value (can be number or reference like "C1.25")
-    const resolveDSCR = (value, defaultVal) => {
-        if (typeof value === 'number') return value
-        if (typeof value === 'string') {
-            // Check if it's a reference (e.g., "C1.25")
-            if (context[value]) {
-                const arr = context[value]
-                // Get first non-zero value (constants are typically constant across periods)
-                return arr.find(v => v !== 0) || arr[0] || defaultVal
-            }
-            // Try parsing as a number string
-            const parsed = parseFloat(value)
-            return isNaN(parsed) ? defaultVal : parsed
-        }
-        return defaultVal
-    }
-
     const useNewFormat = contractedCfadsRef || merchantCfadsRef
-    // Resolve all numeric inputs - supports refs like C1.25, no hardcoded defaults
-    const parsedContractedDSCR = resolveDSCR(contractedDSCR, 0)
-    const parsedMerchantDSCR = resolveDSCR(merchantDSCR, 0)
-    const parsedTargetDSCR = resolveDSCR(targetDSCR, 0)
-    const parsedMaxGearing = resolveDSCR(maxGearingPct, 0)
+    // Resolve all numeric inputs using shared resolver - supports refs like C1.25
+    const parsedContractedDSCR = resolveModuleInput(contractedDSCR, context, 0)
+    const parsedMerchantDSCR = resolveModuleInput(merchantDSCR, context, 0)
+    const parsedTargetDSCR = resolveModuleInput(targetDSCR, context, 0)
+    const parsedMaxGearing = resolveModuleInput(maxGearingPct, context, 0)
+    const parsedInterestRate = resolveModuleInput(interestRatePct, context, 0)
+    const parsedTenorYears = resolveModuleInput(tenorYears, context, 0)
+    const parsedTolerance = resolveModuleInput(tolerance, context, 0.1)
+    const parsedMaxIterations = Math.round(resolveModuleInput(maxIterations, context, 50))
 
     for (let i = 0; i < arrayLength; i++) {
         if (useNewFormat) {
@@ -1529,11 +1565,11 @@ function calculateIterativeDebtSizing(inputs, arrayLength, context) {
             break
         }
     }
-    const tenorMonths = tenorYears * 12
+    const tenorMonths = parsedTenorYears * 12
     const debtEnd = Math.min(debtStart + tenorMonths - 1, debtFlagEnd, arrayLength - 1)
 
     // Monthly interest rate
-    const monthlyRate = interestRatePct / 100 / 12
+    const monthlyRate = parsedInterestRate / 100 / 12
 
     // Binary search for optimal debt (no IDC added - IDC is equity-funded)
     let lowerBound = 0
@@ -1541,8 +1577,8 @@ function calculateIterativeDebtSizing(inputs, arrayLength, context) {
     let bestDebt = 0
     let bestSchedule = null
 
-    for (let iter = 0; iter < maxIterations; iter++) {
-        if (upperBound - lowerBound <= tolerance) break
+    for (let iter = 0; iter < parsedMaxIterations; iter++) {
+        if (upperBound - lowerBound <= parsedTolerance) break
 
         const testDebt = (lowerBound + upperBound) / 2
 
@@ -1591,6 +1627,197 @@ function calculateIterativeDebtSizing(inputs, arrayLength, context) {
     }
 
     return emptyDebtSizingOutputs(arrayLength)
+}
+
+/**
+ * Distributions module using Gold Standard CUMSUM pattern.
+ * Handles shareholder distributions waterfall:
+ * 1. Calculate cash available above minimum reserve
+ * 2. Apply RE test (must have positive cumulative RE)
+ * 3. Apply NPAT test (must have positive period NPAT)
+ * 4. Pay dividends if tests pass
+ * 5. Return share capital from remaining cash
+ * 6. Apply withholding tax
+ *
+ * Key insight: Use CUMSUM patterns to avoid circular dependencies.
+ * Available cash = CUMSUM(pre-dist cash) - prior distributions - minimum reserve
+ */
+function calculateDistributions(inputs, arrayLength, context) {
+    const {
+        availableCashRef = null,
+        npatRef = null,
+        equityContributedRef = null,
+        minCashReserve = 0,
+        opsFlagRef = null,
+        withholdingTaxPct = 0
+    } = inputs
+
+    // Initialize outputs
+    const outputs = {
+        cash_available: new Array(arrayLength).fill(0),
+        re_opening: new Array(arrayLength).fill(0),
+        re_npat: new Array(arrayLength).fill(0),
+        re_test: new Array(arrayLength).fill(0),
+        npat_test: new Array(arrayLength).fill(0),
+        dividend_paid: new Array(arrayLength).fill(0),
+        re_movement: new Array(arrayLength).fill(0),
+        re_closing: new Array(arrayLength).fill(0),
+        sc_opening: new Array(arrayLength).fill(0),
+        sc_cash_available: new Array(arrayLength).fill(0),
+        sc_repayment: new Array(arrayLength).fill(0),
+        sc_closing: new Array(arrayLength).fill(0),
+        total_distributions: new Array(arrayLength).fill(0),
+        withholding_tax: new Array(arrayLength).fill(0),
+        net_to_equity: new Array(arrayLength).fill(0)
+    }
+
+    // Get input arrays
+    const availableCash = availableCashRef && context[availableCashRef]
+        ? context[availableCashRef]
+        : new Array(arrayLength).fill(0)
+
+    const npat = npatRef && context[npatRef]
+        ? context[npatRef]
+        : new Array(arrayLength).fill(0)
+
+    const equityContributed = equityContributedRef && context[equityContributedRef]
+        ? context[equityContributedRef]
+        : new Array(arrayLength).fill(0)
+
+    const opsFlag = opsFlagRef && context[opsFlagRef]
+        ? context[opsFlagRef]
+        : new Array(arrayLength).fill(0)
+
+    // Resolve numeric inputs - support both direct values and references
+    const minCash = resolveModuleInput(minCashReserve, context, 0)
+    const taxRate = resolveModuleInput(withholdingTaxPct, context, 0) / 100
+
+    // Get total equity contributed (constant from Construction Funding M4.7)
+    // This is a cumulative value - get the final value
+    let totalEquityContributed = 0
+    for (let i = arrayLength - 1; i >= 0; i--) {
+        if (equityContributed[i] !== 0) {
+            totalEquityContributed = equityContributed[i]
+            break
+        }
+    }
+    // If not found at end, check if it's a constant array
+    if (totalEquityContributed === 0 && equityContributed[0] !== 0) {
+        totalEquityContributed = equityContributed[0]
+    }
+
+    // ============================================================
+    // STEP 1: Calculate cumulative pre-distribution cash
+    // ============================================================
+    const cumPreDistCash = new Array(arrayLength).fill(0)
+    let runningCash = 0
+    for (let i = 0; i < arrayLength; i++) {
+        runningCash += availableCash[i] || 0
+        cumPreDistCash[i] = runningCash
+    }
+
+    // ============================================================
+    // STEP 2: Calculate RE components using CUMSUM
+    // RE Closing = CUMSUM(NPAT - Dividends)
+    // We need to iterate because dividends depend on RE test
+    // ============================================================
+    const cumNpat = new Array(arrayLength).fill(0)
+    let runningNpat = 0
+    for (let i = 0; i < arrayLength; i++) {
+        runningNpat += npat[i] || 0
+        cumNpat[i] = runningNpat
+    }
+
+    // ============================================================
+    // STEP 3: Calculate distributions sequentially
+    // Standard project finance waterfall:
+    //   1. SC repayment FIRST (return of capital - tax efficient)
+    //   2. Dividends from remaining cash (capped at NPAT, subject to RE/NPAT tests)
+    // ============================================================
+    let cumDividends = 0
+    let cumScRepayment = 0
+    let cumCashPosition = 0  // Running cash balance
+
+    for (let i = 0; i < arrayLength; i++) {
+        const isOps = opsFlag[i] === 1 || opsFlag[i] === true
+        const periodNpat = npat[i] || 0
+        const periodCash = availableCash[i] || 0
+
+        // RE - NPAT for this period
+        outputs.re_npat[i] = periodNpat
+
+        // RE - Opening = Cumulative NPAT before this period - Cumulative Dividends before this period
+        const priorCumNpat = i > 0 ? cumNpat[i - 1] : 0
+        const priorCumDividends = cumDividends
+        outputs.re_opening[i] = priorCumNpat - priorCumDividends
+
+        // RE Test: 1 if (Opening RE + current NPAT) > 0
+        const reForTest = outputs.re_opening[i] + periodNpat
+        outputs.re_test[i] = reForTest > 0 ? 1 : 0
+
+        // NPAT Test: 1 if current period NPAT > 0
+        outputs.npat_test[i] = periodNpat > 0 ? 1 : 0
+
+        // Add this period's cash to position
+        cumCashPosition += periodCash
+
+        // Cash available for distribution = cash above minimum reserve
+        const cashForDist = isOps ? Math.max(0, cumCashPosition - minCash) : 0
+        outputs.cash_available[i] = cashForDist
+
+        // ============================================================
+        // Share Capital Repayment FIRST (return of capital)
+        // SC gets priority on available cash until fully repaid
+        // ============================================================
+        outputs.sc_opening[i] = totalEquityContributed
+
+        // SC repayment capped at remaining equity to return
+        const scRemainingEquity = Math.max(0, totalEquityContributed - cumScRepayment)
+        const periodScRepayment = Math.min(cashForDist, scRemainingEquity)
+        outputs.sc_repayment[i] = periodScRepayment
+
+        // Update cumulative SC repayment and reduce cash position
+        cumScRepayment += periodScRepayment
+        cumCashPosition -= periodScRepayment
+
+        // SC Closing = Total contributed - cumulative repaid
+        outputs.sc_closing[i] = Math.max(0, totalEquityContributed - cumScRepayment)
+
+        // ============================================================
+        // Dividends SECOND (from remaining cash after SC repayment)
+        // Subject to RE test and NPAT test, capped at period NPAT
+        // ============================================================
+
+        // Cash available for dividends = remaining cash above minimum (after SC)
+        const postScCash = isOps ? Math.max(0, cumCashPosition - minCash) : 0
+        outputs.sc_cash_available[i] = postScCash  // Repurpose as "post-SC cash available"
+
+        // Dividend = MIN(available cash after SC, NPAT) when tests pass
+        let periodDividend = 0
+        if (isOps && outputs.re_test[i] === 1 && outputs.npat_test[i] === 1) {
+            periodDividend = Math.min(postScCash, Math.max(0, periodNpat))
+        }
+        outputs.dividend_paid[i] = periodDividend
+
+        // RE Movement = NPAT - Dividends
+        outputs.re_movement[i] = periodNpat - periodDividend
+
+        // Update cumulative dividends and reduce cash position
+        cumDividends += periodDividend
+        cumCashPosition -= periodDividend
+
+        // RE Closing = CUMSUM(RE Movement)
+        outputs.re_closing[i] = (i > 0 ? outputs.re_closing[i - 1] : 0) + outputs.re_movement[i]
+
+        // ============================================================
+        // Totals and Tax
+        // ============================================================
+        outputs.total_distributions[i] = outputs.dividend_paid[i] + outputs.sc_repayment[i]
+        outputs.withholding_tax[i] = outputs.total_distributions[i] * taxRate
+        outputs.net_to_equity[i] = outputs.total_distributions[i] - outputs.withholding_tax[i]
+    }
+
+    return outputs
 }
 
 // Get available module output references for a module instance
