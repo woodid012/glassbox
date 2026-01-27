@@ -277,14 +277,27 @@ export const MODULE_TEMPLATES = {
     distributions: {
         type: 'distributions',
         name: 'Distributions',
-        description: 'Shareholder distributions waterfall with RE test and share capital repayment',
+        description: 'Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment',
         inputs: [
             { key: 'availableCashRef', label: 'Available Cashflow (pre-dist)', type: 'reference', refType: 'any', required: true },
             { key: 'npatRef', label: 'NPAT', type: 'reference', refType: 'any', required: true },
             { key: 'equityContributedRef', label: 'Equity Contributed', type: 'reference', refType: 'any', required: true },
             { key: 'minCashReserve', label: 'Minimum Cash Reserve', type: 'number_or_ref', required: false, default: 0 },
             { key: 'opsFlagRef', label: 'Operations Flag', type: 'reference', refType: 'flag', required: true },
-            { key: 'withholdingTaxPct', label: 'Withholding Tax %', type: 'number_or_ref', required: false, default: 0 }
+            { key: 'withholdingTaxPct', label: 'Withholding Tax %', type: 'number_or_ref', required: false, default: 0 },
+            { key: 'lockupActive', label: 'Lock-up Active', type: 'boolean', default: true },
+            { key: 'lockupReleasePeriods', label: 'Release After (Qtrs)', type: 'number_or_ref', default: 2 },
+            { key: 'dscrTestActive', label: 'DSCR Test Active', type: 'boolean', default: true },
+            { key: 'dscrRef', label: 'DSCR (periodic)', type: 'reference', refType: 'any', required: false },
+            { key: 'dscrThreshold', label: 'DSCR Threshold', type: 'number_or_ref', default: 1.15 },
+            { key: 'adscrTestActive', label: 'Historical ADSCR Test Active', type: 'boolean', default: true },
+            { key: 'cfadsRef', label: 'Total CFADS', type: 'reference', refType: 'any', required: false },
+            { key: 'debtServiceRef', label: 'Total Debt Service', type: 'reference', refType: 'any', required: false },
+            { key: 'adscrThreshold', label: 'ADSCR Threshold', type: 'number_or_ref', default: 1.15 },
+            { key: 'dsraTestActive', label: 'DSRA Fully Funded Test', type: 'boolean', default: false },
+            { key: 'dsraBalanceRef', label: 'DSRA Balance', type: 'reference', refType: 'any', required: false },
+            { key: 'dsraTargetRef', label: 'DSRA Target', type: 'reference', refType: 'any', required: false },
+            { key: 'quarterEndFlagRef', label: 'Quarter End Flag', type: 'reference', refType: 'flag', required: false }
         ],
         outputs: [
             { key: 'cash_available', label: 'Cash Available for Dist', type: 'flow', section: 'Cash Available' },
@@ -301,7 +314,13 @@ export const MODULE_TEMPLATES = {
             { key: 'sc_closing', label: 'SC - Closing', type: 'stock', section: 'Share Capital' },
             { key: 'total_distributions', label: 'Total Distributions', type: 'flow', section: 'Totals' },
             { key: 'withholding_tax', label: 'Withholding Tax', type: 'flow', section: 'Totals' },
-            { key: 'net_to_equity', label: 'Net to Equity', type: 'flow', section: 'Totals' }
+            { key: 'net_to_equity', label: 'Net to Equity', type: 'flow', section: 'Totals' },
+            { key: 'dscr_test', label: 'DSCR Test', type: 'stock', section: 'Lock-up' },
+            { key: 'adscr_test', label: 'ADSCR Test', type: 'stock', section: 'Lock-up' },
+            { key: 'dsra_test', label: 'DSRA Test', type: 'stock', section: 'Lock-up' },
+            { key: 'all_tests_pass', label: 'All Tests Pass', type: 'stock', section: 'Lock-up' },
+            { key: 'consec_pass_qtrs', label: 'Consecutive Pass Qtrs', type: 'stock', section: 'Lock-up' },
+            { key: 'lockup_active', label: 'Lock-up Active', type: 'stock', section: 'Lock-up' }
         ],
         outputFormulas: {
             cash_available: 'MAX(0, CUMSUM({availableCashRef}) - {minCashReserve}) × {opsFlagRef} - prior cumulative',
@@ -318,7 +337,50 @@ export const MODULE_TEMPLATES = {
             sc_closing: 'sc_opening - cumulative_sc_repayment',
             total_distributions: 'dividend_paid + sc_repayment',
             withholding_tax: 'total_distributions × {withholdingTaxPct}/100',
-            net_to_equity: 'total_distributions - withholding_tax'
+            net_to_equity: 'total_distributions - withholding_tax',
+            dscr_test: '{dscrRef} >= {dscrThreshold} ? 1 : 0 (at quarter end)',
+            adscr_test: 'trailing_12m_CFADS / trailing_12m_DS >= {adscrThreshold} ? 1 : 0',
+            dsra_test: '{dsraBalanceRef} >= {dsraTargetRef} ? 1 : 0',
+            all_tests_pass: 'dscr_test × adscr_test × dsra_test (at quarter end)',
+            consec_pass_qtrs: 'consecutive quarter ends where all_tests_pass = 1',
+            lockup_active: 'consec_pass_qtrs < {lockupReleasePeriods} ? 1 : 0'
+        }
+    },
+    dsrf: {
+        type: 'dsrf',
+        name: 'Debt Service Reserve Facility (DSRF)',
+        description: 'Standby facility guaranteeing debt service with refinancing schedule',
+        inputs: [
+            { key: 'dsrfActiveRef', label: 'DSRF Active (1/0)', type: 'number_or_ref', required: true, default: 1 },
+            { key: 'debtServiceRef', label: 'Base Debt Service (pre-DSRF)', type: 'reference', refType: 'any', required: true },
+            { key: 'operationsFlagRef', label: 'Operations Flag', type: 'reference', refType: 'flag', required: true },
+            { key: 'establishmentFeePctRef', label: 'Establishment Fee (%)', type: 'number_or_ref', required: true, default: 1.35 },
+            { key: 'commitmentFeePctOfMarginRef', label: 'Commitment Fee (% of Margin)', type: 'number_or_ref', required: true, default: 40 },
+            { key: 'baseMarginPctRef', label: 'Base Margin (%)', type: 'number_or_ref', required: true, default: 1.75 },
+            { key: 'facilityMonthsRef', label: 'Facility Months of DS', type: 'number_or_ref', required: true, default: 6 },
+            { key: 'refinancingSchedule', label: 'Refinancing Schedule', type: 'array', required: false, default: [] }
+        ],
+        outputs: [
+            { key: 'facility_limit', label: 'Facility Limit', type: 'stock' },
+            { key: 'establishment_fee', label: 'Establishment Fee', type: 'flow' },
+            { key: 'commitment_fee', label: 'Commitment Fee', type: 'flow' },
+            { key: 'refi_fees', label: 'Refinancing Fees', type: 'flow' },
+            { key: 'effective_margin', label: 'Effective Margin (%)', type: 'stock' },
+            { key: 'total_dsrf_fees', label: 'Total DSRF Fees', type: 'flow' },
+            { key: 'total_dsrf_fees_cumulative', label: 'Total DSRF Fees (Cumulative)', type: 'stock' },
+            { key: 'ds_plus_dsrf', label: 'DS + DSRF Fees', type: 'flow' },
+            { key: 'adjusted_dscr', label: 'Adjusted DSCR', type: 'stock' }
+        ],
+        outputFormulas: {
+            facility_limit: 'Forward-looking sum of next N months DS (recalc at each refi)',
+            establishment_fee: 'facility_limit × establishmentFeePct / 100 × F2.Start',
+            commitment_fee: 'facility_limit × effective_margin / 100 × commitmentFeePct / 100 / T.MiY × F2',
+            refi_fees: 'facility_limit × refiFeePct / 100 at each refi date',
+            effective_margin: 'Steps from base margin to refi margin at each date',
+            total_dsrf_fees: 'establishment_fee + commitment_fee + refi_fees',
+            total_dsrf_fees_cumulative: 'CUMSUM(total_dsrf_fees)',
+            ds_plus_dsrf: 'debtService + total_dsrf_fees',
+            adjusted_dscr: 'CFADS / ds_plus_dsrf'
         }
     },
     iterative_debt_sizing: {
@@ -402,6 +464,8 @@ export function calculateModuleOutputs(moduleInstance, arrayLength, context) {
             return calculateIterativeDebtSizing(inputs, arrayLength, context)
         case 'distributions':
             return calculateDistributions(inputs, arrayLength, context)
+        case 'dsrf':
+            return calculateDsrf(inputs, arrayLength, context)
         default:
             return outputs
     }
@@ -1707,7 +1771,21 @@ function calculateDistributions(inputs, arrayLength, context) {
         equityContributedRef = null,
         minCashReserve = 0,
         opsFlagRef = null,
-        withholdingTaxPct = 0
+        withholdingTaxPct = 0,
+        // Lock-up inputs
+        lockupActive = true,
+        lockupReleasePeriods = 2,
+        dscrTestActive = true,
+        dscrRef = null,
+        dscrThreshold = 1.15,
+        adscrTestActive = true,
+        cfadsRef = null,
+        debtServiceRef = null,
+        adscrThreshold = 1.15,
+        dsraTestActive = false,
+        dsraBalanceRef = null,
+        dsraTargetRef = null,
+        quarterEndFlagRef = null
     } = inputs
 
     // Initialize outputs
@@ -1726,7 +1804,14 @@ function calculateDistributions(inputs, arrayLength, context) {
         sc_closing: new Array(arrayLength).fill(0),
         total_distributions: new Array(arrayLength).fill(0),
         withholding_tax: new Array(arrayLength).fill(0),
-        net_to_equity: new Array(arrayLength).fill(0)
+        net_to_equity: new Array(arrayLength).fill(0),
+        // Lock-up outputs
+        dscr_test: new Array(arrayLength).fill(0),
+        adscr_test: new Array(arrayLength).fill(0),
+        dsra_test: new Array(arrayLength).fill(0),
+        all_tests_pass: new Array(arrayLength).fill(0),
+        consec_pass_qtrs: new Array(arrayLength).fill(0),
+        lockup_active: new Array(arrayLength).fill(0)
     }
 
     // Get input arrays
@@ -1750,6 +1835,40 @@ function calculateDistributions(inputs, arrayLength, context) {
     const minCash = resolveModuleInput(minCashReserve, context, 0)
     const taxRate = resolveModuleInput(withholdingTaxPct, context, 0) / 100
 
+    // Lock-up numeric inputs
+    const lockupEnabled = lockupActive === true || lockupActive === 'true'
+    const releasePeriods = Math.round(resolveModuleInput(lockupReleasePeriods, context, 2))
+    const dscrTestOn = dscrTestActive === true || dscrTestActive === 'true'
+    const adscrTestOn = adscrTestActive === true || adscrTestActive === 'true'
+    const dsraTestOn = dsraTestActive === true || dsraTestActive === 'true'
+    const dscrThresh = resolveModuleInput(dscrThreshold, context, 1.15)
+    const adscrThresh = resolveModuleInput(adscrThreshold, context, 1.15)
+
+    // Lock-up reference arrays
+    const dscr = dscrRef && context[dscrRef]
+        ? context[dscrRef]
+        : new Array(arrayLength).fill(0)
+
+    const cfads = cfadsRef && context[cfadsRef]
+        ? context[cfadsRef]
+        : new Array(arrayLength).fill(0)
+
+    const debtService = debtServiceRef && context[debtServiceRef]
+        ? context[debtServiceRef]
+        : new Array(arrayLength).fill(0)
+
+    const dsraBalance = dsraBalanceRef && context[dsraBalanceRef]
+        ? context[dsraBalanceRef]
+        : new Array(arrayLength).fill(0)
+
+    const dsraTarget = dsraTargetRef && context[dsraTargetRef]
+        ? context[dsraTargetRef]
+        : new Array(arrayLength).fill(0)
+
+    const qeFlag = quarterEndFlagRef && context[quarterEndFlagRef]
+        ? context[quarterEndFlagRef]
+        : new Array(arrayLength).fill(0)
+
     // Get total equity contributed (constant from Construction Funding M4.7)
     // This is a cumulative value - get the final value
     let totalEquityContributed = 0
@@ -1762,6 +1881,64 @@ function calculateDistributions(inputs, arrayLength, context) {
     // If not found at end, check if it's a constant array
     if (totalEquityContributed === 0 && equityContributed[0] !== 0) {
         totalEquityContributed = equityContributed[0]
+    }
+
+    // ============================================================
+    // LOCK-UP: Compute covenant tests and lock-up state
+    // ============================================================
+
+    // Historical ADSCR: trailing 12-month CFADS / trailing 12-month Debt Service
+    const adscr = new Array(arrayLength).fill(0)
+    let trailingCfads = 0
+    let trailingDs = 0
+    for (let i = 0; i < arrayLength; i++) {
+        trailingCfads += cfads[i] || 0
+        trailingDs += debtService[i] || 0
+        if (i >= 12) {
+            trailingCfads -= cfads[i - 12] || 0
+            trailingDs -= debtService[i - 12] || 0
+        }
+        adscr[i] = trailingDs > 0.0001 ? trailingCfads / trailingDs : 99
+    }
+
+    // Evaluate covenant tests and consecutive pass counter
+    let consecPassing = 0
+    let currentLockup = lockupEnabled ? 1 : 0  // Start locked if enabled
+
+    for (let i = 0; i < arrayLength; i++) {
+        const isOps = opsFlag[i] === 1 || opsFlag[i] === true
+        const isQE = qeFlag[i] === 1 || qeFlag[i] === true
+
+        // Individual test results (1 = pass, 0 = fail)
+        // DSCR test: periodic DSCR >= threshold
+        const dscrOk = !dscrTestOn || (dscr[i] >= dscrThresh)
+        outputs.dscr_test[i] = (isOps && dscrTestOn) ? (dscrOk ? 1 : 0) : (isOps ? 1 : 0)
+
+        // ADSCR test: trailing 12m ratio >= threshold
+        const adscrOk = !adscrTestOn || (adscr[i] >= adscrThresh)
+        outputs.adscr_test[i] = (isOps && adscrTestOn) ? (adscrOk ? 1 : 0) : (isOps ? 1 : 0)
+
+        // DSRA test: balance >= target
+        const dsraOk = !dsraTestOn || (dsraBalance[i] >= dsraTarget[i] - 0.0001)
+        outputs.dsra_test[i] = (isOps && dsraTestOn) ? (dsraOk ? 1 : 0) : (isOps ? 1 : 0)
+
+        // Evaluate consecutive pass counter at quarter ends during operations
+        if (isQE && isOps) {
+            const allPass = dscrOk && adscrOk && dsraOk
+            outputs.all_tests_pass[i] = allPass ? 1 : 0
+            if (allPass) {
+                consecPassing++
+            } else {
+                consecPassing = 0
+            }
+            currentLockup = (lockupEnabled && consecPassing < releasePeriods) ? 1 : 0
+        } else if (isOps) {
+            // Between quarter ends, carry forward last QE evaluation
+            outputs.all_tests_pass[i] = (i > 0 ? outputs.all_tests_pass[i - 1] : 0)
+        }
+
+        outputs.consec_pass_qtrs[i] = consecPassing
+        outputs.lockup_active[i] = lockupEnabled ? currentLockup : 0
     }
 
     // ============================================================
@@ -1791,6 +1968,7 @@ function calculateDistributions(inputs, arrayLength, context) {
     // Standard project finance waterfall:
     //   1. SC repayment FIRST (return of capital - tax efficient)
     //   2. Dividends from remaining cash (capped at NPAT, subject to RE/NPAT tests)
+    //   Both gated by lock-up: blocked when lockup_active = 1
     // ============================================================
     let cumDividends = 0
     let cumScRepayment = 0
@@ -1798,6 +1976,7 @@ function calculateDistributions(inputs, arrayLength, context) {
 
     for (let i = 0; i < arrayLength; i++) {
         const isOps = opsFlag[i] === 1 || opsFlag[i] === true
+        const isLocked = outputs.lockup_active[i] === 1
         const periodNpat = npat[i] || 0
         const periodCash = availableCash[i] || 0
 
@@ -1826,12 +2005,13 @@ function calculateDistributions(inputs, arrayLength, context) {
         // ============================================================
         // Share Capital Repayment FIRST (return of capital)
         // SC gets priority on available cash until fully repaid
+        // Blocked when lock-up is active
         // ============================================================
         outputs.sc_opening[i] = totalEquityContributed
 
         // SC repayment capped at remaining equity to return
         const scRemainingEquity = Math.max(0, totalEquityContributed - cumScRepayment)
-        const periodScRepayment = Math.min(cashForDist, scRemainingEquity)
+        const periodScRepayment = isLocked ? 0 : Math.min(cashForDist, scRemainingEquity)
         outputs.sc_repayment[i] = periodScRepayment
 
         // Update cumulative SC repayment and reduce cash position
@@ -1843,16 +2023,16 @@ function calculateDistributions(inputs, arrayLength, context) {
 
         // ============================================================
         // Dividends SECOND (from remaining cash after SC repayment)
-        // Subject to RE test and NPAT test, capped at period NPAT
+        // Subject to RE test, NPAT test, and lock-up gate
         // ============================================================
 
         // Cash available for dividends = remaining cash above minimum (after SC)
         const postScCash = isOps ? Math.max(0, cumCashPosition - minCash) : 0
         outputs.sc_cash_available[i] = postScCash  // Repurpose as "post-SC cash available"
 
-        // Dividend = MIN(available cash after SC, NPAT) when tests pass
+        // Dividend = MIN(available cash after SC, NPAT) when tests pass and not locked
         let periodDividend = 0
-        if (isOps && outputs.re_test[i] === 1 && outputs.npat_test[i] === 1) {
+        if (isOps && !isLocked && outputs.re_test[i] === 1 && outputs.npat_test[i] === 1) {
             periodDividend = Math.min(postScCash, Math.max(0, periodNpat))
         }
         outputs.dividend_paid[i] = periodDividend
@@ -1890,6 +2070,168 @@ export function getModuleOutputRefs(moduleInstance) {
         label: `${moduleInstance.name}: ${output.label}`,
         type: output.type
     }))
+}
+
+/**
+ * DSRF (Debt Service Reserve Facility) calculation.
+ * Models a standby facility that guarantees debt service payments.
+ *
+ * The facility limit is sized on base debt service (without DSRF fees)
+ * as a forward-looking sum of the next N months of DS.
+ * The facility limit is recalculated at each refinancing date.
+ *
+ * Fees:
+ *   Establishment fee = one-time at ops start on facility limit
+ *   Commitment fee = ongoing monthly = limit * effective_margin * commitPct / 12
+ *   Refi fees = one-time at each refinancing date on facility limit
+ *
+ * Effective margin steps from base margin to each refi margin at refi dates.
+ */
+function calculateDsrf(inputs, arrayLength, context) {
+    const {
+        dsrfActiveRef = 1,
+        debtServiceRef = null,
+        operationsFlagRef = null,
+        establishmentFeePctRef = 1.35,
+        commitmentFeePctOfMarginRef = 40,
+        baseMarginPctRef = 1.75,
+        facilityMonthsRef = 6,
+        refinancingSchedule = []
+    } = inputs
+
+    // Initialize outputs
+    const outputs = {
+        facility_limit: new Array(arrayLength).fill(0),
+        establishment_fee: new Array(arrayLength).fill(0),
+        commitment_fee: new Array(arrayLength).fill(0),
+        refi_fees: new Array(arrayLength).fill(0),
+        effective_margin: new Array(arrayLength).fill(0),
+        total_dsrf_fees: new Array(arrayLength).fill(0),
+        total_dsrf_fees_cumulative: new Array(arrayLength).fill(0),
+        ds_plus_dsrf: new Array(arrayLength).fill(0),
+        adjusted_dscr: new Array(arrayLength).fill(0)
+    }
+
+    // Check if DSRF is active
+    const dsrfActive = resolveModuleInput(dsrfActiveRef, context, 1)
+    if (!dsrfActive) return outputs
+
+    // Get input arrays
+    const debtService = debtServiceRef && context[debtServiceRef]
+        ? context[debtServiceRef]
+        : new Array(arrayLength).fill(0)
+
+    const opsFlag = operationsFlagRef && context[operationsFlagRef]
+        ? context[operationsFlagRef]
+        : new Array(arrayLength).fill(0)
+
+    // Resolve scalar parameters
+    const estFeePct = resolveModuleInput(establishmentFeePctRef, context, 1.35) / 100
+    const commitFeePctOfMargin = resolveModuleInput(commitmentFeePctOfMarginRef, context, 40) / 100
+    const baseMarginPct = resolveModuleInput(baseMarginPctRef, context, 1.75)
+    const facilityMonths = Math.round(resolveModuleInput(facilityMonthsRef, context, 6))
+
+    // Find ops start (first period where opsFlag = 1)
+    const opsStart = opsFlag.findIndex(f => f === 1 || f === true)
+    if (opsStart < 0) return outputs
+
+    // Build sorted active refinancing events
+    const activeRefis = (refinancingSchedule || [])
+        .filter(r => r.active && r.monthIndex > 0)
+        .sort((a, b) => a.monthIndex - b.monthIndex)
+
+    // Step 1: Build effective margin time series
+    // Starts at base margin, steps to each refi margin at the refi month index
+    let currentMargin = baseMarginPct
+    let nextRefiIdx = 0
+    for (let i = 0; i < arrayLength; i++) {
+        // Check if we've hit a refinancing date
+        if (nextRefiIdx < activeRefis.length && i >= activeRefis[nextRefiIdx].monthIndex) {
+            currentMargin = activeRefis[nextRefiIdx].marginPct
+            nextRefiIdx++
+        }
+        outputs.effective_margin[i] = currentMargin
+    }
+
+    // Step 2: Calculate facility limit
+    // Forward-looking sum of next N months of absolute debt service
+    // Recalculated at ops start and at each refi date
+    // Between recalc points, the limit stays constant
+
+    // Collect recalc points: ops start + each active refi date
+    const recalcPoints = [opsStart]
+    for (const refi of activeRefis) {
+        if (refi.monthIndex > opsStart && refi.monthIndex < arrayLength) {
+            recalcPoints.push(refi.monthIndex)
+        }
+    }
+
+    let currentLimit = 0
+    let nextRecalcIdx = 0
+
+    for (let i = 0; i < arrayLength; i++) {
+        const isOps = opsFlag[i] === 1 || opsFlag[i] === true
+        if (!isOps) continue
+
+        // Check if we need to recalculate the facility limit
+        if (nextRecalcIdx < recalcPoints.length && i >= recalcPoints[nextRecalcIdx]) {
+            // Forward-looking sum of next N months of DS (absolute values)
+            let forwardSum = 0
+            for (let j = i; j < Math.min(i + facilityMonths, arrayLength); j++) {
+                forwardSum += Math.abs(debtService[j] || 0)
+            }
+            currentLimit = forwardSum
+            // Advance past any recalc points at or before current period
+            while (nextRecalcIdx < recalcPoints.length && recalcPoints[nextRecalcIdx] <= i) {
+                nextRecalcIdx++
+            }
+        }
+
+        outputs.facility_limit[i] = currentLimit
+    }
+
+    // Step 3: Calculate establishment fee (one-time at ops start)
+    if (opsStart < arrayLength) {
+        outputs.establishment_fee[opsStart] = outputs.facility_limit[opsStart] * estFeePct
+    }
+
+    // Step 4: Calculate refinancing fees (one-time at each refi date)
+    for (const refi of activeRefis) {
+        const idx = refi.monthIndex
+        if (idx >= 0 && idx < arrayLength && (opsFlag[idx] === 1 || opsFlag[idx] === true)) {
+            const refiFeePct = (refi.feePct || 0) / 100
+            outputs.refi_fees[idx] = outputs.facility_limit[idx] * refiFeePct
+        }
+    }
+
+    // Step 5: Calculate commitment fee (monthly during operations)
+    // commitment_fee = facility_limit * effective_margin% * commitFeePctOfMargin / 12
+    for (let i = 0; i < arrayLength; i++) {
+        const isOps = opsFlag[i] === 1 || opsFlag[i] === true
+        if (isOps && outputs.facility_limit[i] > 0) {
+            outputs.commitment_fee[i] = outputs.facility_limit[i] *
+                (outputs.effective_margin[i] / 100) *
+                commitFeePctOfMargin / 12
+        }
+    }
+
+    // Step 6: Aggregate totals
+    let cumFees = 0
+    for (let i = 0; i < arrayLength; i++) {
+        const totalFee = outputs.establishment_fee[i] + outputs.commitment_fee[i] + outputs.refi_fees[i]
+        outputs.total_dsrf_fees[i] = totalFee
+        cumFees += totalFee
+        outputs.total_dsrf_fees_cumulative[i] = cumFees
+
+        // DS + DSRF = base debt service + DSRF fees (both as absolutes for reporting)
+        const absDS = Math.abs(debtService[i] || 0)
+        outputs.ds_plus_dsrf[i] = absDS + totalFee
+
+        // Adjusted DSCR = not directly computable here (needs CFADS from context)
+        // Will be 0 - downstream calculations can compute if needed
+    }
+
+    return outputs
 }
 
 // Get output key from numeric index for a module type

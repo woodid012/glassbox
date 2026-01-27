@@ -1,5 +1,51 @@
 {
   "_description": "Model structure - formulas and relationships only",
+  "_constantsReference": {
+    "C1.1": { "id": 100, "name": "Capacity (MW)" },
+    "C1.2": { "id": 101, "name": "Storage Hours" },
+    "C1.3": { "id": 102, "name": "Energy Storage (MWh)" },
+    "C1.4": { "id": 103, "name": "Cycles Per Day" },
+    "C1.5": { "id": 104, "name": "Annual Energy (MWh)" },
+    "C1.10": { "id": 109, "name": "Tolling Cost ($/MW/hr)" },
+    "C1.11": { "id": 110, "name": "Tax Rate (%)" },
+    "C1.12": { "id": 111, "name": "WACC (%)" },
+    "C1.13": { "id": 112, "name": "Receivable Days" },
+    "C1.14": { "id": 113, "name": "Payable Days" },
+    "C1.15": { "id": 114, "name": "GST Rate (%)" },
+    "C1.16": { "id": 115, "name": "DSRA Months Cover" },
+    "C1.17": { "id": 116, "name": "MRA Target ($)" },
+    "C1.18": { "id": 117, "name": "Min Cash Balance" },
+    "C1.19": { "id": 118, "name": "Max Gearing (%)" },
+    "C1.20": { "id": 119, "name": "Construction Interest Rate (%)" },
+    "C1.21": { "id": 120, "name": "Operations Interest Rate (%)" },
+    "C1.23": { "id": 122, "name": "Contingency (%)" },
+    "C1.24": { "id": 123, "name": "Depreciation Life (Years)" },
+    "C1.25": { "id": 124, "name": "Contracted DSCR Target" },
+    "C1.26": { "id": 125, "name": "Uncontracted DSCR Target" },
+    "C1.27": { "id": 126, "name": "Debt Tenor (Years)" },
+    "C1.28": { "id": 127, "name": "Minimum Cash Balance ($M)" },
+    "C1.29": { "id": 128, "name": "Dividend Withholding Tax (%)" },
+    "C1.30": { "id": 129, "name": "Terminal Value ($M)" },
+    "C1.31": { "id": 130, "name": "GST Receipt Delay (Months)" },
+    "C1.32": { "id": 131, "name": "Debt Margin - Construction (%)" },
+    "C1.33": { "id": 132, "name": "Debt Margin - Operations (%)" },
+    "C1.34": { "id": 133, "name": "Establishment Fee (%)" },
+    "C1.35": { "id": 134, "name": "Upfront Fees ($M)" },
+    "C1.36": { "id": 135, "name": "Commitment Fee (% of Margin)" },
+    "C1.41": { "id": 140, "name": "A Very Small Number" },
+    "C1.43": { "id": 142, "name": "Minor Event Revenue ($/MW)" },
+    "C1.44": { "id": 143, "name": "Minor Event Frequency (Years)" },
+    "C1.45": { "id": 144, "name": "Major Event Revenue ($/MW)" },
+    "C1.46": { "id": 145, "name": "Major Event Frequency (Years)" },
+    "C1.47": { "id": 146, "name": "Lock-up DSCR Threshold" },
+    "C1.48": { "id": 147, "name": "Lock-up ADSCR Threshold" },
+    "C1.49": { "id": 148, "name": "Lock-up Release Periods (Qtrs)" },
+    "C1.50": { "id": 149, "name": "DSRF Active" },
+    "C1.51": { "id": 150, "name": "DSRF Establishment Fee (%)" },
+    "C1.52": { "id": 151, "name": "DSRF Commitment Fee (% of Margin)" },
+    "C1.53": { "id": 152, "name": "DSRF Base Margin (%)" },
+    "C1.54": { "id": 153, "name": "DSRF Facility Months of DS" }
+  },
   "calculationsTabs": [
     {
       "id": 1,
@@ -337,8 +383,8 @@
       "tabId": 1,
       "groupId": 4,
       "name": "EBT",
-      "formula": "R15 + R16 + R174 - R144 - R146",
-      "description": "Earnings before taxes (incl. agency fee, upfront fees, commitment fees)"
+      "formula": "R15 + R16 + R174 - R144 - R146 + R153",
+      "description": "Earnings before taxes (incl. agency fee, upfront fees, commitment fees, DSRF fees)"
     },
     {
       "id": 18,
@@ -526,8 +572,8 @@
       "tabId": 3,
       "groupId": 32,
       "name": "Total Debt Service",
-      "formula": "R31 + R32 + R174",
-      "description": "Principal + Interest + Agency Fee"
+      "formula": "R31 + R32 + R174 + R153",
+      "description": "Principal + Interest + Agency Fee + DSRF Fees"
     },
     {
       "id": 33,
@@ -566,8 +612,8 @@
       "tabId": 3,
       "groupId": 32,
       "name": "DSRF Fees",
-      "formula": "0",
-      "description": "Placeholder - ongoing DSRA/facility fees"
+      "formula": "-M8.6",
+      "description": "Total DSRF fees (establishment + commitment + refinancing) from DSRF module"
     },
     {
       "id": 199,
@@ -685,9 +731,9 @@
       "id": 145,
       "tabId": 3,
       "groupId": 36,
-      "name": "DSRF Initial Funding",
-      "formula": "0",
-      "description": "Placeholder - Debt Service Reserve Fund initial funding",
+      "name": "DSRF Facility Limit",
+      "formula": "M8.1",
+      "description": "DSRF facility limit (notional, from DSRF module)",
       "type": "flow"
     },
     {
@@ -1025,6 +1071,14 @@
       "formula": "M1.7",
       "description": "Debt Service Coverage Ratio",
       "type": "stock"
+    },
+    {
+      "id": 205,
+      "tabId": 3,
+      "groupId": 24,
+      "name": "Total CFADS",
+      "formula": "R115 + R116",
+      "description": "Combined contracted + merchant CFADS for ADSCR calculation"
     },
     {
       "id": 70,
@@ -1534,7 +1588,7 @@
       "id": 1769600000000,
       "templateId": "distributions",
       "name": "Distributions",
-      "description": "Shareholder distributions waterfall with RE test and share capital repayment",
+      "description": "Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment",
       "category": "financing",
       "inputs": {
         "availableCashRef": "R170",
@@ -1542,7 +1596,20 @@
         "equityContributedRef": "M4.3",
         "minCashReserve": "C1.28",
         "opsFlagRef": "F2",
-        "withholdingTaxPct": 0
+        "withholdingTaxPct": 0,
+        "lockupActive": true,
+        "lockupReleasePeriods": "C1.49",
+        "dscrTestActive": true,
+        "dscrRef": "R118",
+        "dscrThreshold": "C1.47",
+        "adscrTestActive": true,
+        "cfadsRef": "R205",
+        "debtServiceRef": "R178",
+        "adscrThreshold": "C1.48",
+        "dsraTestActive": false,
+        "dsraBalanceRef": "",
+        "dsraTargetRef": "",
+        "quarterEndFlagRef": "T.QE"
       },
       "outputs": [
         "cash_available",
@@ -1559,7 +1626,48 @@
         "sc_closing",
         "total_distributions",
         "withholding_tax",
-        "net_to_equity"
+        "net_to_equity",
+        "dscr_test",
+        "adscr_test",
+        "dsra_test",
+        "all_tests_pass",
+        "consec_pass_qtrs",
+        "lockup_active"
+      ],
+      "enabled": true
+    },
+    {
+      "id": 1769700000000,
+      "templateId": "dsrf",
+      "name": "DSRF (Debt Service Reserve Facility)",
+      "description": "Standby facility guaranteeing debt service with refinancing schedule",
+      "category": "financing",
+      "inputs": {
+        "dsrfActiveRef": "C1.50",
+        "debtServiceRef": "R178",
+        "operationsFlagRef": "F2",
+        "establishmentFeePctRef": "C1.51",
+        "commitmentFeePctOfMarginRef": "C1.52",
+        "baseMarginPctRef": "C1.53",
+        "facilityMonthsRef": "C1.54",
+        "refinancingSchedule": [
+          { "active": true, "monthIndex": 60, "feePct": 1.00, "marginPct": 1.70 },
+          { "active": true, "monthIndex": 120, "feePct": 1.00, "marginPct": 1.70 },
+          { "active": true, "monthIndex": 180, "feePct": 1.00, "marginPct": 1.70 },
+          { "active": true, "monthIndex": 240, "feePct": 1.00, "marginPct": 1.70 },
+          { "active": false, "monthIndex": 0, "feePct": 0, "marginPct": 0 }
+        ]
+      },
+      "outputs": [
+        "facility_limit",
+        "establishment_fee",
+        "commitment_fee",
+        "refi_fees",
+        "effective_margin",
+        "total_dsrf_fees",
+        "total_dsrf_fees_cumulative",
+        "ds_plus_dsrf",
+        "adjusted_dscr"
       ],
       "enabled": true
     }
