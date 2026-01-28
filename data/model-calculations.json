@@ -275,15 +275,15 @@
       "id": 179,
       "groupId": 28,
       "name": "Minor Event Revenue",
-      "formula": "C1.1 * C1.43 / C1.44 / T.MiY / 10^6 * F7 * I2",
-      "description": "Minor augmentation event revenue (capacity * $/MW / frequency / 12, CPI-indexed)"
+      "formula": "C1.1 * C1.43 / C1.44 / T.MiY / 10^6 * F7 * R12 * I2",
+      "description": "Minor augmentation event revenue (capacity * $/MW / frequency / 12, technical adj, CPI-indexed)"
     },
     {
       "id": 180,
       "groupId": 28,
       "name": "Major Event Revenue",
-      "formula": "C1.1 * C1.45 / C1.46 / T.MiY / 10^6 * F7 * I2",
-      "description": "Major augmentation event revenue (capacity * $/MW / frequency / 12, CPI-indexed)"
+      "formula": "C1.1 * C1.45 / C1.46 / T.MiY / 10^6 * F7 * R12 * I2",
+      "description": "Major augmentation event revenue (capacity * $/MW / frequency / 12, technical adj, CPI-indexed)"
     },
     {
       "id": 181,
