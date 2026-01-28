@@ -44,7 +44,8 @@
     "C1.51": { "id": 150, "name": "DSRF Establishment Fee (%)" },
     "C1.52": { "id": 151, "name": "DSRF Commitment Fee (% of Margin)" },
     "C1.53": { "id": 152, "name": "DSRF Base Margin (%)" },
-    "C1.54": { "id": 153, "name": "DSRF Facility Months of DS" }
+    "C1.54": { "id": 153, "name": "DSRF Facility Months of DS" },
+    "C1.56": { "id": 155, "name": "Life Extension Revenue Factor (%)" }
   },
   "calculationsTabs": [
     {
@@ -295,8 +296,8 @@
       "id": 7,
       "groupId": 28,
       "name": "Merchant Revenue",
-      "formula": "R5 + R6 + R181",
-      "description": "FCAS + Arbitrage + Market Events"
+      "formula": "(R5 + R6 + R181) * (1 - F4 + F4 * C1.56 / 100)",
+      "description": "FCAS + Arbitrage + Market Events (95% during Life Extension)"
     },
     {
       "id": 8,

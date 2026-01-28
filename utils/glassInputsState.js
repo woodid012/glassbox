@@ -588,6 +588,28 @@ export function deserializeState(savedState) {
         }))
     }
 
+    // Detect and fix duplicate IDs in inputGlass
+    if (loaded.inputGlass && loaded.inputGlass.length > 0) {
+        const seenIds = new Map() // id -> first occurrence index
+        const duplicates = []
+        loaded.inputGlass.forEach((input, idx) => {
+            if (seenIds.has(input.id)) {
+                duplicates.push({ id: input.id, index: idx, name: input.name, groupId: input.groupId })
+            } else {
+                seenIds.set(input.id, idx)
+            }
+        })
+        if (duplicates.length > 0) {
+            let maxId = Math.max(...loaded.inputGlass.map(s => s.id), 0)
+            duplicates.forEach(dup => {
+                maxId++
+                const oldId = loaded.inputGlass[dup.index].id
+                loaded.inputGlass[dup.index] = { ...loaded.inputGlass[dup.index], id: maxId }
+                console.warn(`[Data Integrity] Duplicate input id=${oldId} ("${dup.name}", groupId=${dup.groupId}) reassigned to id=${maxId}`)
+            })
+        }
+    }
+
     // Recalculate linked key period dates to ensure consistency
     if (loaded.keyPeriods && loaded.keyPeriods.length > 0 && loaded.config) {
         loaded.keyPeriods = recalculateKeyPeriodDates(loaded.keyPeriods, loaded.config)

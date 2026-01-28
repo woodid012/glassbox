@@ -272,11 +272,39 @@ export default function ValidationPage() {
         const totalSources = totalSourcesArr[constructionEndIdx] || 0
         const sourcesUsesCheck = sourcesUsesCheckArr[constructionEndIdx] || (totalSources - totalUses)
 
+        // Balance sheet check - R195 should be zero every period
+        const bsCheckArr = calculationResults?.R195 || []
+        const totalAssetsArr = calculationResults?.R187 || []
+        const totalLEArr = calculationResults?.R194 || []
+
+        // Find max absolute deviation and the period it occurs
+        let bsMaxDeviation = 0
+        let bsMaxDeviationIdx = 0
+        let bsFailCount = 0
+        for (let i = 0; i < bsCheckArr.length; i++) {
+            const val = Math.abs(bsCheckArr[i] || 0)
+            if (val > 0.01) bsFailCount++
+            if (val > Math.abs(bsMaxDeviation)) {
+                bsMaxDeviation = bsCheckArr[i] || 0
+                bsMaxDeviationIdx = i
+            }
+        }
+
+        // Get the assets and L+E at the worst period for display
+        const bsTotalAssets = totalAssetsArr[bsMaxDeviationIdx] || 0
+        const bsTotalLE = totalLEArr[bsMaxDeviationIdx] || 0
+
         return {
             totalUses,
             totalSources,
             sourcesUsesCheck,
-            constructionEndIdx
+            constructionEndIdx,
+            bsMaxDeviation,
+            bsMaxDeviationIdx,
+            bsFailCount,
+            bsTotalAssets,
+            bsTotalLE,
+            bsTotalPeriods: bsCheckArr.length
         }
     }, [calculationResults])
 
@@ -383,6 +411,13 @@ export default function ValidationPage() {
                         tolerance={0.01}
                         unit="$"
                     />
+                    <IntegrityCheck
+                        label="Balance Sheet Balances"
+                        description={`Assets (${integrityChecks.bsTotalAssets.toFixed(1)}M) - L+E (${integrityChecks.bsTotalLE.toFixed(1)}M) | ${integrityChecks.bsFailCount === 0 ? 'All' : integrityChecks.bsTotalPeriods - integrityChecks.bsFailCount + '/' + integrityChecks.bsTotalPeriods} periods pass`}
+                        value={integrityChecks.bsMaxDeviation}
+                        tolerance={0.01}
+                        unit="$"
+                    />
                     <div className="flex items-center justify-between p-4 rounded-lg border bg-slate-50 border-slate-200">
                         <div className="flex items-center gap-3">
                             <DollarSign className="w-5 h-5 text-slate-500" />
@@ -394,6 +429,19 @@ export default function ValidationPage() {
                         <div className="text-right text-slate-700">
                             <div className="text-sm">Uses: <span className="font-semibold">${integrityChecks.totalUses.toFixed(1)}M</span></div>
                             <div className="text-sm">Sources: <span className="font-semibold">${integrityChecks.totalSources.toFixed(1)}M</span></div>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 rounded-lg border bg-slate-50 border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <Scale className="w-5 h-5 text-slate-500" />
+                            <div>
+                                <div className="font-medium text-slate-900">B/S Summary</div>
+                                <div className="text-xs text-slate-500">Worst deviation at period {integrityChecks.bsMaxDeviationIdx + 1}</div>
+                            </div>
+                        </div>
+                        <div className="text-right text-slate-700">
+                            <div className="text-sm">Assets: <span className="font-semibold">${integrityChecks.bsTotalAssets.toFixed(1)}M</span></div>
+                            <div className="text-sm">L+E: <span className="font-semibold">${integrityChecks.bsTotalLE.toFixed(1)}M</span></div>
                         </div>
                     </div>
                 </div>

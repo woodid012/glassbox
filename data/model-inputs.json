@@ -33,7 +33,7 @@
     {
       "id": 2,
       "name": "Total Operations",
-      "periods": 301,
+      "periods": 300,
       "linkedToPeriodId": null,
       "linkOffset": {
         "value": 0,
@@ -44,7 +44,7 @@
       "startYear": 2028,
       "startMonth": 10,
       "endYear": 2053,
-      "endMonth": 10,
+      "endMonth": 9,
       "startLinkedToPeriodId": 1,
       "startLinkToEnd": true,
       "startLinkOffset": {
@@ -1664,7 +1664,7 @@
       "unit": "%"
     },
     {
-      "id": 36,
+      "id": 154,
       "groupId": 7,
       "inputId": "perf.degradation",
       "name": "Annual Degradation",
@@ -3955,7 +3955,21 @@
       "description": "Number of months of debt service the facility covers"
     },
     {
-      "id": 130,
+      "id": 155,
+      "groupId": 100,
+      "subgroupId": 5,
+      "name": "Life Extension Revenue Factor (%)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 95,
+      "valueFrequency": "Y",
+      "spreadMethod": null,
+      "unit": "%",
+      "description": "Revenue reduction factor applied to merchant revenues during life extension period"
+    },
+    {
+      "id": 155,
       "groupId": 8,
       "subgroupId": null,
       "name": "Base Maintenance",

@@ -15,8 +15,7 @@ import {
     CartesianGrid,
     Tooltip,
     Legend,
-    ReferenceLine,
-    Cell
+    ReferenceLine
 } from 'recharts'
 import MetricCard from './MetricCard'
 import { calculatePeriodValues, calculateTotal } from '@/utils/valueAggregation'
@@ -24,15 +23,23 @@ import { calculatePeriodValues, calculateTotal } from '@/utils/valueAggregation'
 // Calculation R-ref mappings
 const CALC_REFS = {
     tollingRevenue: 'R4',
+    fcasRevenue: 'R5',
+    arbRevenue: 'R6',
     merchantRevenue: 'R7',
     totalRevenue: 'R8',
+    marketEventRevenue: 'R181',
     opex: 'R9',
     ebitda: 'R13',
     depreciation: 'R14',
+    interestExpense: 'R16',
     netIncome: 'R19',
     closingCash: 'R42',
     debtClosing: 'R74',
-    dscr: 'R118',
+    principalRepayment: 'R31',
+    interestPaid: 'R32',
+    agencyFee: 'R174',
+    dsrfFees: 'R153',
+    totalDebtService: 'R178',
     // Equity IRR components
     contingentEquity: 'R131',
     equityInjections: 'R132',
@@ -41,13 +48,6 @@ const CALC_REFS = {
     investorTax: 'R135',
     terminalValue: 'R136',
     netCFToEquity: 'R137',
-}
-
-// DSCR Target constants (from model)
-const DSCR_TARGETS = {
-    contracted: 1.35,  // C1.25 - Contracted DSCR target
-    merchant: 1.50,    // C1.26 - Merchant DSCR target
-    minimum: 1.20,     // Typical lender minimum covenant
 }
 
 // Calculate IRR using Newton-Raphson method
@@ -127,11 +127,20 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
             return {
                 period: header.label,
                 tollingRevenue: getValue(CALC_REFS.tollingRevenue),
+                fcasRevenue: getValue(CALC_REFS.fcasRevenue),
+                arbRevenue: getValue(CALC_REFS.arbRevenue),
+                marketEventRevenue: getValue(CALC_REFS.marketEventRevenue),
                 merchantRevenue: getValue(CALC_REFS.merchantRevenue),
                 totalRevenue: getValue(CALC_REFS.totalRevenue),
+                opex: getValue(CALC_REFS.opex),
                 ebitda: getValue(CALC_REFS.ebitda),
                 netIncome: getValue(CALC_REFS.netIncome),
                 debtBalance: getValue(CALC_REFS.debtClosing, 'stock'),
+                principalRepayment: getValue(CALC_REFS.principalRepayment),
+                interestPaid: getValue(CALC_REFS.interestPaid),
+                agencyFee: getValue(CALC_REFS.agencyFee),
+                dsrfFees: getValue(CALC_REFS.dsrfFees),
+                totalDebtService: getValue(CALC_REFS.totalDebtService),
             }
         })
     }, [viewHeaders, calculationResults, calculationTypes, viewMode])
@@ -199,13 +208,6 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
         const totalDistributions = totalDividends + totalShareCapitalRepayment + totalTerminalValue + totalInvestorTax
         const moic = totalInvested !== 0 ? totalDistributions / totalInvested : 0
 
-        // Cumulative cash flow for chart
-        let cumulative = 0
-        const cumulativeCashFlows = monthlyCashFlows.map(cf => {
-            cumulative += cf
-            return cumulative
-        })
-
         return {
             irr,
             moic,
@@ -217,7 +219,6 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
             totalTerminalValue,
             totalInvestorTax,
             totalNetCFToEquity,
-            cumulativeCashFlows,
         }
     }, [calculationResults, calculationTypes, viewHeaders, viewMode])
 
@@ -241,78 +242,6 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
         }
     }, [viewHeaders, calculationResults, calculationTypes, viewMode])
 
-    // DSCR covenant monitoring data
-    const dscrChartData = useMemo(() => {
-        return viewHeaders.map((header) => {
-            const arr = calculationResults[CALC_REFS.dscr] || []
-            const calcType = calculationTypes?.[CALC_REFS.dscr] || 'stock'
-            const periodValues = calculatePeriodValues(arr, [header], viewMode, calcType)
-            const dscr = periodValues[0] || 0
-
-            return {
-                period: header.label,
-                dscr,
-                targetContracted: DSCR_TARGETS.contracted,
-                targetMerchant: DSCR_TARGETS.merchant,
-                minimum: DSCR_TARGETS.minimum,
-            }
-        })
-    }, [viewHeaders, calculationResults, calculationTypes, viewMode])
-
-    // DSCR metrics
-    const dscrMetrics = useMemo(() => {
-        const dscrValues = dscrChartData
-            .map(d => d.dscr)
-            .filter(v => v > 0) // Only count periods with debt service
-
-        if (dscrValues.length === 0) {
-            return {
-                minDscr: 0,
-                avgDscr: 0,
-                periodsBelowContracted: 0,
-                periodsBelowMinimum: 0,
-                totalPeriods: 0,
-                covenantStatus: 'N/A',
-            }
-        }
-
-        const minDscr = Math.min(...dscrValues)
-        const avgDscr = dscrValues.reduce((a, b) => a + b, 0) / dscrValues.length
-        const periodsBelowContracted = dscrValues.filter(v => v < DSCR_TARGETS.contracted).length
-        const periodsBelowMinimum = dscrValues.filter(v => v < DSCR_TARGETS.minimum).length
-
-        let covenantStatus = 'Pass'
-        if (periodsBelowMinimum > 0) covenantStatus = 'Breach'
-        else if (periodsBelowContracted > 0) covenantStatus = 'Warning'
-
-        return {
-            minDscr,
-            avgDscr,
-            periodsBelowContracted,
-            periodsBelowMinimum,
-            totalPeriods: dscrValues.length,
-            covenantStatus,
-        }
-    }, [dscrChartData])
-
-    // Cumulative equity cash flow chart data (aggregated by view period)
-    const cumulativeEquityChartData = useMemo(() => {
-        // Use the raw monthly cumulative cash flows
-        const monthlyCumulative = equityMetrics.cumulativeCashFlows || []
-        if (monthlyCumulative.length === 0) return []
-
-        // Map to view headers (aggregate to last period in each group)
-        return viewHeaders.map((header) => {
-            // Get the last index in this period group
-            const lastIdx = header.indices[header.indices.length - 1]
-            const cumulative = monthlyCumulative[lastIdx] || 0
-
-            return {
-                period: header.label,
-                cumulative,
-            }
-        })
-    }, [viewHeaders, equityMetrics.cumulativeCashFlows])
 
     // Format helpers
     const formatPercent = (value) => `${(value * 100).toFixed(1)}%`
@@ -436,141 +365,139 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
                     </div>
                 </div>
 
-                {/* Cumulative Equity Cash Flow Chart */}
-                <div className="bg-white rounded-xl border border-slate-200 p-4 mt-6">
-                    <h3 className="text-sm font-semibold text-slate-700 mb-4">Cumulative Equity Cash Flow ($M)</h3>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <AreaChart data={cumulativeEquityChartData}>
-                            <defs>
-                                <linearGradient id="cumulativeGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.05}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
-                            <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                            <Tooltip
-                                formatter={(value) => [`$${value.toFixed(1)}M`, 'Cumulative']}
-                                contentStyle={{ fontSize: 12 }}
-                            />
-                            <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="5 5" label={{ value: 'Payback', fontSize: 10, fill: '#ef4444' }} />
-                            <Area
-                                type="monotone"
-                                dataKey="cumulative"
-                                stroke="#7c3aed"
-                                strokeWidth={2}
-                                fill="url(#cumulativeGradient)"
-                                name="Cumulative CF"
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                    <p className="text-xs text-slate-500 mt-2 text-center">
-                        Payback occurs when cumulative cash flow crosses zero
-                    </p>
+            </div>
+
+            {/* ==================== REVENUE BREAKDOWN ==================== */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+                <h2 className="text-lg font-bold text-blue-900 mb-4">Revenue Breakdown</h2>
+                <div className="grid grid-cols-2 gap-6">
+                    {/* Revenue Stacked Bar */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-4">Revenue by Source ($M)</h3>
+                        <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    formatter={(value) => [`$${value.toFixed(2)}M`, '']}
+                                    contentStyle={{ fontSize: 12 }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: 10 }} />
+                                <Bar dataKey="tollingRevenue" stackId="rev" fill="#4f46e5" name="Tolling" />
+                                <Bar dataKey="fcasRevenue" stackId="rev" fill="#818cf8" name="FCAS" />
+                                <Bar dataKey="arbRevenue" stackId="rev" fill="#a5b4fc" name="Arbitrage" />
+                                <Bar dataKey="marketEventRevenue" stackId="rev" fill="#c7d2fe" name="Market Events" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {/* Contracted vs Merchant split */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-4">Contracted vs Merchant ($M)</h3>
+                        <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    formatter={(value) => [`$${value.toFixed(2)}M`, '']}
+                                    contentStyle={{ fontSize: 12 }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: 10 }} />
+                                <Bar dataKey="tollingRevenue" stackId="split" fill="#4f46e5" name="Contracted (Tolling)" />
+                                <Bar dataKey="merchantRevenue" stackId="split" fill="#818cf8" name="Merchant" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 
-            {/* ==================== DSCR COVENANT MONITORING ==================== */}
+            {/* ==================== OPEX ==================== */}
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-6">
-                <h2 className="text-lg font-bold text-amber-900 mb-4 flex items-center gap-2">
-                    <span className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center text-white text-sm">📋</span>
-                    DSCR Covenant Monitoring
-                </h2>
+                <h2 className="text-lg font-bold text-amber-900 mb-4">Operating Expenses</h2>
+                <div className="grid grid-cols-2 gap-6">
+                    {/* OPEX vs Revenue */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-4">Revenue vs OPEX ($M)</h3>
+                        <ResponsiveContainer width="100%" height={250}>
+                            <ComposedChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    formatter={(value) => [`$${Math.abs(value).toFixed(2)}M`, '']}
+                                    contentStyle={{ fontSize: 12 }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: 10 }} />
+                                <Bar dataKey="totalRevenue" fill="#4f46e5" name="Revenue" />
+                                <Bar dataKey="opex" fill="#f59e0b" name="OPEX" />
+                            </ComposedChart>
+                        </ResponsiveContainer>
+                    </div>
 
-                {/* DSCR Metrics Row */}
-                <div className="grid grid-cols-5 gap-4 mb-6">
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-amber-100">
-                        <div className="text-xs text-slate-500 uppercase tracking-wide">Min DSCR</div>
-                        <div className={`text-2xl font-bold ${dscrMetrics.minDscr < DSCR_TARGETS.minimum ? 'text-red-600' : dscrMetrics.minDscr < DSCR_TARGETS.contracted ? 'text-amber-600' : 'text-green-600'}`}>
-                            {dscrMetrics.minDscr.toFixed(2)}x
-                        </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-amber-100">
-                        <div className="text-xs text-slate-500 uppercase tracking-wide">Avg DSCR</div>
-                        <div className="text-2xl font-bold text-indigo-600">{dscrMetrics.avgDscr.toFixed(2)}x</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-amber-100">
-                        <div className="text-xs text-slate-500 uppercase tracking-wide">Target (Contracted)</div>
-                        <div className="text-2xl font-bold text-slate-600">{DSCR_TARGETS.contracted.toFixed(2)}x</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-amber-100">
-                        <div className="text-xs text-slate-500 uppercase tracking-wide">Periods Below Target</div>
-                        <div className={`text-2xl font-bold ${dscrMetrics.periodsBelowContracted > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                            {dscrMetrics.periodsBelowContracted} / {dscrMetrics.totalPeriods}
-                        </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-amber-100">
-                        <div className="text-xs text-slate-500 uppercase tracking-wide">Covenant Status</div>
-                        <div className={`text-2xl font-bold ${
-                            dscrMetrics.covenantStatus === 'Pass' ? 'text-green-600' :
-                            dscrMetrics.covenantStatus === 'Warning' ? 'text-amber-600' :
-                            dscrMetrics.covenantStatus === 'Breach' ? 'text-red-600' : 'text-slate-400'
-                        }`}>
-                            {dscrMetrics.covenantStatus}
-                        </div>
+                    {/* EBITDA & Net Income */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-4">EBITDA & Net Income ($M)</h3>
+                        <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    formatter={(value) => [`$${value.toFixed(2)}M`, '']}
+                                    contentStyle={{ fontSize: 12 }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: 10 }} />
+                                <ReferenceLine y={0} stroke="#94a3b8" />
+                                <Line type="monotone" dataKey="ebitda" stroke="#10b981" strokeWidth={2} dot={false} name="EBITDA" />
+                                <Line type="monotone" dataKey="netIncome" stroke="#f59e0b" strokeWidth={2} dot={false} name="Net Income" />
+                            </LineChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
+            </div>
 
-                {/* DSCR Chart */}
-                <div className="bg-white rounded-xl border border-slate-200 p-4">
-                    <h3 className="text-sm font-semibold text-slate-700 mb-4">DSCR Trend Over Time</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <ComposedChart data={dscrChartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
-                            <YAxis
-                                tick={{ fontSize: 10 }}
-                                tickLine={false}
-                                axisLine={false}
-                                domain={[0, 'auto']}
-                            />
-                            <Tooltip
-                                formatter={(value, name) => [value.toFixed(2) + 'x', name]}
-                                contentStyle={{ fontSize: 12 }}
-                            />
-                            <Legend wrapperStyle={{ fontSize: 10 }} />
-                            {/* Target reference lines */}
-                            <ReferenceLine
-                                y={DSCR_TARGETS.contracted}
-                                stroke="#f59e0b"
-                                strokeDasharray="5 5"
-                                label={{ value: `Target ${DSCR_TARGETS.contracted}x`, fontSize: 9, fill: '#f59e0b', position: 'right' }}
-                            />
-                            <ReferenceLine
-                                y={DSCR_TARGETS.minimum}
-                                stroke="#ef4444"
-                                strokeDasharray="5 5"
-                                label={{ value: `Min ${DSCR_TARGETS.minimum}x`, fontSize: 9, fill: '#ef4444', position: 'right' }}
-                            />
-                            {/* Actual DSCR as bars with conditional coloring */}
-                            <Bar dataKey="dscr" name="DSCR" radius={[2, 2, 0, 0]}>
-                                {dscrChartData.map((entry, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={
-                                            entry.dscr === 0 ? '#e2e8f0' :
-                                            entry.dscr < DSCR_TARGETS.minimum ? '#ef4444' :
-                                            entry.dscr < DSCR_TARGETS.contracted ? '#f59e0b' : '#22c55e'
-                                        }
-                                    />
-                                ))}
-                            </Bar>
-                        </ComposedChart>
-                    </ResponsiveContainer>
-                    <div className="flex justify-center gap-6 mt-3 text-xs">
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded bg-green-500"></div>
-                            <span className="text-slate-600">Above Target</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded bg-amber-500"></div>
-                            <span className="text-slate-600">Below Target</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded bg-red-500"></div>
-                            <span className="text-slate-600">Covenant Breach</span>
-                        </div>
+            {/* ==================== DEBT ==================== */}
+            <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-xl border border-red-200 p-6">
+                <h2 className="text-lg font-bold text-red-900 mb-4">Debt</h2>
+                <div className="grid grid-cols-2 gap-6">
+                    {/* Debt Service Breakdown */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-4">Debt Service Breakdown ($M)</h3>
+                        <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    formatter={(value) => [`$${Math.abs(value).toFixed(2)}M`, '']}
+                                    contentStyle={{ fontSize: 12 }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: 10 }} />
+                                <Bar dataKey="principalRepayment" stackId="ds" fill="#ef4444" name="Principal" />
+                                <Bar dataKey="interestPaid" stackId="ds" fill="#f97316" name="Interest" />
+                                <Bar dataKey="agencyFee" stackId="ds" fill="#fbbf24" name="Agency Fee" />
+                                <Bar dataKey="dsrfFees" stackId="ds" fill="#fcd34d" name="DSRF Fees" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {/* Debt Balance */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-4">Debt Balance ($M)</h3>
+                        <ResponsiveContainer width="100%" height={250}>
+                            <AreaChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    formatter={(value) => [`$${value.toFixed(1)}M`, '']}
+                                    contentStyle={{ fontSize: 12 }}
+                                />
+                                <Area type="monotone" dataKey="debtBalance" fill="#fca5a5" stroke="#ef4444" name="Debt Balance" />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>
@@ -597,120 +524,6 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
                 />
             </div>
 
-            {/* Charts Row 1 */}
-            <div className="grid grid-cols-2 gap-6">
-                {/* Revenue Breakdown - Stacked Bar */}
-                <div className="bg-white rounded-xl border border-slate-200 p-4">
-                    <h3 className="text-sm font-semibold text-slate-700 mb-4">Revenue Breakdown ($M)</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis
-                                dataKey="period"
-                                tick={{ fontSize: 10 }}
-                                tickLine={false}
-                            />
-                            <YAxis
-                                tick={{ fontSize: 10 }}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <Tooltip
-                                formatter={(value) => [`$${value.toFixed(1)}M`, '']}
-                                contentStyle={{ fontSize: 12 }}
-                            />
-                            <Legend wrapperStyle={{ fontSize: 11 }} />
-                            <Bar
-                                dataKey="tollingRevenue"
-                                stackId="a"
-                                fill="#6366f1"
-                                name="Tolling Revenue"
-                            />
-                            <Bar
-                                dataKey="merchantRevenue"
-                                stackId="a"
-                                fill="#a5b4fc"
-                                name="Merchant Revenue"
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* EBITDA & Net Income - Line Chart */}
-                <div className="bg-white rounded-xl border border-slate-200 p-4">
-                    <h3 className="text-sm font-semibold text-slate-700 mb-4">EBITDA & Net Income ($M)</h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis
-                                dataKey="period"
-                                tick={{ fontSize: 10 }}
-                                tickLine={false}
-                            />
-                            <YAxis
-                                tick={{ fontSize: 10 }}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <Tooltip
-                                formatter={(value) => [`$${value.toFixed(1)}M`, '']}
-                                contentStyle={{ fontSize: 12 }}
-                            />
-                            <Legend wrapperStyle={{ fontSize: 11 }} />
-                            <Line
-                                type="monotone"
-                                dataKey="ebitda"
-                                stroke="#10b981"
-                                strokeWidth={2}
-                                dot={false}
-                                name="EBITDA"
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="netIncome"
-                                stroke="#f59e0b"
-                                strokeWidth={2}
-                                dot={false}
-                                name="Net Income"
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Charts Row 2 */}
-            <div className="grid grid-cols-1 gap-6">
-                {/* Debt Balance - Area Chart */}
-                <div className="bg-white rounded-xl border border-slate-200 p-4">
-                    <h3 className="text-sm font-semibold text-slate-700 mb-4">Debt Balance Over Time ($M)</h3>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <AreaChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis
-                                dataKey="period"
-                                tick={{ fontSize: 10 }}
-                                tickLine={false}
-                            />
-                            <YAxis
-                                tick={{ fontSize: 10 }}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <Tooltip
-                                formatter={(value) => [`$${value.toFixed(1)}M`, '']}
-                                contentStyle={{ fontSize: 12 }}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="debtBalance"
-                                fill="#fca5a5"
-                                stroke="#ef4444"
-                                name="Debt Balance"
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
         </div>
     )
 }
