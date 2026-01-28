@@ -1,52 +1,5 @@
 {
   "_description": "Model structure - formulas and relationships only",
-  "_constantsReference": {
-    "C1.1": { "id": 100, "name": "Capacity (MW)" },
-    "C1.2": { "id": 101, "name": "Storage Hours" },
-    "C1.3": { "id": 102, "name": "Energy Storage (MWh)" },
-    "C1.4": { "id": 103, "name": "Cycles Per Day" },
-    "C1.5": { "id": 104, "name": "Annual Energy (MWh)" },
-    "C1.10": { "id": 109, "name": "Tolling Cost ($/MW/hr)" },
-    "C1.11": { "id": 110, "name": "Tax Rate (%)" },
-    "C1.12": { "id": 111, "name": "WACC (%)" },
-    "C1.13": { "id": 112, "name": "Receivable Days" },
-    "C1.14": { "id": 113, "name": "Payable Days" },
-    "C1.15": { "id": 114, "name": "GST Rate (%)" },
-    "C1.16": { "id": 115, "name": "DSRA Months Cover" },
-    "C1.17": { "id": 116, "name": "MRA Target ($)" },
-    "C1.18": { "id": 117, "name": "Min Cash Balance" },
-    "C1.19": { "id": 118, "name": "Max Gearing (%)" },
-    "C1.20": { "id": 119, "name": "Construction Interest Rate (%)" },
-    "C1.21": { "id": 120, "name": "Operations Interest Rate (%)" },
-    "C1.23": { "id": 122, "name": "Contingency (%)" },
-    "C1.24": { "id": 123, "name": "Depreciation Life (Years)" },
-    "C1.25": { "id": 124, "name": "Contracted DSCR Target" },
-    "C1.26": { "id": 125, "name": "Uncontracted DSCR Target" },
-    "C1.27": { "id": 126, "name": "Debt Tenor (Years)" },
-    "C1.28": { "id": 127, "name": "Minimum Cash Balance ($M)" },
-    "C1.29": { "id": 128, "name": "Dividend Withholding Tax (%)" },
-    "C1.30": { "id": 129, "name": "Terminal Value ($M)" },
-    "C1.31": { "id": 130, "name": "GST Receipt Delay (Months)" },
-    "C1.32": { "id": 131, "name": "Debt Margin - Construction (%)" },
-    "C1.33": { "id": 132, "name": "Debt Margin - Operations (%)" },
-    "C1.34": { "id": 133, "name": "Establishment Fee (%)" },
-    "C1.35": { "id": 134, "name": "Upfront Fees ($M)" },
-    "C1.36": { "id": 135, "name": "Commitment Fee (% of Margin)" },
-    "C1.41": { "id": 140, "name": "A Very Small Number" },
-    "C1.43": { "id": 142, "name": "Minor Event Revenue ($/MW)" },
-    "C1.44": { "id": 143, "name": "Minor Event Frequency (Years)" },
-    "C1.45": { "id": 144, "name": "Major Event Revenue ($/MW)" },
-    "C1.46": { "id": 145, "name": "Major Event Frequency (Years)" },
-    "C1.47": { "id": 146, "name": "Lock-up DSCR Threshold" },
-    "C1.48": { "id": 147, "name": "Lock-up ADSCR Threshold" },
-    "C1.49": { "id": 148, "name": "Lock-up Release Periods (Qtrs)" },
-    "C1.50": { "id": 149, "name": "DSRF Active" },
-    "C1.51": { "id": 150, "name": "DSRF Establishment Fee (%)" },
-    "C1.52": { "id": 151, "name": "DSRF Commitment Fee (% of Margin)" },
-    "C1.53": { "id": 152, "name": "DSRF Base Margin (%)" },
-    "C1.54": { "id": 153, "name": "DSRF Facility Months of DS" },
-    "C1.56": { "id": 155, "name": "Life Extension Revenue Factor (%)" }
-  },
   "calculationsTabs": [
     {
       "id": 1,
@@ -267,7 +220,7 @@
     {
       "id": 6,
       "groupId": 28,
-      "name": "Arb Revenue",
+      "name": "Market Arbitrage Revenue",
       "formula": "L1.1 * C1.1 / 10^6 / T.MiY * F7 * R12 * I2",
       "description": "Arbitrage revenue (L1.1 annual, /12 for monthly)"
     },
@@ -359,7 +312,7 @@
       "id": 14,
       "tabId": 1,
       "groupId": 4,
-      "name": "Depreciation",
+      "name": "P&L Depreciation",
       "formula": "-M2.3",
       "description": "From D&A module"
     },
@@ -416,7 +369,7 @@
       "id": 138,
       "tabId": 1,
       "groupId": 4,
-      "name": "Dividends",
+      "name": "P&L Dividends Declared",
       "formula": "-M7.6",
       "description": "Dividends (from Distributions module)",
       "type": "flow"
@@ -452,7 +405,7 @@
       "id": 20,
       "tabId": 3,
       "groupId": 30,
-      "name": "EBITDA",
+      "name": "Operating CF EBITDA",
       "formula": "R13",
       "description": ""
     },
@@ -460,7 +413,7 @@
       "id": 21,
       "tabId": 3,
       "groupId": 30,
-      "name": "WC Movement",
+      "name": "Operating CF WC Movement",
       "formula": "-R98",
       "description": "Negative of NWC increase (increase uses cash)"
     },
@@ -844,7 +797,7 @@
       "id": 41,
       "tabId": 3,
       "groupId": 13,
-      "name": "Opening Cash",
+      "name": "Cash Opening Balance",
       "formula": "CUMSUM(R40) - R40",
       "description": "",
       "type": "stock_start"
@@ -853,7 +806,7 @@
       "id": 42,
       "tabId": 3,
       "groupId": 13,
-      "name": "Closing Cash",
+      "name": "Cash Closing Balance",
       "formula": "CUMSUM(R40)",
       "description": "Final cash balance (includes all distributions)",
       "type": "stock"
@@ -922,7 +875,7 @@
       "id": 43,
       "tabId": 4,
       "groupId": 20,
-      "name": "EBITDA",
+      "name": "FCF EBITDA",
       "formula": "R13",
       "description": ""
     },
@@ -938,7 +891,7 @@
       "id": 45,
       "tabId": 4,
       "groupId": 20,
-      "name": "WC Movement",
+      "name": "FCF WC Movement",
       "formula": "R21",
       "description": ""
     },
@@ -954,7 +907,7 @@
       "id": 47,
       "tabId": 4,
       "groupId": 20,
-      "name": "Debt Service",
+      "name": "FCF Debt Service",
       "formula": "R31 + R32",
       "description": ""
     },
@@ -962,7 +915,7 @@
       "id": 48,
       "tabId": 4,
       "groupId": 20,
-      "name": "Debt Drawdown",
+      "name": "FCF Debt Drawdown",
       "formula": "R29",
       "description": "Construction + Ops debt"
     },
@@ -1085,7 +1038,7 @@
       "id": 70,
       "tabId": 3,
       "groupId": 15,
-      "name": "Opening Balance",
+      "name": "Debt Opening Balance",
       "formula": "M1.2",
       "description": "From iterative debt sizing module",
       "type": "stock_start"
@@ -1094,7 +1047,7 @@
       "id": 71,
       "tabId": 3,
       "groupId": 15,
-      "name": "Interest - Paid",
+      "name": "Debt Interest Paid",
       "formula": "M1.3",
       "description": "From iterative debt sizing module"
     },
@@ -1102,7 +1055,7 @@
       "id": 72,
       "tabId": 3,
       "groupId": 15,
-      "name": "Principal",
+      "name": "Debt Principal Repayment",
       "formula": "M1.4",
       "description": "From iterative debt sizing module"
     },
@@ -1110,7 +1063,7 @@
       "id": 73,
       "tabId": 3,
       "groupId": 15,
-      "name": "Debt Service",
+      "name": "Debt Service (P+I)",
       "formula": "M1.5",
       "description": "Interest + Principal from iterative debt sizing module"
     },
@@ -1118,7 +1071,7 @@
       "id": 74,
       "tabId": 3,
       "groupId": 15,
-      "name": "Closing Balance",
+      "name": "Debt Closing Balance",
       "formula": "M1.6",
       "description": "From iterative debt sizing module",
       "type": "stock"
@@ -1135,7 +1088,7 @@
       "id": 80,
       "tabId": 1,
       "groupId": 16,
-      "name": "Opening Balance",
+      "name": "D&A Opening Book Value",
       "formula": "M2.1",
       "description": "From D&A module",
       "type": "stock_start"
@@ -1144,7 +1097,7 @@
       "id": 81,
       "tabId": 1,
       "groupId": 16,
-      "name": "Addition",
+      "name": "D&A Asset Addition",
       "formula": "M2.2",
       "description": "From D&A module"
     },
@@ -1152,7 +1105,7 @@
       "id": 82,
       "tabId": 1,
       "groupId": 16,
-      "name": "Depreciation",
+      "name": "D&A Depreciation Expense",
       "formula": "M2.3",
       "description": "From D&A module"
     },
@@ -1160,7 +1113,7 @@
       "id": 83,
       "tabId": 1,
       "groupId": 16,
-      "name": "Accumulated Depreciation",
+      "name": "D&A Accumulated Depreciation",
       "formula": "M2.4",
       "description": "From D&A module",
       "type": "stock"
@@ -1169,7 +1122,7 @@
       "id": 84,
       "tabId": 1,
       "groupId": 16,
-      "name": "Closing Balance",
+      "name": "D&A Closing Book Value",
       "formula": "M2.5",
       "description": "From D&A module",
       "type": "stock"
@@ -1232,7 +1185,7 @@
       "id": 98,
       "tabId": 3,
       "groupId": 18,
-      "name": "WC Movement",
+      "name": "Net WC Movement",
       "formula": "R97 - SHIFT(R97, 1)",
       "description": "Change in NWC = Closing NWC - Prior NWC"
     },
@@ -1240,7 +1193,7 @@
       "id": 100,
       "tabId": 3,
       "groupId": 19,
-      "name": "Taxable Income",
+      "name": "Tax Taxable Income",
       "formula": "M5.1",
       "description": "From Tax module"
     },
@@ -1274,7 +1227,7 @@
       "id": 103,
       "tabId": 3,
       "groupId": 19,
-      "name": "Net Taxable Income",
+      "name": "Tax Net Taxable Income",
       "formula": "M5.6",
       "description": "From Tax module"
     },
@@ -1282,7 +1235,7 @@
       "id": 104,
       "tabId": 3,
       "groupId": 19,
-      "name": "Tax Expense",
+      "name": "Tax Payable",
       "formula": "M5.7",
       "description": "From Tax module"
     },
@@ -1652,11 +1605,36 @@
         "baseMarginPctRef": "C1.53",
         "facilityMonthsRef": "C1.54",
         "refinancingSchedule": [
-          { "active": true, "monthIndex": 60, "feePct": 1.00, "marginPct": 1.70 },
-          { "active": true, "monthIndex": 120, "feePct": 1.00, "marginPct": 1.70 },
-          { "active": true, "monthIndex": 180, "feePct": 1.00, "marginPct": 1.70 },
-          { "active": true, "monthIndex": 240, "feePct": 1.00, "marginPct": 1.70 },
-          { "active": false, "monthIndex": 0, "feePct": 0, "marginPct": 0 }
+          {
+            "active": true,
+            "monthIndex": 60,
+            "feePct": 1,
+            "marginPct": 1.7
+          },
+          {
+            "active": true,
+            "monthIndex": 120,
+            "feePct": 1,
+            "marginPct": 1.7
+          },
+          {
+            "active": true,
+            "monthIndex": 180,
+            "feePct": 1,
+            "marginPct": 1.7
+          },
+          {
+            "active": true,
+            "monthIndex": 240,
+            "feePct": 1,
+            "marginPct": 1.7
+          },
+          {
+            "active": false,
+            "monthIndex": 0,
+            "feePct": 0,
+            "marginPct": 0
+          }
         ]
       },
       "outputs": [
@@ -2043,6 +2021,218 @@
         "closing_balance",
         "period_dscr",
         "cumulative_principal"
+      ]
+    },
+    {
+      "id": "distributions",
+      "name": "Distributions",
+      "description": "Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "availableCashRef",
+          "label": "Available Cashflow (pre-dist)",
+          "type": "reference",
+          "default": "R170"
+        },
+        {
+          "key": "npatRef",
+          "label": "NPAT",
+          "type": "reference",
+          "default": "R19"
+        },
+        {
+          "key": "equityContributedRef",
+          "label": "Equity Contributed",
+          "type": "reference",
+          "default": "M4.3"
+        },
+        {
+          "key": "minCashReserve",
+          "label": "Minimum Cash Reserve",
+          "type": "number_or_ref",
+          "default": 0
+        },
+        {
+          "key": "opsFlagRef",
+          "label": "Operations Flag",
+          "type": "reference",
+          "default": "F2"
+        },
+        {
+          "key": "withholdingTaxPct",
+          "label": "Withholding Tax %",
+          "type": "number_or_ref",
+          "default": 0
+        },
+        {
+          "key": "lockupActive",
+          "label": "Lock-up Active",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "lockupReleasePeriods",
+          "label": "Release After (Qtrs)",
+          "type": "number_or_ref",
+          "default": 2
+        },
+        {
+          "key": "dscrTestActive",
+          "label": "DSCR Test Active",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "dscrRef",
+          "label": "DSCR (periodic)",
+          "type": "reference",
+          "default": "M1.7"
+        },
+        {
+          "key": "dscrThreshold",
+          "label": "DSCR Threshold",
+          "type": "number_or_ref",
+          "default": 1.15
+        },
+        {
+          "key": "adscrTestActive",
+          "label": "Historical ADSCR Test Active",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "cfadsRef",
+          "label": "Total CFADS",
+          "type": "reference",
+          "default": "R205"
+        },
+        {
+          "key": "debtServiceRef",
+          "label": "Total Debt Service",
+          "type": "reference",
+          "default": "M1.5"
+        },
+        {
+          "key": "adscrThreshold",
+          "label": "ADSCR Threshold",
+          "type": "number_or_ref",
+          "default": 1.15
+        },
+        {
+          "key": "dsraTestActive",
+          "label": "DSRA Fully Funded Test",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "dsraBalanceRef",
+          "label": "DSRA Balance",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "dsraTargetRef",
+          "label": "DSRA Target",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "quarterEndFlagRef",
+          "label": "Quarter End Flag",
+          "type": "reference",
+          "default": "T.QE"
+        }
+      ],
+      "outputs": [
+        "cash_available",
+        "re_opening",
+        "re_npat",
+        "re_test",
+        "npat_test",
+        "dividend_paid",
+        "re_movement",
+        "re_closing",
+        "sc_opening",
+        "sc_cash_available",
+        "sc_repayment",
+        "sc_closing",
+        "total_distributions",
+        "withholding_tax",
+        "net_to_equity",
+        "dscr_test",
+        "adscr_test",
+        "dsra_test",
+        "all_tests_pass",
+        "consec_pass_qtrs",
+        "lockup_active"
+      ]
+    },
+    {
+      "id": "dsrf",
+      "name": "DSRF (Debt Service Reserve Facility)",
+      "description": "Standby facility guaranteeing debt service with refinancing schedule",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "dsrfActiveRef",
+          "label": "DSRF Active",
+          "type": "reference",
+          "default": "C1.50"
+        },
+        {
+          "key": "debtServiceRef",
+          "label": "Total Debt Service",
+          "type": "reference",
+          "default": "R178"
+        },
+        {
+          "key": "operationsFlagRef",
+          "label": "Operations Flag",
+          "type": "reference",
+          "default": "F2"
+        },
+        {
+          "key": "establishmentFeePctRef",
+          "label": "Establishment Fee (%)",
+          "type": "number_or_ref",
+          "default": "C1.51"
+        },
+        {
+          "key": "commitmentFeePctOfMarginRef",
+          "label": "Commitment Fee (% of Margin)",
+          "type": "number_or_ref",
+          "default": "C1.52"
+        },
+        {
+          "key": "baseMarginPctRef",
+          "label": "Base Margin (%)",
+          "type": "number_or_ref",
+          "default": "C1.53"
+        },
+        {
+          "key": "facilityMonthsRef",
+          "label": "Facility Months of DS",
+          "type": "number_or_ref",
+          "default": "C1.54"
+        },
+        {
+          "key": "refinancingSchedule",
+          "label": "Refinancing Schedule",
+          "type": "array",
+          "default": []
+        }
+      ],
+      "outputs": [
+        "facility_limit",
+        "establishment_fee",
+        "commitment_fee",
+        "refi_fees",
+        "effective_margin",
+        "total_dsrf_fees",
+        "total_dsrf_fees_cumulative",
+        "ds_plus_dsrf",
+        "adjusted_dscr"
       ]
     }
   ]

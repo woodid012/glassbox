@@ -106,7 +106,29 @@ Total L+E (R194) = R190 + R193
 4. Trace all CF lines active in that period and verify each has a B/S counterpart
 5. Check for double-counting (same item in Operating CF and Investing/Financing CF)
 
-### 8. Audit Trail Verification
+### 8. Calculation Naming Quality (LLM Scraper Compatibility)
+Calculation names must be **self-describing and unambiguous** so that an LLM scraper can match them against an Excel model without needing group context.
+
+**Rules:**
+- Generic ledger terms (Opening Balance, Closing Balance, Addition, Reduction) must be prefixed with their domain (e.g., "Debt Opening Balance", "D&A Asset Addition")
+- Names that appear in multiple groups (EBITDA, WC Movement, Debt Service, Dividends) must be disambiguated with a context prefix (e.g., "FCF EBITDA", "Operating CF EBITDA", "P&L Dividends Declared")
+- P&L line items that mirror other calculations should use the "P&L" prefix (e.g., "P&L Depreciation" vs "D&A Depreciation Expense")
+- Tax group calcs should use "Tax" prefix (e.g., "Tax Taxable Income", "Tax Payable")
+- Cash position calcs should use "Cash" prefix (e.g., "Cash Opening Balance", "Cash Closing Balance")
+
+**Names that are fine as-is (already unique):**
+- Domain-specific names like "Tolling Revenue", "FCAS Revenue", "Market Arbitrage Revenue"
+- Unique financial terms like "EBIT", "EBT", "NPAT", "FCFF", "FCFE", "DSCR"
+- B/S line items like "PP&E (Net Book Value)", "Trade Receivables", "Share Capital"
+- S&U items like "Total Uses", "Total Sources", "Senior Debt"
+
+**Flagging format:**
+```
+## Naming Issues
+- R{id} "{current name}": Too generic, appears in multiple contexts → Suggest: "{better name}"
+```
+
+### 9. Audit Trail Verification
 - Ensure every output can be traced back through the formula chain
 - Verify no magic numbers exist (all constants must be named and documented)
 - Confirm calculation order is deterministic via topological sorting
@@ -138,13 +160,18 @@ Total L+E (R194) = R190 + R193
    - Compare calculation name keywords to output labels
    - Flag mismatches (e.g., "Received" in name but "paid" in output)
 
-7. **Balance Sheet Check**: Verify B/S integrity:
+7. **Check Calculation Names**: For all calculations in scope:
+   - Flag generic names (Opening Balance, Closing Balance, Addition, etc.) missing a domain prefix
+   - Flag duplicate names that appear in multiple groups without disambiguation
+   - Suggest prefixed alternatives that an LLM scraper can match unambiguously
+
+8. **Balance Sheet Check**: Verify B/S integrity:
    - Check R195 = 0 in every period (trace from R187 and R194)
    - For each CF line, confirm a matching B/S counterpart exists
    - Flag any double-counted items (same cost in Operating CF and Investing/Financing CF)
    - Flag any CF outflows without a P&L expense or asset capitalisation
 
-8. **Report Findings**: Provide clear, actionable feedback:
+9. **Report Findings**: Provide clear, actionable feedback:
    - List any errors with specific calculation IDs and formulas
    - Suggest corrections using proper reference syntax
    - Highlight any missing constants that should be added
@@ -170,6 +197,9 @@ When reporting validation results, structure your findings as:
 [PASS if R195=0 all periods / FAIL with first failing period and key period flag]
 - CF↔B/S mapping gaps (if any)
 - Double-counting issues (if any)
+
+## Naming Issues
+- R{id} "{name}": [Why it's ambiguous] → Suggest: "{better name}"
 
 ## Recommendations
 - Any additional improvements for model integrity

@@ -374,7 +374,7 @@ export const MODULE_TEMPLATES = {
         outputFormulas: {
             facility_limit: 'Forward-looking sum of next N months DS (recalc at each refi)',
             establishment_fee: 'facility_limit × establishmentFeePct / 100 × F2.Start',
-            commitment_fee: 'facility_limit × effective_margin / 100 × commitmentFeePct / 100 / T.MiY × F2',
+            commitment_fee: 'facility_limit × effective_margin / 100 × commitmentFeePct / 100 / 4 × T.QE × F2',
             refi_fees: 'facility_limit × refiFeePct / 100 at each refi date',
             effective_margin: 'Steps from base margin to refi margin at each date',
             total_dsrf_fees: 'establishment_fee + commitment_fee + refi_fees',
@@ -2085,7 +2085,7 @@ export function getModuleOutputRefs(moduleInstance) {
  *
  * Fees:
  *   Establishment fee = one-time at ops start on facility limit
- *   Commitment fee = ongoing monthly = limit * effective_margin * commitPct / 12
+ *   Commitment fee = quarterly at QE = limit * effective_margin * commitPct / 4
  *   Refi fees = one-time at each refinancing date on facility limit
  *
  * Effective margin steps from base margin to each refi margin at refi dates.
@@ -2207,14 +2207,16 @@ function calculateDsrf(inputs, arrayLength, context) {
         }
     }
 
-    // Step 5: Calculate commitment fee (monthly during operations)
-    // commitment_fee = facility_limit * effective_margin% * commitFeePctOfMargin / 12
+    // Step 5: Calculate commitment fee (quarterly - paid at quarter end)
+    // commitment_fee = facility_limit * effective_margin% * commitFeePctOfMargin / 4 (quarterly)
+    const qeFlag = context['T.QE'] || new Array(arrayLength).fill(0)
     for (let i = 0; i < arrayLength; i++) {
         const isOps = opsFlag[i] === 1 || opsFlag[i] === true
-        if (isOps && outputs.facility_limit[i] > 0) {
+        const isQE = qeFlag[i] === 1
+        if (isOps && isQE && outputs.facility_limit[i] > 0) {
             outputs.commitment_fee[i] = outputs.facility_limit[i] *
                 (outputs.effective_margin[i] / 100) *
-                commitFeePctOfMargin / 12
+                commitFeePctOfMargin / 4
         }
     }
 

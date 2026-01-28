@@ -304,14 +304,38 @@
       "lookupEndYear": 2060,
       "lookupEndMonth": 3,
       "subgroups": [
-        { "id": 1, "name": "Plant" },
-        { "id": 2, "name": "Revenue" },
-        { "id": 3, "name": "Tax & Accounting" },
-        { "id": 4, "name": "Working Capital" },
-        { "id": 5, "name": "Debt" },
-        { "id": 6, "name": "Reserves & Cash" },
-        { "id": 7, "name": "Valuation" },
-        { "id": 8, "name": "Technical" }
+        {
+          "id": 1,
+          "name": "Plant"
+        },
+        {
+          "id": 2,
+          "name": "Revenue"
+        },
+        {
+          "id": 3,
+          "name": "Tax & Accounting"
+        },
+        {
+          "id": 4,
+          "name": "Working Capital"
+        },
+        {
+          "id": 5,
+          "name": "Debt"
+        },
+        {
+          "id": 6,
+          "name": "Reserves & Cash"
+        },
+        {
+          "id": 7,
+          "name": "Valuation"
+        },
+        {
+          "id": 8,
+          "name": "Technical"
+        }
       ]
     },
     {
@@ -3969,7 +3993,7 @@
       "description": "Revenue reduction factor applied to merchant revenues during life extension period"
     },
     {
-      "id": 155,
+      "id": 156,
       "groupId": 8,
       "subgroupId": null,
       "name": "Base Maintenance",

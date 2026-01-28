@@ -302,13 +302,16 @@ export default function ArrayViewPage() {
 
                 {/* Table */}
                 <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
-                    <table className="w-full border-collapse text-[11px]" style={{ minWidth: viewMode === 'M' ? `${200 + viewHeaders.length * 55}px` : '100%' }}>
+                    <table className="w-full border-collapse text-[11px]" style={{ minWidth: viewMode === 'M' ? `${270 + viewHeaders.length * 55}px` : '100%' }}>
                         <thead className="sticky top-0 z-30">
                             <tr className="bg-slate-100 border-b border-slate-300">
                                 <th className="sticky left-0 z-40 w-[200px] min-w-[200px] px-3 py-2 text-left bg-slate-100 border-r border-slate-300">
                                     <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                                         {arrayViewSubTab === 'inputs' ? 'Input Arrays' : arrayViewSubTab === 'modules' ? 'Module Outputs' : 'Calculation Results'}
                                     </span>
+                                </th>
+                                <th className="sticky left-[200px] z-40 min-w-[70px] px-0.5 py-2 text-center bg-slate-200 border-r border-slate-300">
+                                    <span className="text-[10px] font-bold text-slate-600">Total</span>
                                 </th>
                                 {viewHeaders.map((header, i) => (
                                     <th key={i} className="px-0.5 py-2 text-center min-w-[55px] bg-slate-100">
@@ -373,6 +376,7 @@ function SectionHeader({ label, viewHeaders, color = 'slate' }) {
             <td className={`sticky left-0 z-20 w-[200px] min-w-[200px] border-r ${borderClass} px-3 py-1.5 ${bgClass}`}>
                 <span className={`text-[10px] font-bold ${textClass} uppercase tracking-wider`}>{label}</span>
             </td>
+            <td className={`sticky left-[200px] z-20 min-w-[70px] ${bgClass} border-r ${borderClass}`}></td>
             {viewHeaders.map((_, i) => (
                 <td key={i} className={`min-w-[55px] ${bgClass}`}></td>
             ))}
@@ -381,7 +385,7 @@ function SectionHeader({ label, viewHeaders, color = 'slate' }) {
 }
 
 // Shared: group header row
-function GroupHeader({ refLabel, name, count, viewHeaders, colorScheme = 'purple', cells }) {
+function GroupHeader({ refLabel, name, count, viewHeaders, colorScheme = 'purple', cells, totalValue }) {
     const colors = {
         purple: { badge: 'text-purple-600 bg-purple-100', bg: 'bg-slate-50', border: 'border-slate-200' },
         green: { badge: 'text-green-600 bg-green-100', bg: 'bg-slate-50', border: 'border-slate-200' },
@@ -401,6 +405,9 @@ function GroupHeader({ refLabel, name, count, viewHeaders, colorScheme = 'purple
                     <span className="text-[11px] font-semibold text-slate-900 truncate">{name}</span>
                     {count != null && <span className="text-[10px] text-slate-400">({count})</span>}
                 </div>
+            </td>
+            <td className={`sticky left-[200px] z-20 min-w-[70px] h-[22px] p-0 bg-slate-100 border-r ${c.border}`}>
+                {totalValue != null && <DisplayCell value={totalValue} category="value" isTimeline={false} />}
             </td>
             {cells || viewHeaders.map((_, i) => (
                 <td key={i} className={`min-w-[55px] h-[22px] p-0 ${c.bg}`}></td>
@@ -425,6 +432,14 @@ function DataRow({ refLabel, name, viewHeaders, viewMode, dataArray, dataType = 
     }
     const c = colors[colorScheme] || colors.purple
     const isMonthly = viewMode === 'M'
+    const isFlag = c.category === 'flag'
+
+    // Calculate total: sum for flows, last value for stocks, skip for flags
+    const totalValue = isFlag ? null : (
+        dataType === 'stock'
+            ? (dataArray[dataArray.length - 1] ?? 0)
+            : dataArray.reduce((sum, v) => sum + (v || 0), 0)
+    )
 
     return (
         <tr className="hover:bg-blue-50/30 border-b border-slate-100">
@@ -435,10 +450,13 @@ function DataRow({ refLabel, name, viewHeaders, viewMode, dataArray, dataType = 
                     {suffix && <span className="text-[9px] text-slate-400">{suffix}</span>}
                 </div>
             </td>
+            <td className="sticky left-[200px] z-20 min-w-[70px] h-[22px] p-0 bg-slate-50 border-r border-slate-200">
+                {totalValue != null && <DisplayCell value={totalValue} category={c.category} isTimeline={false} />}
+            </td>
             {viewHeaders.map((header, i) => {
                 const cellValue = isMonthly
                     ? (dataArray[header.index] ?? 0)
-                    : getAggregatedValueForArray(dataArray, header.indices, dataType, c.category === 'flag' ? 'flag' : undefined)
+                    : getAggregatedValueForArray(dataArray, header.indices, dataType, isFlag ? 'flag' : undefined)
                 return (
                     <td key={i} className="min-w-[55px] h-[22px] p-0">
                         <DisplayCell value={cellValue} category={c.category} isTimeline={false} />
@@ -541,6 +559,19 @@ function InputsSubTab({
                                 inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
                             )
 
+                            // Calculate group total across all periods
+                            const groupTotalValue = groupType === 'stock' ? (() => {
+                                let last = 0
+                                inputMonthlyArrays.forEach(arr => { last += (arr[arr.length - 1] || 0) })
+                                return last
+                            })() : (() => {
+                                let sum = 0
+                                inputMonthlyArrays.forEach(arr => {
+                                    for (let i = 0; i < arr.length; i++) sum += (arr[i] || 0)
+                                })
+                                return sum
+                            })()
+
                             return (
                                 <React.Fragment key={group.id}>
                                     {/* Group total */}
@@ -550,6 +581,7 @@ function InputsSubTab({
                                         count={groupInputs.length}
                                         viewHeaders={viewHeaders}
                                         colorScheme={colorScheme}
+                                        totalValue={groupTotalValue}
                                         cells={viewHeaders.map((header, colIndex) => {
                                             let cellValue = 0
                                             inputMonthlyArrays.forEach(arr => {
@@ -725,6 +757,16 @@ function ResultsSubTab({ calculations, calculationsTabs, calculationsGroups, cal
     }
 
     const renderGroupHeader = (group, groupCalcs) => {
+        // Calculate grand total for the group (sum of all flow calcs across all periods)
+        let groupGrandTotal = 0
+        groupCalcs.forEach(calc => {
+            const calcRef = `R${calcIndexMap.get(calc.id)}`
+            const resultArray = calculationResults[calcRef] || []
+            const calcType = calculationTypes?.[calcRef] || 'flow'
+            if (calcType === 'stock') return
+            for (let i = 0; i < resultArray.length; i++) groupGrandTotal += (resultArray[i] || 0)
+        })
+
         const groupCells = viewHeaders.map((header, colIndex) => {
             const subtotal = groupCalcs.reduce((sum, calc) => {
                 const calcRef = `R${calcIndexMap.get(calc.id)}`
@@ -749,6 +791,7 @@ function ResultsSubTab({ calculations, calculationsTabs, calculationsGroups, cal
                 name={group.name}
                 viewHeaders={viewHeaders}
                 colorScheme="rose"
+                totalValue={groupGrandTotal}
                 cells={groupCells}
             />
         )

@@ -15,12 +15,8 @@ import {
     AlertTriangle,
     Info,
     CheckCircle2,
-    ChevronDown,
-    ChevronRight,
-    RefreshCw,
     Filter,
     Link as LinkIcon,
-    ExternalLink,
     Scale,
     DollarSign
 } from 'lucide-react'
@@ -62,125 +58,46 @@ const categoryLabels = {
     [CATEGORY.RUNTIME]: 'Runtime Risks'
 }
 
-function SeverityBadge({ severity }) {
-    const config = severityConfig[severity]
+function IssueRow({ issue, calcRef, calcName, calcId, onGoTo, showCalcRef }) {
+    const config = severityConfig[issue.severity]
     const Icon = config.icon
 
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${config.badgeColor}`}>
-            <Icon className="w-3 h-3" />
-            {config.label}
-        </span>
-    )
-}
-
-function CategoryBadge({ category }) {
-    return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
-            {categoryLabels[category] || category}
-        </span>
-    )
-}
-
-function IssueCard({ issue }) {
-    const config = severityConfig[issue.severity]
-
-    return (
-        <div className={`p-3 rounded-lg border ${config.bgColor} ${config.borderColor}`}>
-            <div className="flex items-start gap-3">
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <SeverityBadge severity={issue.severity} />
-                        <CategoryBadge category={issue.category} />
-                    </div>
-                    <p className={`mt-2 text-sm font-medium ${config.textColor}`}>
-                        {issue.message}
-                    </p>
-                    {issue.details && (
-                        <p className="mt-1 text-xs text-slate-600">
-                            {issue.details}
-                        </p>
-                    )}
-                </div>
-            </div>
-        </div>
-    )
-}
-
-function CalculationIssueGroup({ calcRef, calcName, calcId, issues, isExpanded, onToggle, onGoTo }) {
-    const errorCount = issues.filter(i => i.severity === SEVERITY.ERROR).length
-    const warningCount = issues.filter(i => i.severity === SEVERITY.WARNING).length
-    const infoCount = issues.filter(i => i.severity === SEVERITY.INFO).length
-
-    // Determine overall severity for styling
-    const hasErrors = errorCount > 0
-    const hasWarnings = warningCount > 0
-
-    return (
-        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-            <div className={`px-4 py-3 flex items-center justify-between ${
-                hasErrors ? 'bg-red-50/50' : hasWarnings ? 'bg-amber-50/50' : ''
-            }`}>
-                <button
-                    onClick={onToggle}
-                    className="flex items-center gap-3 flex-1 text-left hover:opacity-80 transition-opacity"
-                >
-                    {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-slate-400" />
-                    ) : (
-                        <ChevronRight className="w-4 h-4 text-slate-400" />
-                    )}
-                    <div>
-                        <span className="font-mono text-sm font-medium text-indigo-600">
-                            {calcRef}
-                        </span>
-                        {calcName && (
-                            <span className="text-sm text-slate-600 ml-2">
-                                {calcName}
-                            </span>
-                        )}
-                    </div>
-                </button>
-                <div className="flex items-center gap-2">
-                    {errorCount > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
-                            <AlertCircle className="w-3 h-3" />
-                            {errorCount}
-                        </span>
-                    )}
-                    {warningCount > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
-                            <AlertTriangle className="w-3 h-3" />
-                            {warningCount}
-                        </span>
-                    )}
-                    {infoCount > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
-                            <Info className="w-3 h-3" />
-                            {infoCount}
-                        </span>
-                    )}
+        <tr className={`border-b border-slate-100 hover:bg-slate-50/50 ${showCalcRef ? '' : 'bg-slate-25'}`}>
+            <td className="px-3 py-1.5 whitespace-nowrap align-top">
+                {showCalcRef ? (
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onGoTo(calcId)
-                        }}
-                        className="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                        onClick={() => onGoTo(calcId)}
+                        className="font-mono text-xs font-medium text-indigo-600 hover:text-indigo-800"
                         title="Go to calculation"
                     >
-                        <ExternalLink className="w-3 h-3" />
-                        Go to
+                        {calcRef}
                     </button>
-                </div>
-            </div>
-            {isExpanded && (
-                <div className="px-4 pb-4 pt-2 space-y-2 border-t border-slate-100">
-                    {issues.map((issue, idx) => (
-                        <IssueCard key={idx} issue={issue} />
-                    ))}
-                </div>
-            )}
-        </div>
+                ) : (
+                    <span className="text-xs text-slate-300 font-mono">&nbsp;</span>
+                )}
+            </td>
+            <td className="px-3 py-1.5 align-top">
+                {showCalcRef && calcName && (
+                    <span className="text-xs text-slate-500 mr-2">{calcName} &mdash;</span>
+                )}
+                <span className={`text-xs ${config.textColor}`}>{issue.message}</span>
+                {issue.details && (
+                    <span className="text-xs text-slate-400 ml-1">({issue.details})</span>
+                )}
+            </td>
+            <td className="px-3 py-1.5 whitespace-nowrap align-top">
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${config.badgeColor}`}>
+                    <Icon className="w-2.5 h-2.5" />
+                    {config.label}
+                </span>
+            </td>
+            <td className="px-3 py-1.5 whitespace-nowrap align-top">
+                <span className="text-[10px] text-slate-400">
+                    {categoryLabels[issue.category]?.replace(' Issues', '').replace(' Errors', '').replace(' Risks', '') || issue.category}
+                </span>
+            </td>
+        </tr>
     )
 }
 
@@ -242,7 +159,6 @@ export default function ValidationPage() {
     const { setSelectedCalculationId } = setters
     const router = useRouter()
 
-    const [expandedCalcs, setExpandedCalcs] = useState(new Set())
     const [severityFilter, setSeverityFilter] = useState('all')
     const [categoryFilter, setCategoryFilter] = useState('all')
 
@@ -329,26 +245,6 @@ export default function ValidationPage() {
     const groupedIssues = useMemo(() => {
         return groupIssuesByCalculation(filteredIssues)
     }, [filteredIssues])
-
-    const toggleCalc = (calcRef) => {
-        setExpandedCalcs(prev => {
-            const next = new Set(prev)
-            if (next.has(calcRef)) {
-                next.delete(calcRef)
-            } else {
-                next.add(calcRef)
-            }
-            return next
-        })
-    }
-
-    const expandAll = () => {
-        setExpandedCalcs(new Set(Object.keys(groupedIssues)))
-    }
-
-    const collapseAll = () => {
-        setExpandedCalcs(new Set())
-    }
 
     const hasIssues = issues.length > 0
     const hasErrors = summary.bySeverity[SEVERITY.ERROR] > 0
@@ -447,107 +343,95 @@ export default function ValidationPage() {
                 </div>
             </div>
 
-            {/* Filters and Actions */}
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        <Filter className="w-4 h-4 text-slate-400" />
-                        <select
-                            value={severityFilter}
-                            onChange={(e) => setSeverityFilter(e.target.value)}
-                            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white"
-                        >
-                            <option value="all">All Severities</option>
-                            <option value={SEVERITY.ERROR}>Errors Only</option>
-                            <option value={SEVERITY.WARNING}>Warnings Only</option>
-                            <option value={SEVERITY.INFO}>Info Only</option>
-                        </select>
-                    </div>
-                    <select
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white"
-                    >
-                        <option value="all">All Categories</option>
-                        <option value={CATEGORY.REFERENCE}>Reference Issues</option>
-                        <option value={CATEGORY.SYNTAX}>Syntax Errors</option>
-                        <option value={CATEGORY.DEPENDENCY}>Dependency Issues</option>
-                        <option value={CATEGORY.BEST_PRACTICE}>Best Practices</option>
-                        <option value={CATEGORY.RUNTIME}>Runtime Risks</option>
-                    </select>
-                </div>
-                <div className="flex items-center gap-2">
+            {/* Filters */}
+            <div className="flex items-center gap-3 mb-3">
+                <Filter className="w-4 h-4 text-slate-400" />
+                <select
+                    value={severityFilter}
+                    onChange={(e) => setSeverityFilter(e.target.value)}
+                    className="text-xs border border-slate-200 rounded px-2 py-1 bg-white"
+                >
+                    <option value="all">All Severities</option>
+                    <option value={SEVERITY.ERROR}>Errors</option>
+                    <option value={SEVERITY.WARNING}>Warnings</option>
+                    <option value={SEVERITY.INFO}>Info</option>
+                </select>
+                <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="text-xs border border-slate-200 rounded px-2 py-1 bg-white"
+                >
+                    <option value="all">All Categories</option>
+                    <option value={CATEGORY.REFERENCE}>Reference</option>
+                    <option value={CATEGORY.SYNTAX}>Syntax</option>
+                    <option value={CATEGORY.DEPENDENCY}>Dependency</option>
+                    <option value={CATEGORY.BEST_PRACTICE}>Best Practice</option>
+                    <option value={CATEGORY.RUNTIME}>Runtime</option>
+                </select>
+                {(severityFilter !== 'all' || categoryFilter !== 'all') && (
                     <button
-                        onClick={expandAll}
-                        className="text-xs text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100"
+                        onClick={() => { setSeverityFilter('all'); setCategoryFilter('all') }}
+                        className="text-xs text-indigo-600 hover:text-indigo-700"
                     >
-                        Expand All
+                        Clear
                     </button>
-                    <button
-                        onClick={collapseAll}
-                        className="text-xs text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100"
-                    >
-                        Collapse All
-                    </button>
-                </div>
+                )}
+                <span className="text-xs text-slate-400 ml-auto">{filteredIssues.length} issues</span>
             </div>
 
-            {/* Issues List */}
-            {hasIssues ? (
-                <div className="space-y-3">
-                    {Object.entries(groupedIssues)
-                        .sort((a, b) => {
-                            // Sort by highest severity issue in group
-                            const aHasError = a[1].issues.some(i => i.severity === SEVERITY.ERROR)
-                            const bHasError = b[1].issues.some(i => i.severity === SEVERITY.ERROR)
-                            if (aHasError !== bHasError) return bHasError ? 1 : -1
-
-                            const aHasWarning = a[1].issues.some(i => i.severity === SEVERITY.WARNING)
-                            const bHasWarning = b[1].issues.some(i => i.severity === SEVERITY.WARNING)
-                            if (aHasWarning !== bHasWarning) return bHasWarning ? 1 : -1
-
-                            return 0
-                        })
-                        .map(([key, group]) => {
-                            // Extract calc ID from calcRef (e.g., "R123" -> 123)
-                            const calcId = group.calcRef ? parseInt(group.calcRef.replace('R', ''), 10) : null
-                            return (
-                                <CalculationIssueGroup
-                                    key={key}
-                                    calcRef={group.calcRef}
-                                    calcName={group.calcName}
-                                    calcId={calcId}
-                                    issues={group.issues}
-                                    isExpanded={expandedCalcs.has(key)}
-                                    onToggle={() => toggleCalc(key)}
-                                    onGoTo={goToCalculation}
-                                />
-                            )
-                        })}
+            {/* Issues Table */}
+            {hasIssues && filteredIssues.length > 0 ? (
+                <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-slate-200 bg-slate-50">
+                                <th className="px-3 py-2 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider w-20">Ref</th>
+                                <th className="px-3 py-2 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Info</th>
+                                <th className="px-3 py-2 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider w-20">Type</th>
+                                <th className="px-3 py-2 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider w-24">Category</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(groupedIssues)
+                                .sort((a, b) => {
+                                    const aHasError = a[1].issues.some(i => i.severity === SEVERITY.ERROR)
+                                    const bHasError = b[1].issues.some(i => i.severity === SEVERITY.ERROR)
+                                    if (aHasError !== bHasError) return bHasError ? 1 : -1
+                                    const aHasWarning = a[1].issues.some(i => i.severity === SEVERITY.WARNING)
+                                    const bHasWarning = b[1].issues.some(i => i.severity === SEVERITY.WARNING)
+                                    if (aHasWarning !== bHasWarning) return bHasWarning ? 1 : -1
+                                    return 0
+                                })
+                                .flatMap(([key, group]) => {
+                                    const calcId = group.calcRef ? parseInt(group.calcRef.replace('R', ''), 10) : null
+                                    return group.issues.map((issue, idx) => (
+                                        <IssueRow
+                                            key={`${key}-${idx}`}
+                                            issue={issue}
+                                            calcRef={group.calcRef}
+                                            calcName={group.calcName}
+                                            calcId={calcId}
+                                            onGoTo={goToCalculation}
+                                            showCalcRef={idx === 0}
+                                        />
+                                    ))
+                                })}
+                        </tbody>
+                    </table>
+                </div>
+            ) : !hasIssues ? (
+                <div className="text-center py-8 bg-white rounded-lg border border-slate-200">
+                    <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-3" />
+                    <h3 className="text-sm font-medium text-slate-900">All Checks Passed</h3>
+                    <p className="text-xs text-slate-500 mt-1">No validation issues found.</p>
                 </div>
             ) : (
-                <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
-                    <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-900">All Checks Passed</h3>
-                    <p className="text-sm text-slate-500 mt-1">
-                        No validation issues found in your calculations.
-                    </p>
-                </div>
-            )}
-
-            {/* Empty filtered state */}
-            {hasIssues && filteredIssues.length === 0 && (
-                <div className="text-center py-8 bg-white rounded-lg border border-slate-200">
-                    <Filter className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-                    <p className="text-sm text-slate-600">
-                        No issues match the current filters.
-                    </p>
+                <div className="text-center py-6 bg-white rounded-lg border border-slate-200">
+                    <Filter className="w-6 h-6 text-slate-400 mx-auto mb-2" />
+                    <p className="text-xs text-slate-600">No issues match the current filters.</p>
                     <button
-                        onClick={() => {
-                            setSeverityFilter('all')
-                            setCategoryFilter('all')
-                        }}
-                        className="text-sm text-indigo-600 hover:text-indigo-700 mt-2"
+                        onClick={() => { setSeverityFilter('all'); setCategoryFilter('all') }}
+                        className="text-xs text-indigo-600 hover:text-indigo-700 mt-1"
                     >
                         Clear filters
                     </button>
