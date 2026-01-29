@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useRef } from 'react'
 import { processArrayFunctions, evaluateSafeExpression, extractShiftTargets, evaluateClusterPeriodByPeriod } from '@/utils/formulaEvaluator'
-import { calculateModuleOutputs, MODULE_TEMPLATES } from '@/utils/moduleTemplates'
+import { calculateModuleOutputs, MODULE_TEMPLATES } from '@/utils/modules'
 
 // Module-level regex cache (shared across all hook instances)
 const globalRegexCache = new Map()

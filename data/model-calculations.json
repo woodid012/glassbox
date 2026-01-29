@@ -1348,7 +1348,7 @@
       "groupId": 41,
       "name": "Share Capital",
       "formula": "CUMSUM(M4.7) * F1 + M7.12 * F2",
-      "description": "Construction: cumulative equity drawn (M4.7). Operations: SC closing from distributions module (M7.12)",
+      "description": "Construction: cumulative equity drawn (M4.7) gated by F1. Operations: SC closing from distributions module (M7.12) gated by F2. Both gates required - M7.12 outputs totalEquityContributed during construction, so F2 prevents double-counting.",
       "type": "stock"
     },
     {

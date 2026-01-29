@@ -6,7 +6,7 @@ import { getDefaultState } from '../../../utils/glassInputsState'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useInputManagement } from '@/hooks/useInputManagement'
 import { useInputArrays } from '@/hooks/useInputArrays'
-import { MODULE_TEMPLATES } from '@/utils/moduleTemplates'
+import { MODULE_TEMPLATES } from '@/utils/modules'
 import { useReferenceMap } from './useReferenceMap'
 import { useUnifiedCalculation } from './useUnifiedCalculation'
 

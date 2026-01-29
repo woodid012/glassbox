@@ -274,7 +274,7 @@ export default function CalculationsPage() {
     }
 
     // Build reference list for sidebar
-    const buildReferenceList = () => {
+    const referenceList = useMemo(() => {
         const activeGroups = inputGlassGroups.filter(group =>
             inputGlass.some(input => input.groupId === group.id)
         )
@@ -303,9 +303,7 @@ export default function CalculationsPage() {
                 groupInputs
             }
         })
-    }
-
-    const referenceList = buildReferenceList()
+    }, [inputGlassGroups, inputGlass])
 
     // Build calculation index map for R references (memoized)
     // Now uses calculation ID directly (not array position) for stable references

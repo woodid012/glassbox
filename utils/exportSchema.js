@@ -1,7 +1,7 @@
 // Export Schema - Bundle model data for Python/Excel export
 // Generates a complete snapshot of the model for external consumption
 
-import { MODULE_TEMPLATES } from './moduleTemplates'
+import { MODULE_TEMPLATES } from './modules'
 
 /**
  * Build timeline arrays from config

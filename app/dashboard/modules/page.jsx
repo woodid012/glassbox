@@ -3,7 +3,7 @@
 import { Plus, Trash2, Play, RefreshCw, ToggleLeft, ToggleRight } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 import { DeferredInput } from '@/components/DeferredInput'
-import { MODULE_TEMPLATES } from '@/utils/moduleTemplates'
+import { MODULE_TEMPLATES } from '@/utils/modules'
 import { formatValue } from '@/utils/valueAggregation'
 import { useMemo, useState } from 'react'
 
