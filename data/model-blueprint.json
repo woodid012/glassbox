@@ -1,0 +1,283 @@
+{
+  "_description": "Blueprint defining expected components of a complete project finance model. Used by model-review analysis to check completeness.",
+  "sections": [
+    {
+      "id": "ifs",
+      "name": "Income & Financial Statements",
+      "tabId": 1,
+      "groups": [
+        {
+          "name": "Revenue",
+          "expectedCalcs": [
+            { "label": "Total Revenue", "matchPattern": ["total revenue"], "matchRef": "R8" },
+            { "label": "Tolling Revenue", "matchPattern": ["tolling revenue", "contracted revenue"], "matchRef": "R4" },
+            { "label": "Merchant Revenue", "matchPattern": ["merchant revenue"], "matchRef": "R7" },
+            { "label": "FCAS Revenue", "matchPattern": ["fcas"], "matchRef": "R5" },
+            { "label": "Market Arbitrage Revenue", "matchPattern": ["arbitrage", "market arbitrage"], "matchRef": "R6" }
+          ]
+        },
+        {
+          "name": "Profitability",
+          "expectedCalcs": [
+            { "label": "Total OPEX", "matchPattern": ["total opex", "opex.*nominal"], "matchRef": "R9" },
+            { "label": "Gross Margin", "matchPattern": ["gross margin"], "matchRef": "R10" },
+            { "label": "EBITDA", "matchPattern": ["^ebitda$"], "matchRef": "R13" },
+            { "label": "Depreciation (P&L)", "matchPattern": ["p&l depreciation", "depreciation"], "matchRef": "R14" },
+            { "label": "EBIT", "matchPattern": ["^ebit$"], "matchRef": "R15" },
+            { "label": "Interest Expense", "matchPattern": ["interest expense"], "matchRef": "R16" },
+            { "label": "EBT", "matchPattern": ["^ebt$"], "matchRef": "R17" },
+            { "label": "Tax Expense", "matchPattern": ["tax expense"], "matchRef": "R18" },
+            { "label": "NPAT", "matchPattern": ["^npat$"], "matchRef": "R19" }
+          ]
+        },
+        {
+          "name": "Retained Earnings",
+          "expectedCalcs": [
+            { "label": "Prior RE", "matchPattern": ["prior re", "re.*opening"], "matchRef": "R20" },
+            { "label": "Dividends Declared", "matchPattern": ["dividends declared"], "matchRef": "R21" },
+            { "label": "RE Movement", "matchPattern": ["re.*movement"], "matchRef": "R23" },
+            { "label": "RE Closing", "matchPattern": ["re.*closing"], "matchRef": "R24" }
+          ]
+        },
+        {
+          "name": "Working Capital",
+          "expectedCalcs": [
+            { "label": "Receivables", "matchPattern": ["receivables$"], "matchRef": "R91" },
+            { "label": "Payables", "matchPattern": ["payables$"], "matchRef": "R92" },
+            { "label": "Net Working Capital", "matchPattern": ["net working capital"], "matchRef": "R93" },
+            { "label": "Net WC Movement", "matchPattern": ["net wc movement", "wc movement"], "matchRef": "R94" }
+          ]
+        },
+        {
+          "name": "D&A",
+          "expectedCalcs": [
+            { "label": "D&A Opening Book Value", "matchPattern": ["d&a opening", "opening book value"], "matchRef": "R80" },
+            { "label": "D&A Asset Addition", "matchPattern": ["d&a.*addition", "asset addition"], "matchRef": "R81" },
+            { "label": "D&A Depreciation Expense", "matchPattern": ["d&a depreciation", "depreciation expense"], "matchRef": "R82" },
+            { "label": "D&A Closing Book Value", "matchPattern": ["d&a closing", "closing book value"], "matchRef": "R84" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "funding",
+      "name": "Funding & Debt",
+      "tabId": 2,
+      "groups": [
+        {
+          "name": "Sources & Uses",
+          "expectedCalcs": [
+            { "label": "Total Uses", "matchPattern": ["total uses"], "matchRef": "R64" },
+            { "label": "Total Sources", "matchPattern": ["total sources"], "matchRef": "R68" },
+            { "label": "Sources = Uses Check", "matchPattern": ["sources.*uses.*check"], "matchRef": "R69" },
+            { "label": "Capex + Contingency", "matchPattern": ["capex.*contingency"], "matchRef": "R55" },
+            { "label": "Senior Debt", "matchPattern": ["senior debt"], "matchRef": "R66" },
+            { "label": "Committed Equity", "matchPattern": ["committed equity"], "matchRef": "R67" }
+          ]
+        },
+        {
+          "name": "Operations Debt",
+          "expectedCalcs": [
+            { "label": "Debt Opening Balance", "matchPattern": ["debt opening"], "matchRef": "R95" },
+            { "label": "Debt Interest Paid", "matchPattern": ["debt interest"], "matchRef": "R96" },
+            { "label": "Debt Principal Repayment", "matchPattern": ["debt principal", "principal repayment"], "matchRef": "R97" },
+            { "label": "Debt Service (P+I)", "matchPattern": ["debt service.*p\\+i", "total debt service"], "matchRef": "R98" },
+            { "label": "Debt Closing Balance", "matchPattern": ["debt closing"], "matchRef": "R99" }
+          ]
+        },
+        {
+          "name": "Covenants",
+          "expectedCalcs": [
+            { "label": "DSCR", "matchPattern": ["^dscr$", "debt service coverage"], "matchRef": "R118" },
+            { "label": "Total CFADS", "matchPattern": ["total cfads", "cfads"], "matchRef": "R117" }
+          ]
+        },
+        {
+          "name": "Equity & Dividends",
+          "expectedCalcs": [
+            { "label": "Equity Injections", "matchPattern": ["equity injection"], "matchRef": "R130" },
+            { "label": "Dividends", "matchPattern": ["^dividends$"], "matchRef": "R124" },
+            { "label": "Share Capital Repayment", "matchPattern": ["share capital repayment"], "matchRef": "R143" },
+            { "label": "Equity IRR", "matchPattern": ["equity irr", "net cash flow to equity"], "matchRef": "R136" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ops",
+      "name": "Operations",
+      "tabId": 3,
+      "groups": [
+        {
+          "name": "Technical",
+          "expectedCalcs": [
+            { "label": "Model Period", "matchPattern": ["model period"], "matchRef": "R119" },
+            { "label": "Degradation Index", "matchPattern": ["degradation"], "matchRef": "R11" },
+            { "label": "Operating Adjustment", "matchPattern": ["operating adjustment"], "matchRef": "R12" }
+          ]
+        },
+        {
+          "name": "Opex",
+          "expectedCalcs": [
+            { "label": "Agency Fee", "matchPattern": ["agency fee"], "matchRef": "R30" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bs",
+      "name": "Balance Sheet",
+      "tabId": 5,
+      "groups": [
+        {
+          "name": "Assets",
+          "expectedCalcs": [
+            { "label": "Cash & Cash Equivalents", "matchPattern": ["cash.*equivalents"], "matchRef": "R182" },
+            { "label": "Construction WIP", "matchPattern": ["construction wip", "wip"], "matchRef": "R196" },
+            { "label": "PP&E (Net Book Value)", "matchPattern": ["pp&e", "net book value"], "matchRef": "R183" },
+            { "label": "Trade Receivables", "matchPattern": ["trade receivables"], "matchRef": "R184" },
+            { "label": "GST Receivable", "matchPattern": ["gst receivable"], "matchRef": "R185" },
+            { "label": "MRA Balance", "matchPattern": ["mra balance"], "matchRef": "R186" },
+            { "label": "Total Assets", "matchPattern": ["total assets"], "matchRef": "R187" }
+          ]
+        },
+        {
+          "name": "Liabilities",
+          "expectedCalcs": [
+            { "label": "Construction Debt", "matchPattern": ["construction debt"], "matchRef": "R198" },
+            { "label": "Operations Debt", "matchPattern": ["operations debt"], "matchRef": "R188" },
+            { "label": "Trade Payables", "matchPattern": ["trade payables"], "matchRef": "R189" },
+            { "label": "Total Liabilities", "matchPattern": ["total liabilities"], "matchRef": "R190" }
+          ]
+        },
+        {
+          "name": "Equity",
+          "expectedCalcs": [
+            { "label": "Share Capital", "matchPattern": ["^share capital$"], "matchRef": "R191" },
+            { "label": "Retained Earnings", "matchPattern": ["^retained earnings$"], "matchRef": "R192" },
+            { "label": "Total Equity", "matchPattern": ["total equity"], "matchRef": "R193" },
+            { "label": "Total L + E", "matchPattern": ["total l.*e"], "matchRef": "R194" }
+          ]
+        },
+        {
+          "name": "Balance Check",
+          "expectedCalcs": [
+            { "label": "Balance Check", "matchPattern": ["balance check"], "matchRef": "R195" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cashflow",
+      "name": "Cash Flow Statement",
+      "tabId": 6,
+      "groups": [
+        {
+          "name": "Operating CF",
+          "expectedCalcs": [
+            { "label": "Operating CF EBITDA", "matchPattern": ["operating cf ebitda", "cf ebitda"], "matchRef": "R25" },
+            { "label": "Operating CF WC Movement", "matchPattern": ["operating cf wc", "cf wc movement"], "matchRef": "R26" },
+            { "label": "Operating CF", "matchPattern": ["^operating cf$"], "matchRef": "R28" }
+          ]
+        },
+        {
+          "name": "Investing CF",
+          "expectedCalcs": [
+            { "label": "Capex", "matchPattern": ["^capex$"], "matchRef": "R31" },
+            { "label": "GST Paid on Capex", "matchPattern": ["gst paid.*capex"], "matchRef": "R32" },
+            { "label": "GST Received", "matchPattern": ["gst received"], "matchRef": "R33" },
+            { "label": "MRA Contribution", "matchPattern": ["mra contribution"], "matchRef": "R34" },
+            { "label": "MRA Release", "matchPattern": ["mra release"], "matchRef": "R35" },
+            { "label": "Investing CF", "matchPattern": ["^investing cf$"], "matchRef": "R38" }
+          ]
+        },
+        {
+          "name": "Financing CF",
+          "expectedCalcs": [
+            { "label": "Construction Debt Drawdown", "matchPattern": ["construction debt drawdown"], "matchRef": "R40" },
+            { "label": "Principal Repayment", "matchPattern": ["^principal repayment$"], "matchRef": "R41" },
+            { "label": "Interest Paid", "matchPattern": ["^interest paid$"], "matchRef": "R42" },
+            { "label": "Dividends Paid", "matchPattern": ["dividends paid"], "matchRef": "R51" },
+            { "label": "Financing CF", "matchPattern": ["^financing cf$"], "matchRef": "R76" }
+          ]
+        },
+        {
+          "name": "Cash Position",
+          "expectedCalcs": [
+            { "label": "Net Cashflow", "matchPattern": ["^net cashflow$", "net cf$"], "matchRef": "R78" },
+            { "label": "Cash Opening Balance", "matchPattern": ["cash opening"], "matchRef": "R79" },
+            { "label": "Cash Closing Balance", "matchPattern": ["cash closing"], "matchRef": "R100" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "valuation",
+      "name": "Valuation",
+      "tabId": 4,
+      "groups": [
+        {
+          "name": "Free Cash Flow",
+          "expectedCalcs": [
+            { "label": "FCFF", "matchPattern": ["^fcff$", "free cash flow.*firm"], "matchRef": "R107" },
+            { "label": "FCFE", "matchPattern": ["^fcfe$", "free cash flow.*equity"], "matchRef": "R110" },
+            { "label": "FCF EBITDA", "matchPattern": ["fcf ebitda"], "matchRef": "R104" }
+          ]
+        },
+        {
+          "name": "Discount Factors",
+          "expectedCalcs": [
+            { "label": "Monthly Discount Rate", "matchPattern": ["monthly discount", "discount rate"], "matchRef": "R113" },
+            { "label": "Discount Factor", "matchPattern": ["discount factor"], "matchRef": "R114" }
+          ]
+        }
+      ]
+    }
+  ],
+  "expectedModules": [
+    { "templateId": "iterative_debt_sizing", "label": "Iterative Debt Sizing (DSCR Sculpted)", "required": true },
+    { "templateId": "depreciation_amortization", "label": "Depreciation & Amortization", "required": true },
+    { "templateId": "gst_receivable", "label": "GST Paid/Received", "required": true },
+    { "templateId": "construction_funding", "label": "Construction Funding", "required": true },
+    { "templateId": "tax_losses", "label": "Tax & Tax Losses", "required": true },
+    { "templateId": "reserve_account", "label": "MRA (Maintenance Reserve)", "required": true },
+    { "templateId": "distributions", "label": "Distributions", "required": true },
+    { "templateId": "dsrf", "label": "DSRF (Debt Service Reserve Facility)", "required": false }
+  ],
+  "expectedInputs": {
+    "keyPeriods": [
+      { "label": "Construction", "matchPattern": ["construction"] },
+      { "label": "Total Operations", "matchPattern": ["total operations", "operations"] },
+      { "label": "Normal Operations", "matchPattern": ["normal operations"] },
+      { "label": "Offtake", "matchPattern": ["offtake", "contracted"] },
+      { "label": "Merchant", "matchPattern": ["merchant"] },
+      { "label": "Operations Debt", "matchPattern": ["ops debt", "operations debt", "debt tenor"] }
+    ],
+    "constants": [
+      { "label": "Battery Capacity (MW)", "matchPattern": ["capacity.*mw", "battery.*capacity"] },
+      { "label": "Tolling Rate ($/MW/hr)", "matchPattern": ["tolling rate", "tolling cost"] },
+      { "label": "GST Rate (%)", "matchPattern": ["gst rate"] },
+      { "label": "Tax Rate (%)", "matchPattern": ["tax rate"] },
+      { "label": "Contingency (%)", "matchPattern": ["contingency"] },
+      { "label": "Depreciation Life", "matchPattern": ["depreciation life", "useful life"] },
+      { "label": "Contracted DSCR Target", "matchPattern": ["contracted dscr", "dscr target"] },
+      { "label": "WACC / Discount Rate", "matchPattern": ["wacc", "discount rate", "hurdle rate"] }
+    ]
+  },
+  "integrityChecks": [
+    {
+      "id": "bs_balance",
+      "label": "Balance Sheet Balances",
+      "description": "Total Assets = Total L+E every period",
+      "checkRef": "R195",
+      "tolerance": 0.01
+    },
+    {
+      "id": "su_check",
+      "label": "Sources = Uses",
+      "description": "Construction S&U must balance",
+      "checkRef": "R69",
+      "tolerance": 0.01
+    }
+  ]
+}
