@@ -10,6 +10,8 @@ import { getModeColorClasses, getCalcTypeColorClasses, getModePrefix, getTabItem
 import CalcRow from './CalcRow'
 import CalculationsTimeSeriesPreview from './CalculationsTimeSeriesPreview'
 import CalculationPreview from './CalculationPreview'
+import PageHeader from '../components/PageHeader'
+import EmptyState from '../components/EmptyState'
 
 // Find next available calculation ID (fills gaps, e.g., if R1, R3 exist, returns 2)
 function getNextAvailableCalcId(calculations) {
@@ -332,41 +334,37 @@ export default function CalculationsPage() {
         <main className="max-w-[1800px] mx-auto px-6 py-6">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {/* Calculations Header */}
-                <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h2 className="text-lg font-semibold text-slate-900">Calculations</h2>
-                            <p className="text-sm text-slate-500">Build formulas using input references</p>
-                            {inputsEditMode && (
-                            <div className="flex items-center gap-4 mt-2 text-xs text-slate-600">
-                                <span className="font-medium text-slate-700">Syntax:</span>
-                                <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">V1 + S1</code> Addition</span>
-                                <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">V1 * F1</code> Multiply by flag</span>
-                                <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">C1 * T1.1</code> Stock × Timing = Flow</span>
-                                <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">R1 + R2</code> Chain calculations</span>
-                            </div>
-                            )}
-                        </div>
-                        {inputsEditMode && (
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={addCalculationsGroup}
-                                className="flex items-center gap-2 px-4 py-2 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
-                            >
-                                <FolderPlus className="w-4 h-4" />
-                                Add Group
-                            </button>
-                            <button
-                                onClick={() => addCalculation()}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add Calculation
-                            </button>
-                        </div>
-                        )}
+                <PageHeader title="Calculations" subtitle="Build formulas using input references">
+                    {inputsEditMode && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={addCalculationsGroup}
+                            className="flex items-center gap-2 px-4 py-2 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                            <FolderPlus className="w-4 h-4" />
+                            Add Group
+                        </button>
+                        <button
+                            onClick={() => addCalculation()}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Add Calculation
+                        </button>
+                    </div>
+                    )}
+                </PageHeader>
+                {inputsEditMode && (
+                <div className="px-6 py-2 border-b border-slate-200 bg-slate-50">
+                    <div className="flex items-center gap-4 text-xs text-slate-600">
+                        <span className="font-medium text-slate-700">Syntax:</span>
+                        <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">V1 + S1</code> Addition</span>
+                        <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">V1 * F1</code> Multiply by flag</span>
+                        <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">C1 * T1.1</code> Stock × Timing = Flow</span>
+                        <span><code className="bg-slate-200 px-1.5 py-0.5 rounded">R1 + R2</code> Chain calculations</span>
                     </div>
                 </div>
+                )}
 
                 {/* Generated Time Series Preview - only in view mode */}
                 {!inputsEditMode && calculations && calculations.length > 0 && (
@@ -681,11 +679,11 @@ export default function CalculationsPage() {
                                 const allCalcs = calculations || []
                                 if (allCalcs.length === 0) {
                                     return (
-                                        <div className="text-center py-12 text-slate-500">
-                                            <div className="text-4xl mb-3">∑</div>
-                                            <p className="text-sm">No calculations yet</p>
-                                            <p className="text-xs mt-1">Switch to a sheet tab to create calculations</p>
-                                        </div>
+                                        <EmptyState
+                                            icon="∑"
+                                            title="No calculations yet"
+                                            subtitle="Switch to a sheet tab to create calculations"
+                                        />
                                     )
                                 }
 
@@ -783,11 +781,11 @@ export default function CalculationsPage() {
 
                             if (tabCalcs.length === 0 && tabGroups.length === 0) {
                                 return (
-                                    <div className="text-center py-12 text-slate-500">
-                                        <div className="text-4xl mb-3">∑</div>
-                                        <p className="text-sm">No calculations in this tab yet</p>
-                                        <p className="text-xs mt-1">Click "Add Calculation" to create your first formula</p>
-                                    </div>
+                                    <EmptyState
+                                        icon="∑"
+                                        title="No calculations in this tab yet"
+                                        subtitle='Click "Add Calculation" to create your first formula'
+                                    />
                                 )
                             }
                             return (

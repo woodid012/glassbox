@@ -6,6 +6,8 @@ import { DeferredInput } from '@/components/DeferredInput'
 import { MODULE_TEMPLATES } from '@/utils/modules'
 import { formatValue } from '@/utils/valueAggregation'
 import { useMemo, useState } from 'react'
+import PageHeader from '../components/PageHeader'
+import EmptyState from '../components/EmptyState'
 
 /**
  * Format a module input value for display.
@@ -235,14 +237,7 @@ export default function ModulesPage() {
         <main className="max-w-[1800px] mx-auto px-6 py-6">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {/* Modules Header */}
-                <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h2 className="text-lg font-semibold text-slate-900">Modules</h2>
-                            <p className="text-sm text-slate-500">Pre-built calculation blocks and custom modules</p>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader title="Modules" subtitle="Pre-built calculation blocks and custom modules" />
 
                 <div className="p-6">
                     {/* Pre-built Templates Section - only in edit mode */}
@@ -291,11 +286,12 @@ export default function ModulesPage() {
                         </h3>
 
                         {(!modules || modules.length === 0) ? (
-                            <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg">
-                                <div className="text-4xl mb-3">📦</div>
-                                <p className="text-sm text-slate-500">No modules added yet</p>
-                                <p className="text-xs text-slate-400 mt-1">Click a template above to add a module</p>
-                            </div>
+                            <EmptyState
+                                icon="📦"
+                                title="No modules added yet"
+                                subtitle="Click a template above to add a module"
+                                className="border-2 border-dashed border-slate-200 rounded-lg"
+                            />
                         ) : (
                             <div className="space-y-4">
                                 {modules.map((module, moduleIndex) => {
