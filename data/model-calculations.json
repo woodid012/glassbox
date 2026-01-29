@@ -301,11 +301,18 @@
       "type": "stock"
     },
     {
+      "id": 206,
+      "groupId": 4,
+      "name": "Maintenance Capex (Add-back)",
+      "formula": "S1.19 * I2",
+      "description": "Maintenance capex separated from OPEX for below-EBITDA treatment"
+    },
+    {
       "id": 13,
       "tabId": 1,
       "groupId": 4,
       "name": "EBITDA",
-      "formula": "R10",
+      "formula": "R10 + R206",
       "description": "Earnings before interest, taxes, depreciation, amortization"
     },
     {
@@ -1035,6 +1042,27 @@
       "description": "Combined contracted + merchant CFADS for ADSCR calculation"
     },
     {
+      "id": 208,
+      "groupId": 24,
+      "name": "Contracted CFADS Post Capex",
+      "formula": "R115 - R206 * R4 / R8 * F2",
+      "description": "Contracted CFADS less proportional maintenance capex"
+    },
+    {
+      "id": 209,
+      "groupId": 24,
+      "name": "Merchant CFADS Post Capex",
+      "formula": "R116 - R206 * R7 / R8 * F2",
+      "description": "Merchant CFADS less proportional maintenance capex"
+    },
+    {
+      "id": 207,
+      "groupId": 24,
+      "name": "Total CFADS Post Capex",
+      "formula": "R208 + R209",
+      "description": "Total CFADS after maintenance capex deduction"
+    },
+    {
       "id": 70,
       "tabId": 3,
       "groupId": 15,
@@ -1392,9 +1420,9 @@
       "description": "Binary search to find optimal debt with DSCR-sculpted repayments",
       "category": "financing",
       "inputs": {
-        "contractedCfadsRef": "R115",
+        "contractedCfadsRef": "R208",
         "contractedDSCR": "C1.25",
-        "merchantCfadsRef": "R116",
+        "merchantCfadsRef": "R209",
         "merchantDSCR": "C1.26",
         "debtFlagRef": "F8",
         "totalFundingRef": "R60",
