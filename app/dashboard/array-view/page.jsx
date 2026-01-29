@@ -131,7 +131,8 @@ export default function ArrayViewPage() {
             inputGlass.some(input => input.groupId === group.id)
         )
 
-        activeGroups.forEach(group => {
+        // Filter out lookup groups — they're exported separately below
+        activeGroups.filter(g => g.entryMode !== 'lookup' && g.entryMode !== 'lookup2').forEach(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
             let normalizedMode
             if (group.groupType === 'timing') {
@@ -140,14 +141,12 @@ export default function ArrayViewPage() {
                 normalizedMode = 'constant'
             } else {
                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-                else normalizedMode = groupMode
+                normalizedMode = groupMode
             }
             modeIndices[normalizedMode]++
             const modePrefix = normalizedMode === 'timing' ? 'T' :
                               normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' :
-                              normalizedMode === 'lookup' ? 'L' : 'V'
+                              normalizedMode === 'constant' ? 'C' : 'V'
             const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
             const groupType = referenceTypeMap?.[groupRef] || 'flow'
 
@@ -540,7 +539,10 @@ function InputsSubTab({
                     {(() => {
                         const modeIndices = { values: 0, series: 0, constant: 0, timing: 0 }
 
-                        return activeInputGroups.map((group) => {
+                        // Filter out lookup groups — they render in their own section below
+                        return activeInputGroups
+                            .filter(g => g.entryMode !== 'lookup' && g.entryMode !== 'lookup2')
+                            .map((group) => {
                             const groupInputs = inputsByGroupId.get(group.id) || []
 
                             let normalizedMode
@@ -550,15 +552,13 @@ function InputsSubTab({
                                 normalizedMode = 'constant'
                             } else {
                                 const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-                                else normalizedMode = groupMode
+                                normalizedMode = groupMode
                             }
 
                             modeIndices[normalizedMode]++
                             const modePrefix = normalizedMode === 'timing' ? 'T' :
                                               normalizedMode === 'series' ? 'S' :
-                                              normalizedMode === 'constant' ? 'C' :
-                                              normalizedMode === 'lookup' ? 'L' : 'V'
+                                              normalizedMode === 'constant' ? 'C' : 'V'
                             const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
                             const groupType = referenceTypeMap?.[groupRef] || 'flow'
                             const colorScheme = normalizedMode === 'timing' ? 'teal' :
