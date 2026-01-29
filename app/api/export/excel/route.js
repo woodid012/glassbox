@@ -1,15 +1,17 @@
 // Excel Export API Route
-// Generates an Excel-compatible file (CSV or XLSX-XML format)
+// Generates XLSX with 7 sheets: Constants, CAPEX, OPEX, Flags & Time, Modules, Calcs (formulas), Summary
 
 import { NextResponse } from 'next/server'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { generateExportBundle } from '@/utils/exportSchema'
+import { runServerModel } from '@/utils/serverModelEngine'
+import { buildRefMap, convertFormula, canConvertToExcel } from '@/utils/excelFormulaConverter'
 
-// Mark as dynamic to prevent static generation issues
 export const dynamic = 'force-dynamic'
 
-// Simple ZIP file creation for XLSX
+// ─── ZIP & XLSX Utilities ───
+
 function createZipArchive(files) {
     const entries = []
     let centralDir = []
@@ -90,7 +92,6 @@ function crc32(buffer) {
     return (crc ^ 0xFFFFFFFF) >>> 0
 }
 
-// Convert column number to Excel letter
 function colToLetter(col) {
     let letter = ''
     while (col > 0) {
@@ -101,7 +102,6 @@ function colToLetter(col) {
     return letter || 'A'
 }
 
-// Escape XML special characters
 function escapeXml(str) {
     if (str === null || str === undefined) return ''
     return String(str)
@@ -112,79 +112,307 @@ function escapeXml(str) {
         .replace(/'/g, '&apos;')
 }
 
-// Generate XLSX file using Office Open XML format
-function generateXlsxFiles(bundle) {
+// ─── Sheet Builders ───
+
+/**
+ * Build a worksheet XML from an array of rows.
+ * Each row is an array of cells. Each cell can be:
+ *   - { type: 'string', value: 'text' }
+ *   - { type: 'number', value: 123 }
+ *   - { type: 'formula', value: '=A1+B1' }
+ *   - { type: 'static', value: 123 }  — pre-computed number, styled differently
+ *   - simple string/number (auto-detected)
+ *
+ * Style indices:  0 = normal, 1 = bold, 2 = static fill (light amber bg + italic)
+ */
+function buildSheetXml(rows, addString) {
+    const rowsXml = []
+    for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+        const row = rows[rowIdx]
+        if (!row) continue
+        const cellsXml = []
+        for (let colIdx = 0; colIdx < row.length; colIdx++) {
+            let cell = row[colIdx]
+            if (cell === null || cell === undefined || cell === '') continue
+
+            const cellRef = `${colToLetter(colIdx + 1)}${rowIdx + 1}`
+
+            // Normalize cell to { type, value }
+            if (typeof cell !== 'object' || cell === null) {
+                if (typeof cell === 'number') {
+                    cell = { type: 'number', value: cell }
+                } else {
+                    cell = { type: 'string', value: String(cell) }
+                }
+            }
+
+            if (cell.type === 'static') {
+                // Pre-computed static value — amber background + italic font (style 2)
+                cellsXml.push(`<c r="${cellRef}" s="2"><v>${cell.value}</v></c>`)
+            } else if (cell.type === 'number') {
+                cellsXml.push(`<c r="${cellRef}"><v>${cell.value}</v></c>`)
+            } else if (cell.type === 'formula') {
+                cellsXml.push(`<c r="${cellRef}"><f>${escapeXml(cell.value)}</f></c>`)
+            } else {
+                const idx = addString(escapeXml(cell.value))
+                cellsXml.push(`<c r="${cellRef}" t="s"><v>${idx}</v></c>`)
+            }
+        }
+        if (cellsXml.length > 0) {
+            rowsXml.push(`<row r="${rowIdx + 1}">${cellsXml.join('')}</row>`)
+        }
+    }
+
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>${rowsXml.join('')}</sheetData>
+</worksheet>`
+}
+
+// ─── Sheet Data Builders ───
+
+/**
+ * Sheet 1: Constants — Ref | Name | Value (single value per row, replicated across period columns)
+ * Row 1: Header (Ref, Name, period labels...)
+ * Row 2+: One row per constant
+ */
+function buildConstantsSheet(bundle, periodLabels) {
+    const rows = []
+    // Header row
+    const header = ['Ref', 'Name', 'Value', ...periodLabels]
+    rows.push(header)
+
+    const constantsGroup = Object.entries(bundle.inputs || {}).find(([, g]) => g._meta?.entryMode === 'constant')
+    const refRows = [] // Track refs and their row numbers for refMap
+
+    if (constantsGroup) {
+        const [, groupData] = constantsGroup
+        for (const [ref, data] of Object.entries(groupData)) {
+            if (ref === '_meta') continue
+            const row = [ref, data.name, { type: 'number', value: data.value ?? 0 }]
+            // Replicate value across all period columns (col D onward)
+            for (let i = 0; i < periodLabels.length; i++) {
+                // Reference the Value column (C) so changing C propagates
+                row.push({ type: 'formula', value: `$C${rows.length + 1}` })
+            }
+            refRows.push({ ref, row: rows.length + 1 }) // 1-based row
+            rows.push(row)
+        }
+    }
+
+    return { rows, refRows }
+}
+
+/**
+ * Sheet 2: CAPEX — time series with period columns
+ */
+function buildSeriesSheet(bundle, periodLabels, groupFilter) {
+    const rows = []
+    const header = ['Ref', 'Name', 'Unit', ...periodLabels]
+    rows.push(header)
+    const refRows = []
+
+    for (const [, groupData] of Object.entries(bundle.inputs || {})) {
+        const meta = groupData._meta
+        if (!meta) continue
+        if (!groupFilter(meta)) continue
+
+        for (const [ref, data] of Object.entries(groupData)) {
+            if (ref === '_meta') continue
+            const row = [ref, data.name, data.unit || '']
+            const values = data.values || []
+            for (let i = 0; i < periodLabels.length; i++) {
+                row.push({ type: 'number', value: values[i] ?? 0 })
+            }
+            refRows.push({ ref, row: rows.length + 1 })
+            rows.push(row)
+        }
+    }
+
+    return { rows, refRows }
+}
+
+/**
+ * Sheet 4: Flags & Time — flags, indices, time constants as time series
+ */
+function buildFlagsSheet(bundle, periodLabels, referenceMap) {
+    const rows = []
+    const header = ['Ref', 'Name', 'Type', ...periodLabels]
+    rows.push(header)
+    const refRows = []
+
+    // Key period flags
+    for (const [ref, data] of Object.entries(bundle.keyPeriods || {})) {
+        // Main flag
+        const flagRow = [ref, data.name, 'Flag']
+        for (let i = 0; i < periodLabels.length; i++) {
+            flagRow.push({ type: 'number', value: data.flag[i] ?? 0 })
+        }
+        refRows.push({ ref, row: rows.length + 1 })
+        rows.push(flagRow)
+
+        // Start flag
+        const startRef = `${ref}.Start`
+        const startRow = [startRef, `${data.name} Start`, 'Flag']
+        for (let i = 0; i < periodLabels.length; i++) {
+            startRow.push({ type: 'number', value: data.flagStart[i] ?? 0 })
+        }
+        refRows.push({ ref: startRef, row: rows.length + 1 })
+        rows.push(startRow)
+
+        // End flag
+        const endRef = `${ref}.End`
+        const endRow = [endRef, `${data.name} End`, 'Flag']
+        for (let i = 0; i < periodLabels.length; i++) {
+            endRow.push({ type: 'number', value: data.flagEnd[i] ?? 0 })
+        }
+        refRows.push({ ref: endRef, row: rows.length + 1 })
+        rows.push(endRow)
+    }
+
+    // Indices
+    for (const [ref, data] of Object.entries(bundle.indices || {})) {
+        const row = [ref, data.name, 'Index']
+        for (let i = 0; i < periodLabels.length; i++) {
+            row.push({ type: 'number', value: data.values[i] ?? 1 })
+        }
+        refRows.push({ ref, row: rows.length + 1 })
+        rows.push(row)
+    }
+
+    // Time constants from referenceMap
+    const timeRefs = ['T.MiY', 'T.DiY', 'T.DiM', 'T.HiY', 'T.HiD', 'T.HiM', 'T.QiY', 'T.MiQ', 'T.DiQ', 'T.QE', 'T.CYE', 'T.FYE']
+    const timeNames = {
+        'T.MiY': 'Months in Year', 'T.DiY': 'Days in Year', 'T.DiM': 'Days in Month',
+        'T.HiY': 'Hours in Year', 'T.HiD': 'Hours in Day', 'T.HiM': 'Hours in Month',
+        'T.QiY': 'Quarters in Year', 'T.MiQ': 'Months in Quarter', 'T.DiQ': 'Days in Quarter',
+        'T.QE': 'Quarter End', 'T.CYE': 'Calendar Year End', 'T.FYE': 'Financial Year End'
+    }
+    for (const ref of timeRefs) {
+        const arr = referenceMap[ref]
+        if (!arr) continue
+        const row = [ref, timeNames[ref] || ref, 'Time']
+        for (let i = 0; i < periodLabels.length; i++) {
+            row.push({ type: 'number', value: arr[i] ?? 0 })
+        }
+        refRows.push({ ref, row: rows.length + 1 })
+        rows.push(row)
+    }
+
+    // Lookup refs from referenceMap (position-based L1.1, L1.2, L2.2, L3.1, etc.)
+    // These match the refs used in formulas, unlike bundle.inputs which uses ID-based refs
+    const lookupRefNames = Object.keys(referenceMap).filter(k => k.startsWith('L')).sort()
+    for (const ref of lookupRefNames) {
+        const arr = referenceMap[ref]
+        if (!arr) continue
+        const row = [ref, ref, 'Lookup']
+        for (let i = 0; i < periodLabels.length; i++) {
+            row.push({ type: 'number', value: arr[i] ?? 0 })
+        }
+        refRows.push({ ref, row: rows.length + 1 })
+        rows.push(row)
+    }
+
+    return { rows, refRows }
+}
+
+/**
+ * Sheet 5: Calcs — interleaved calculations and module outputs in dependency order.
+ * Regular calcs get Excel formulas; module outputs with GlassBox-style formulas also
+ * get Excel formulas; iterative/complex modules get static values (amber-styled).
+ */
+function buildCalcsSheet(periodLabels, refMap, calcResults, moduleOutputs, sortedNodeMeta) {
+    const rows = []
+    const header = ['Ref', 'Name', 'Formula', ...periodLabels]
+    rows.push(header)
+    const refRows = []
+
+    // All results in one map for static fallback lookup
+    const allResults = { ...calcResults, ...moduleOutputs }
+
+    for (const node of sortedNodeMeta) {
+        const ref = node.ref
+        const rowNum = rows.length + 1 // 1-based
+        refRows.push({ ref, row: rowNum })
+
+        const glassFormula = node.formula ?? null
+        const canConvert = glassFormula && canConvertToExcel(glassFormula)
+
+        const row = [ref, node.name, glassFormula || '(pre-computed)']
+
+        if (canConvert && glassFormula !== '0') {
+            // Try to convert each period to an Excel formula
+            for (let i = 0; i < periodLabels.length; i++) {
+                const { formula: excelFormula } = convertFormula(glassFormula, refMap, i, 'Calcs')
+                if (excelFormula) {
+                    row.push({ type: 'formula', value: excelFormula.substring(1) }) // Remove leading '='
+                } else {
+                    // Fallback to static value (styled differently)
+                    const staticValues = allResults[ref] || []
+                    row.push({ type: 'static', value: staticValues[i] ?? 0 })
+                }
+            }
+        } else if (glassFormula === '0') {
+            // Zero-formula rows — plain numbers, nothing to convert
+            for (let i = 0; i < periodLabels.length; i++) {
+                row.push({ type: 'number', value: 0 })
+            }
+        } else {
+            // Static values: null formula (pre-computed module) or unconvertible
+            const staticValues = allResults[ref] || []
+            for (let i = 0; i < periodLabels.length; i++) {
+                row.push({ type: 'static', value: staticValues[i] ?? 0 })
+            }
+        }
+
+        rows.push(row)
+    }
+
+    return { rows, refRows }
+}
+
+/**
+ * Sheet 7: Summary
+ */
+function buildSummarySheet(bundle) {
+    return [
+        ['Glass Box Financial Model Export'],
+        [`Exported: ${bundle.exported_at}`],
+        [''],
+        ['Timeline'],
+        ['Start Year', { type: 'number', value: bundle.timeline.startYear }],
+        ['Start Month', { type: 'number', value: bundle.timeline.startMonth }],
+        ['End Year', { type: 'number', value: bundle.timeline.endYear }],
+        ['End Month', { type: 'number', value: bundle.timeline.endMonth }],
+        ['Total Periods', { type: 'number', value: bundle.timeline.periods }],
+        [''],
+        ['Sheet Guide'],
+        ['Sheet', 'Contents'],
+        ['Constants', 'Single-value inputs (C1.X) replicated across periods'],
+        ['CAPEX', 'Capital expenditure time series (V1.X)'],
+        ['OPEX', 'Operating expenditure time series (S1.X)'],
+        ['Flags & Time', 'Period flags (F), indices (I), time constants (T), lookups (L)'],
+        ['Calcs', 'Calculations (R) + module outputs (M) interleaved in dependency order'],
+        [''],
+        ['Formula Notes'],
+        ['- Calcs sheet contains both R-calcs and M-module outputs in topological order'],
+        ['- Module outputs with GlassBox formulas are converted to Excel formulas'],
+        ['- Iterative debt sizing (M1) uses pre-computed static values (amber cells)'],
+        ['- Change a constant on the Constants sheet and Calcs will recalculate'],
+        ['- Amber/italic cells = pre-computed static values (formula too complex for Excel)']
+    ]
+}
+
+// ─── Main Generator ───
+
+function generateXlsxFiles(bundle, modelResults) {
     const files = {}
+    const periodLabels = bundle.timeline.periodLabels || []
+    const { calculationResults, moduleOutputs, referenceMap, sortedNodeMeta } = modelResults
 
-    // [Content_Types].xml
-    files['[Content_Types].xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/worksheets/sheet4.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
-  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-</Types>`
-
-    // _rels/.rels
-    files['_rels/.rels'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>`
-
-    // xl/_rels/workbook.xml.rels
-    files['xl/_rels/workbook.xml.rels'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
-  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/>
-  <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet4.xml"/>
-  <Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
-  <Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>`
-
-    // xl/workbook.xml
-    files['xl/workbook.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets>
-    <sheet name="Summary" sheetId="1" r:id="rId1"/>
-    <sheet name="Inputs" sheetId="2" r:id="rId2"/>
-    <sheet name="Calculations" sheetId="3" r:id="rId3"/>
-    <sheet name="Modules" sheetId="4" r:id="rId4"/>
-  </sheets>
-</workbook>`
-
-    // xl/styles.xml
-    files['xl/styles.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="2">
-    <font><sz val="11"/><name val="Calibri"/></font>
-    <font><b/><sz val="11"/><name val="Calibri"/></font>
-  </fonts>
-  <fills count="2">
-    <fill><patternFill patternType="none"/></fill>
-    <fill><patternFill patternType="gray125"/></fill>
-  </fills>
-  <borders count="1">
-    <border/>
-  </borders>
-  <cellStyleXfs count="1">
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
-  </cellStyleXfs>
-  <cellXfs count="2">
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
-  </cellXfs>
-</styleSheet>`
-
-    // Collect all strings for shared strings
+    // Shared string table
     const strings = []
     const stringIndex = {}
-
     function addString(s) {
         const str = String(s)
         if (!(str in stringIndex)) {
@@ -194,216 +422,131 @@ function generateXlsxFiles(bundle) {
         return stringIndex[str]
     }
 
-    // Sheet 1: Summary
-    const summaryRows = [
-        ['Glass Box Financial Model Export'],
-        [`Exported: ${bundle.exported_at}`],
-        [''],
-        ['Timeline'],
-        ['Start Year', bundle.timeline.startYear],
-        ['Start Month', bundle.timeline.startMonth],
-        ['End Year', bundle.timeline.endYear],
-        ['End Month', bundle.timeline.endMonth],
-        ['Total Periods', bundle.timeline.periods],
-        [''],
-        ['Model Reference Guide'],
-        ['Reference', 'Description'],
-        ['R{id}', 'Calculation reference'],
-        ['V1.{id}', 'CAPEX input'],
-        ['S1.{id}', 'OPEX input'],
-        ['C1.{idx}', 'Constant'],
-        ['F{id}', 'Period flag'],
-        ['I{id}', 'Index'],
-        ['M{n}.{m}', 'Module output']
-    ]
+    // ─── Build sheet data ───
 
-    let sheet1Data = ''
-    summaryRows.forEach((row, rowIdx) => {
-        row.forEach((cell, colIdx) => {
-            if (cell !== '' && cell !== null && cell !== undefined) {
-                const cellRef = `${colToLetter(colIdx + 1)}${rowIdx + 1}`
-                if (typeof cell === 'number') {
-                    sheet1Data += `<c r="${cellRef}"><v>${cell}</v></c>`
-                } else {
-                    const idx = addString(cell)
-                    sheet1Data += `<c r="${cellRef}" t="s"><v>${idx}</v></c>`
-                }
-            }
-        })
-    })
+    // Sheet 1: Constants
+    const constants = buildConstantsSheet(bundle, periodLabels)
 
-    files['xl/worksheets/sheet1.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <sheetData>${summaryRows.map((row, rowIdx) => {
-        const cells = row.map((cell, colIdx) => {
-            if (cell === '' || cell === null || cell === undefined) return ''
-            const cellRef = `${colToLetter(colIdx + 1)}${rowIdx + 1}`
-            if (typeof cell === 'number') {
-                return `<c r="${cellRef}"><v>${cell}</v></c>`
-            } else {
-                const idx = addString(cell)
-                return `<c r="${cellRef}" t="s"><v>${idx}</v></c>`
-            }
-        }).join('')
-        return cells ? `<row r="${rowIdx + 1}">${cells}</row>` : ''
-    }).join('')}</sheetData>
-</worksheet>`
+    // Sheet 2: CAPEX
+    const capex = buildSeriesSheet(bundle, periodLabels, (meta) =>
+        meta.refPrefix === 'V1' && meta.entryMode !== 'constant'
+    )
 
-    // Sheet 2: Inputs - Dynamically extract all input groups
-    const inputsRows = []
+    // Sheet 3: OPEX (S1 + any other series groups like S3)
+    const opex = buildSeriesSheet(bundle, periodLabels, (meta) =>
+        (meta.refPrefix?.startsWith('S') || meta.refPrefix?.startsWith('G')) && meta.entryMode !== 'constant'
+    )
 
-    // Iterate through all input groups dynamically
-    for (const [groupKey, groupData] of Object.entries(bundle.inputs || {})) {
-        const meta = groupData._meta
-        if (!meta) continue // Skip non-group entries
+    // Sheet 4: Flags & Time
+    const flags = buildFlagsSheet(bundle, periodLabels, referenceMap)
 
-        const entryMode = meta.entryMode
-        const groupName = meta.name
-        const refPrefix = meta.refPrefix
+    // ─── Build refMap for formula conversion ───
+    // First, register all input refs from sheets 1-4,
+    // then pre-register all Calcs rows (interleaved calcs + modules) for self-references
 
-        // Add group header
-        inputsRows.push([`${groupName.toUpperCase()} (${refPrefix}.X)`, '', '', ''])
-
-        if (entryMode === 'constant') {
-            inputsRows.push(['Reference', 'Name', 'Value', 'Unit'])
-            for (const [ref, data] of Object.entries(groupData)) {
-                if (ref === '_meta') continue
-                inputsRows.push([ref, data.name, data.value, data.unit || ''])
-            }
-        } else if (entryMode === 'lookup') {
-            inputsRows.push(['Reference', 'Name', 'Group', 'Unit'])
-            for (const [ref, data] of Object.entries(groupData)) {
-                if (ref === '_meta') continue
-                inputsRows.push([ref, data.name, data.groupName || groupName, data.unit || ''])
-            }
-        } else {
-            // Series (CAPEX, OPEX, etc.)
-            inputsRows.push(['Reference', 'Name', 'Total', 'Unit'])
-            for (const [ref, data] of Object.entries(groupData)) {
-                if (ref === '_meta') continue
-                if (ref === refPrefix) continue // Skip total row for now
-                inputsRows.push([ref, data.name, data.total || 0, data.unit || ''])
-            }
-            // Add total row at end
-            if (groupData[refPrefix]) {
-                const total = groupData[refPrefix]
-                inputsRows.push([`${refPrefix} (Total)`, total.name, total.total || 0, total.unit || ''])
-            }
-        }
-        inputsRows.push(['', '', '', ''])
+    const sheetLayout = {
+        constants: { sheetName: 'Constants', refs: constants.refRows },
+        capex: { sheetName: 'CAPEX', refs: capex.refRows },
+        opex: { sheetName: 'OPEX', refs: opex.refRows },
+        flags: { sheetName: 'Flags & Time', refs: flags.refRows }
     }
 
-    // Key Periods / Flags section
-    if (bundle.keyPeriods && Object.keys(bundle.keyPeriods).length > 0) {
-        inputsRows.push(['KEY PERIODS / FLAGS (F.X)', '', '', '', ''])
-        inputsRows.push(['Reference', 'Name', 'Start (Year-Month)', 'End (Year-Month)', 'Periods'])
-        for (const [ref, data] of Object.entries(bundle.keyPeriods)) {
-            const startStr = `${data.startYear}-${String(data.startMonth).padStart(2, '0')}`
-            const endStr = `${data.endYear}-${String(data.endMonth).padStart(2, '0')}`
-            inputsRows.push([ref, data.name, startStr, endStr, data.periods || ''])
-        }
-        inputsRows.push(['', '', '', '', ''])
+    // Pre-register all Calcs rows (both R-refs and M-refs) based on sortedNodeMeta order
+    const calcsRefRows = sortedNodeMeta.map((node, idx) => ({ ref: node.ref, row: idx + 2 })) // Row 1 is header
+    sheetLayout.calcs = { sheetName: 'Calcs', refs: calcsRefRows }
+
+    const refMap = buildRefMap(sheetLayout)
+
+    // Sheet 5: Calcs (interleaved calcs + modules, with formulas)
+    const calcs = buildCalcsSheet(periodLabels, refMap, calculationResults, moduleOutputs, sortedNodeMeta)
+
+    // Sheet 6: Summary
+    const summaryRows = buildSummarySheet(bundle)
+
+    // ─── Generate worksheet XML files ───
+    const sheetNames = ['Constants', 'CAPEX', 'OPEX', 'Flags & Time', 'Calcs', 'Summary']
+    const sheetData = [constants.rows, capex.rows, opex.rows, flags.rows, calcs.rows, summaryRows]
+
+    for (let i = 0; i < sheetNames.length; i++) {
+        files[`xl/worksheets/sheet${i + 1}.xml`] = buildSheetXml(sheetData[i], addString)
     }
 
-    // Indices section
-    if (bundle.indices && Object.keys(bundle.indices).length > 0) {
-        inputsRows.push(['INDEXATION (I.X)', '', '', '', ''])
-        inputsRows.push(['Reference', 'Name', 'Rate (%)', 'Period', 'Base Year'])
-        for (const [ref, data] of Object.entries(bundle.indices)) {
-            inputsRows.push([ref, data.name, data.rate || 0, data.period || 'annual', data.baseYear || ''])
-        }
-    }
+    // ─── XLSX package files ───
 
-    files['xl/worksheets/sheet2.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <sheetData>${inputsRows.map((row, rowIdx) => {
-        const cells = row.map((cell, colIdx) => {
-            if (cell === '' || cell === null || cell === undefined) return ''
-            const cellRef = `${colToLetter(colIdx + 1)}${rowIdx + 1}`
-            if (typeof cell === 'number') {
-                return `<c r="${cellRef}"><v>${cell}</v></c>`
-            } else {
-                const idx = addString(escapeXml(cell))
-                return `<c r="${cellRef}" t="s"><v>${idx}</v></c>`
-            }
-        }).join('')
-        return cells ? `<row r="${rowIdx + 1}">${cells}</row>` : ''
-    }).join('')}</sheetData>
-</worksheet>`
+    const sheetCount = sheetNames.length
 
-    // Sheet 3: Calculations
-    const calcRows = [['Reference', 'Name', 'Formula', 'Description']]
-    Object.entries(bundle.calculations.items || {}).forEach(([ref, calc]) => {
-        calcRows.push([ref, calc.name, calc.formula || '0', calc.description || ''])
-    })
+    // [Content_Types].xml
+    const sheetOverrides = sheetNames.map((_, i) =>
+        `  <Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+    ).join('\n')
 
-    files['xl/worksheets/sheet3.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <sheetData>${calcRows.map((row, rowIdx) => {
-        const cells = row.map((cell, colIdx) => {
-            if (cell === '' || cell === null || cell === undefined) return ''
-            const cellRef = `${colToLetter(colIdx + 1)}${rowIdx + 1}`
-            if (typeof cell === 'number') {
-                return `<c r="${cellRef}"><v>${cell}</v></c>`
-            } else {
-                const idx = addString(escapeXml(cell))
-                return `<c r="${cellRef}" t="s"><v>${idx}</v></c>`
-            }
-        }).join('')
-        return cells ? `<row r="${rowIdx + 1}">${cells}</row>` : ''
-    }).join('')}</sheetData>
-</worksheet>`
+    files['[Content_Types].xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+${sheetOverrides}
+  <Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`
 
-    // Sheet 4: Modules - Detailed with auditable formulas
-    const moduleRows = [['Module', 'Output Ref', 'Output Name', 'Type', 'Formula (Auditable)']]
+    files['_rels/.rels'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`
 
-    bundle.modules.forEach(mod => {
-        // Add module header row
-        moduleRows.push([`M${mod.index}: ${mod.name}`, '', '', '', mod.description || ''])
+    // Workbook rels
+    const wbRels = sheetNames.map((_, i) =>
+        `  <Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`
+    ).join('\n')
 
-        // Add configured inputs
-        if (mod.inputDefinitions && mod.inputDefinitions.length > 0) {
-            moduleRows.push(['  Inputs:', '', '', '', ''])
-            mod.inputDefinitions.forEach(inp => {
-                const configValue = inp.configuredValue !== undefined ? inp.configuredValue : inp.default
-                moduleRows.push(['', `  ${inp.key}`, inp.label, inp.type, String(configValue || '')])
-            })
-            moduleRows.push(['  Outputs:', '', '', '', ''])
-        }
+    files['xl/_rels/workbook.xml.rels'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${wbRels}
+  <Relationship Id="rId${sheetCount + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
+  <Relationship Id="rId${sheetCount + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`
 
-        // Add each output with its formula
-        mod.outputs.forEach(out => {
-            moduleRows.push([
-                '',
-                out.ref,
-                out.label,
-                out.type,
-                out.formula || ''
-            ])
-        })
+    // Workbook
+    const sheetEntries = sheetNames.map((name, i) =>
+        `    <sheet name="${escapeXml(name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`
+    ).join('\n')
 
-        // Add blank row between modules
-        moduleRows.push(['', '', '', '', ''])
-    })
+    files['xl/workbook.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+${sheetEntries}
+  </sheets>
+</workbook>`
 
-    files['xl/worksheets/sheet4.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <sheetData>${moduleRows.map((row, rowIdx) => {
-        const cells = row.map((cell, colIdx) => {
-            if (cell === '' || cell === null || cell === undefined) return ''
-            const cellRef = `${colToLetter(colIdx + 1)}${rowIdx + 1}`
-            if (typeof cell === 'number') {
-                return `<c r="${cellRef}"><v>${cell}</v></c>`
-            } else {
-                const idx = addString(escapeXml(cell))
-                return `<c r="${cellRef}" t="s"><v>${idx}</v></c>`
-            }
-        }).join('')
-        return cells ? `<row r="${rowIdx + 1}">${cells}</row>` : ''
-    }).join('')}</sheetData>
-</worksheet>`
+    // Styles
+    // Style index 0 = normal, 1 = bold, 2 = static (amber bg + italic + gray text)
+    files['xl/styles.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="3">
+    <font><sz val="11"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><name val="Calibri"/></font>
+    <font><i/><sz val="11"/><name val="Calibri"/><color rgb="FF888888"/></font>
+  </fonts>
+  <fills count="3">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFF3E0"/></patternFill></fill>
+  </fills>
+  <borders count="1">
+    <border/>
+  </borders>
+  <cellStyleXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
+  <cellXfs count="3">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+  </cellXfs>
+</styleSheet>`
 
-    // xl/sharedStrings.xml
+    // Shared strings
     files['xl/sharedStrings.xml'] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${strings.length}" uniqueCount="${strings.length}">
 ${strings.map(s => `<si><t>${escapeXml(s)}</t></si>`).join('\n')}
@@ -412,9 +555,10 @@ ${strings.map(s => `<si><t>${escapeXml(s)}</t></si>`).join('\n')}
     return files
 }
 
+// ─── API Route ───
+
 export async function GET() {
     try {
-        // Read model data
         const dataDir = path.join(process.cwd(), 'data')
         const [inputsData, calculationsData] = await Promise.all([
             fs.readFile(path.join(dataDir, 'model-inputs.json'), 'utf-8'),
@@ -424,16 +568,18 @@ export async function GET() {
         const inputs = JSON.parse(inputsData)
         const calculations = JSON.parse(calculationsData)
 
-        // Generate export bundle
+        // Run server-side model to get all computed results
+        const modelResults = runServerModel(inputs, calculations)
+
+        // Generate export bundle (for metadata, structured groups, module info)
         const bundle = generateExportBundle(inputs, calculations)
 
-        // Generate XLSX files
-        const xlsxFiles = generateXlsxFiles(bundle)
+        // Generate XLSX files with formula-based Calcs sheet
+        const xlsxFiles = generateXlsxFiles(bundle, modelResults)
 
         // Create ZIP archive
         const zipBuffer = createZipArchive(xlsxFiles)
 
-        // Return as downloadable XLSX
         return new NextResponse(zipBuffer, {
             status: 200,
             headers: {
@@ -445,7 +591,7 @@ export async function GET() {
     } catch (error) {
         console.error('Excel export error:', error)
         return NextResponse.json(
-            { error: 'Failed to generate Excel export', details: error.message },
+            { error: 'Failed to generate Excel export', details: error.message, stack: error.stack },
             { status: 500 }
         )
     }
