@@ -397,3 +397,138 @@ describe('Edge Cases and Numeric Stability', () => {
     expect(result[1]).toBeCloseTo(0.4167, 3)
   })
 })
+
+describe('IF function', () => {
+  it('evaluates basic IF with true condition', () => {
+    expect(evaluateSafeExpression('IF(1, 10, 20)')).toBe(10)
+  })
+
+  it('evaluates basic IF with false condition', () => {
+    expect(evaluateSafeExpression('IF(0, 10, 20)')).toBe(20)
+  })
+
+  it('evaluates IF with comparison condition', () => {
+    expect(evaluateSafeExpression('IF(5 > 3, 100, 200)')).toBe(100)
+    expect(evaluateSafeExpression('IF(5 < 3, 100, 200)')).toBe(200)
+  })
+
+  it('evaluates nested IF', () => {
+    expect(evaluateSafeExpression('IF(1, IF(0, 10, 20), 30)')).toBe(20)
+    expect(evaluateSafeExpression('IF(0, 10, IF(1, 20, 30))')).toBe(20)
+  })
+
+  it('evaluates IF with references across periods', () => {
+    const refs = {
+      R5: [10, -5, 0],
+      R6: [100, 100, 100],
+    }
+    const result = evalExprForAllPeriods('IF(R5 > 0, R6, 0)', refs, 3)
+    expect(result).toEqual([100, 0, 0])
+  })
+
+  it('evaluates nested IF with references', () => {
+    const refs = {
+      R5: [150, 50, -10],
+    }
+    const result = evalExprForAllPeriods('IF(R5 > 0, IF(R5 > 100, 100, R5), 0)', refs, 3)
+    expect(result).toEqual([100, 50, 0])
+  })
+
+  it('evaluates IF with MIN/MAX in arguments', () => {
+    const refs = { R1: [10, 20, 30] }
+    const result = evalExprForAllPeriods('IF(R1 > 15, MAX(R1, 25), MIN(R1, 5))', refs, 3)
+    expect(result).toEqual([5, 25, 30])
+  })
+
+  it('evaluates IF with flag references', () => {
+    const refs = {
+      F2: [0, 0, 1, 1],
+      R10: [50, 50, 50, 50],
+    }
+    const result = evalExprForAllPeriods('IF(F2, R10, 0)', refs, 4)
+    expect(result).toEqual([0, 0, 50, 50])
+  })
+})
+
+describe('AND function', () => {
+  it('returns 1 when both conditions true', () => {
+    expect(evaluateSafeExpression('AND(1, 1)')).toBe(1)
+  })
+
+  it('returns 0 when either condition false', () => {
+    expect(evaluateSafeExpression('AND(1, 0)')).toBe(0)
+    expect(evaluateSafeExpression('AND(0, 1)')).toBe(0)
+    expect(evaluateSafeExpression('AND(0, 0)')).toBe(0)
+  })
+
+  it('works with comparisons', () => {
+    const refs = { R1: [10, 5, 20], R2: [1, 0, 1] }
+    const result = evalExprForAllPeriods('AND(R1 > 8, R2)', refs, 3)
+    expect(result).toEqual([1, 0, 1])
+  })
+
+  it('works with IF', () => {
+    const refs = { F2: [0, 1, 1], R5: [-1, -1, 5] }
+    const result = evalExprForAllPeriods('IF(AND(F2, R5 > 0), R5, 0)', refs, 3)
+    expect(result).toEqual([0, 0, 5])
+  })
+})
+
+describe('OR function', () => {
+  it('returns 1 when either condition true', () => {
+    expect(evaluateSafeExpression('OR(1, 0)')).toBe(1)
+    expect(evaluateSafeExpression('OR(0, 1)')).toBe(1)
+    expect(evaluateSafeExpression('OR(1, 1)')).toBe(1)
+  })
+
+  it('returns 0 when both conditions false', () => {
+    expect(evaluateSafeExpression('OR(0, 0)')).toBe(0)
+  })
+
+  it('works with flag references', () => {
+    const refs = { F6: [1, 0, 0], F7: [0, 0, 1] }
+    const result = evalExprForAllPeriods('OR(F6, F7)', refs, 3)
+    expect(result).toEqual([1, 0, 1])
+  })
+})
+
+describe('NOT function', () => {
+  it('inverts truthy to 0', () => {
+    expect(evaluateSafeExpression('NOT(1)')).toBe(0)
+    expect(evaluateSafeExpression('NOT(5)')).toBe(0)
+  })
+
+  it('inverts falsy to 1', () => {
+    expect(evaluateSafeExpression('NOT(0)')).toBe(1)
+  })
+
+  it('works with flag references', () => {
+    const refs = { F2: [0, 1, 1, 0] }
+    const result = evalExprForAllPeriods('NOT(F2)', refs, 4)
+    expect(result).toEqual([1, 0, 0, 1])
+  })
+})
+
+describe('ROUND function', () => {
+  it('rounds to specified decimal places', () => {
+    expect(evaluateSafeExpression('ROUND(3.456, 2)')).toBeCloseTo(3.46)
+    expect(evaluateSafeExpression('ROUND(3.456, 1)')).toBeCloseTo(3.5)
+    expect(evaluateSafeExpression('ROUND(3.456, 0)')).toBe(3)
+  })
+
+  it('rounds negative numbers', () => {
+    expect(evaluateSafeExpression('ROUND(-2.55, 1)')).toBeCloseTo(-2.5)
+  })
+
+  it('works with references', () => {
+    const refs = { R1: [1.234, 5.678, 9.012] }
+    const result = evalExprForAllPeriods('ROUND(R1, 2)', refs, 3)
+    expect(result[0]).toBeCloseTo(1.23)
+    expect(result[1]).toBeCloseTo(5.68)
+    expect(result[2]).toBeCloseTo(9.01)
+  })
+
+  it('works with expressions as first argument', () => {
+    expect(evaluateSafeExpression('ROUND(10 / 3, 2)')).toBeCloseTo(3.33)
+  })
+})

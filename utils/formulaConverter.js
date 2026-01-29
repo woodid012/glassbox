@@ -22,7 +22,12 @@ export function toPython(formula, options = {}) {
     py = py.replace(/SHIFT\s*\(/gi, 'shift(')
     py = py.replace(/COUNT\s*\(/gi, 'count(')
 
-    // Convert MIN/MAX/ABS to numpy
+    // Convert Excel-style functions to numpy/Python
+    py = py.replace(/\bIF\s*\(/gi, 'np.where(')
+    py = py.replace(/\bAND\s*\(/gi, 'np.logical_and(')
+    py = py.replace(/\bOR\s*\(/gi, 'np.logical_or(')
+    py = py.replace(/\bNOT\s*\(/gi, 'np.logical_not(')
+    py = py.replace(/\bROUND\s*\(/gi, 'np.round(')
     py = py.replace(/\bMIN\s*\(/gi, 'np.minimum(')
     py = py.replace(/\bMAX\s*\(/gi, 'np.maximum(')
     py = py.replace(/\bABS\s*\(/gi, 'np.abs(')

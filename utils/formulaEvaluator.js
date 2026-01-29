@@ -43,6 +43,24 @@ class LRUCache {
 // Using LRU cache to avoid clearing all cached functions when limit is reached
 const expressionCache = new LRUCache(1000)
 
+// Helpers for Excel-style functions — injected into eval scope via new Function()
+function _IF(condition, trueVal, falseVal) {
+    return condition ? trueVal : falseVal
+}
+function _AND(a, b) {
+    return (a && b) ? 1 : 0
+}
+function _OR(a, b) {
+    return (a || b) ? 1 : 0
+}
+function _NOT(a) {
+    return a ? 0 : 1
+}
+function _ROUND(x, n) {
+    const factor = Math.pow(10, n || 0)
+    return Math.round(x * factor) / factor
+}
+
 // Cache for compiled regex patterns - avoids repeated regex compilation
 // Regex cache doesn't need LRU since patterns are reused frequently
 const regexCache = new Map()
@@ -71,7 +89,7 @@ function evaluateCachedExpression(safeExpr) {
     if (!evalFn) {
         // LRU cache automatically evicts oldest entries when full
         try {
-            evalFn = new Function(`return (${safeExpr})`)
+            evalFn = new Function('_IF', '_AND', '_OR', '_NOT', '_ROUND', `return Number(${safeExpr})`)
             expressionCache.set(safeExpr, evalFn)
         } catch {
             return 0
@@ -79,7 +97,7 @@ function evaluateCachedExpression(safeExpr) {
     }
 
     try {
-        const result = evalFn()
+        const result = evalFn(_IF, _AND, _OR, _NOT, _ROUND)
         return typeof result === 'number' && isFinite(result) ? result : 0
     } catch {
         return 0
@@ -136,15 +154,20 @@ export function evalExprForAllPeriods(expr, allRefs, periods, options = {}) {
         // Without this, sanitization would strip "R" from "R84" leaving literal "84"
         periodExpr = periodExpr.replace(/\bR\d+\b/g, '0')
 
-        // Convert MIN/MAX/ABS to Math functions
+        // Convert Excel-style functions to eval-safe functions
         periodExpr = periodExpr
+            .replace(/\bIF\s*\(/gi, '_IF(')
+            .replace(/\bAND\s*\(/gi, '_AND(')
+            .replace(/\bOR\s*\(/gi, '_OR(')
+            .replace(/\bNOT\s*\(/gi, '_NOT(')
+            .replace(/\bROUND\s*\(/gi, '_ROUND(')
             .replace(/\bMIN\s*\(/gi, 'Math.min(')
             .replace(/\bMAX\s*\(/gi, 'Math.max(')
             .replace(/\bABS\s*\(/gi, 'Math.abs(')
 
         // Sanitize and convert power operator
         // Allow comparison operators (>, <, =, !), logical operators (&, |), and modulo (%)
-        let safeExpr = periodExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,<>=!&|%]/gi, '')
+        let safeExpr = periodExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbsfdoru_,<>=!&|%]/gi, '')
         safeExpr = safeExpr.replace(/\^/g, '**')
 
         // Evaluate using cached function
@@ -275,6 +298,45 @@ export function shift(innerArray, n, periods) {
 }
 
 /**
+ * PREVSUM - Cumulative sum of all PRIOR periods (excludes current period)
+ * PREVSUM([10, 20, 30]) returns [0, 10, 30]
+ * At period i, returns sum(X[0..i-1]). Equivalent to CUMSUM(X) - X but
+ * explicitly marks a cross-period-only dependency for cycle detection.
+ * Excel equivalent: =SUM($B$2:B{n-1}) — sum of all prior columns
+ * @param {number[]} innerArray - Array of values to sum
+ * @param {number} periods - Number of periods
+ * @returns {number[]} Previous cumulative sum array
+ */
+export function prevsum(innerArray, periods) {
+    const result = new Array(periods).fill(0)
+    let sum = 0
+
+    for (let i = 0; i < periods; i++) {
+        result[i] = sum       // Use accumulated sum BEFORE adding current period
+        sum += innerArray[i]  // Then add current period for next iteration
+    }
+
+    return result
+}
+
+/**
+ * PREVVAL - Value from one period ago (lag by 1)
+ * PREVVAL([10, 20, 30]) returns [0, 10, 20]
+ * At period i, returns X[i-1] (0 at period 0).
+ * Excel equivalent: reference to prior column in same row
+ * @param {number[]} innerArray - Array of values to lag
+ * @param {number} periods - Number of periods
+ * @returns {number[]} Lagged array
+ */
+export function prevval(innerArray, periods) {
+    const result = new Array(periods).fill(0)
+    for (let i = 1; i < periods; i++) {
+        result[i] = innerArray[i - 1] ?? 0
+    }
+    return result
+}
+
+/**
  * COUNT - Cumulative count of non-zero values
  * COUNT([0, 5, 0, 10, 3]) returns [0, 1, 1, 2, 3]
  * @param {number[]} innerArray - Array of values to count
@@ -360,6 +422,32 @@ export function processArrayFunctions(formula, allRefs, timeline) {
         cumsumRegex.lastIndex = 0
     }
 
+    // PREVSUM(expr) - Cumulative sum of all prior periods (excludes current)
+    const prevsumRegex = /PREVSUM\s*\(([^)]+)\)/gi
+    while ((match = prevsumRegex.exec(processedFormula)) !== null) {
+        const innerExpr = match[1]
+        const innerArray = evalExprForAllPeriods(innerExpr, allRefs, timeline.periods)
+        const resultArray = prevsum(innerArray, timeline.periods)
+
+        const placeholder = `__ARRAYFN${arrayFnCounter++}__`
+        arrayFnResults[placeholder] = resultArray
+        processedFormula = processedFormula.replace(match[0], placeholder)
+        prevsumRegex.lastIndex = 0
+    }
+
+    // PREVVAL(expr) - Value from one period ago (lag by 1)
+    const prevvalRegex = /PREVVAL\s*\(([^)]+)\)/gi
+    while ((match = prevvalRegex.exec(processedFormula)) !== null) {
+        const innerExpr = match[1]
+        const innerArray = evalExprForAllPeriods(innerExpr, allRefs, timeline.periods)
+        const resultArray = prevval(innerArray, timeline.periods)
+
+        const placeholder = `__ARRAYFN${arrayFnCounter++}__`
+        arrayFnResults[placeholder] = resultArray
+        processedFormula = processedFormula.replace(match[0], placeholder)
+        prevvalRegex.lastIndex = 0
+    }
+
     // SHIFT(expr, n) - Shift array forward by n periods
     const shiftRegex = /SHIFT\s*\(\s*([^,]+)\s*,\s*(\d+)\s*\)/gi
     while ((match = shiftRegex.exec(processedFormula)) !== null) {
@@ -399,10 +487,11 @@ export function processArrayFunctions(formula, allRefs, timeline) {
 export function extractShiftTargets(formula) {
     if (!formula) return []
     const targets = new Set()
-    const shiftRegex = /SHIFT\s*\(\s*([^,]+)\s*,\s*\d+\s*\)/gi
+    // Match SHIFT(expr, n), PREVSUM(expr), and PREVVAL(expr)
+    const lagRegex = /(?:SHIFT\s*\(\s*([^,]+)\s*,\s*\d+\s*\)|PREVSUM\s*\(([^)]+)\)|PREVVAL\s*\(([^)]+)\))/gi
     let match
-    while ((match = shiftRegex.exec(formula)) !== null) {
-        const innerExpr = match[1]
+    while ((match = lagRegex.exec(formula)) !== null) {
+        const innerExpr = match[1] || match[2] || match[3]
         const rPattern = /\bR(\d+)(?!\d)/g
         let rMatch
         while ((rMatch = rPattern.exec(innerExpr)) !== null) {
@@ -452,6 +541,8 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
         const parsed = {
             originalFormula: formula,
             shiftCalls: [],     // { placeholder, targetRef, offset, innerExpr }
+            prevsumCalls: [],   // { placeholder, innerExpr, accumulator }
+            prevvalCalls: [],   // { placeholder, innerExpr }
             cumsumCalls: [],    // { placeholder, innerExpr, accumulator }
             cumprodCalls: [],   // { placeholder, innerExpr, accumulator }
             countCalls: [],     // { placeholder, innerExpr, accumulator }
@@ -461,10 +552,37 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
 
         let placeholderIdx = 0
 
-        // Extract SHIFT calls
+        // Extract PREVSUM calls (must be before CUMSUM to avoid partial matches)
         let processedF = parsed.processedFormula
-        const shiftRegex = /SHIFT\s*\(\s*([^,]+)\s*,\s*(\d+)\s*\)/gi
         let match
+        const prevsumRegex = /PREVSUM\s*\(([^)]+)\)/gi
+        while ((match = prevsumRegex.exec(processedF)) !== null) {
+            const placeholder = `__CLPREVSUM${placeholderIdx++}__`
+            parsed.prevsumCalls.push({
+                placeholder,
+                innerExpr: match[1].trim(),
+                accumulator: 0,
+                original: match[0]
+            })
+            processedF = processedF.replace(match[0], placeholder)
+            prevsumRegex.lastIndex = 0
+        }
+
+        // Extract PREVVAL calls (must be before SHIFT)
+        const prevvalRegex = /PREVVAL\s*\(([^)]+)\)/gi
+        while ((match = prevvalRegex.exec(processedF)) !== null) {
+            const placeholder = `__CLPREVVAL${placeholderIdx++}__`
+            parsed.prevvalCalls.push({
+                placeholder,
+                innerExpr: match[1].trim(),
+                original: match[0]
+            })
+            processedF = processedF.replace(match[0], placeholder)
+            prevvalRegex.lastIndex = 0
+        }
+
+        // Extract SHIFT calls
+        const shiftRegex = /SHIFT\s*\(\s*([^,]+)\s*,\s*(\d+)\s*\)/gi
         while ((match = shiftRegex.exec(processedF)) !== null) {
             const placeholder = `__CLSHIFT${placeholderIdx++}__`
             parsed.shiftCalls.push({
@@ -522,7 +640,7 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
         parsed.processedFormula = processedF
 
         // Collect all refs used in the processed formula (excluding placeholders)
-        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*|T\.[A-Za-z]+)\b/g
+        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g
         const refs = [...new Set([...processedF.matchAll(refPattern)].map(m => m[1]))]
             .filter(ref => context[ref])
             .sort((a, b) => b.length - a.length)
@@ -537,7 +655,7 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
     // Helper: evaluate a simple expression at period i, substituting refs from context
     function evalExprAtPeriod(expr, i) {
         // Sort context refs by length (longer first)
-        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*|T\.[A-Za-z]+)\b/g
+        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g
         const exprRefs = [...new Set([...expr.matchAll(refPattern)].map(m => m[1]))]
             .filter(ref => context[ref])
             .sort((a, b) => b.length - a.length)
@@ -566,6 +684,24 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
             }
 
             let expr = parsed.processedFormula
+
+            // Resolve PREVSUM placeholders (accumulator holds sum of ALL prior periods)
+            for (const ps of parsed.prevsumCalls) {
+                // Use accumulator value BEFORE adding current period's value
+                const accValue = ps.accumulator
+                expr = expr.replace(ps.placeholder, accValue < 0 ? `(${accValue})` : accValue.toString())
+                // After substitution, add current period's inner value to accumulator for next period
+                // (deferred to after all formulas evaluated for this period — see below)
+            }
+
+            // Resolve PREVVAL placeholders (value from prior period)
+            for (const pv of parsed.prevvalCalls) {
+                let value = 0
+                if (i > 0) {
+                    value = evalExprAtPeriod(pv.innerExpr, i - 1)
+                }
+                expr = expr.replace(pv.placeholder, value < 0 ? `(${value})` : value.toString())
+            }
 
             // Resolve SHIFT placeholders
             for (const sc of parsed.shiftCalls) {
@@ -614,6 +750,17 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
             results[nodeId][i] = value
             // context[nodeId] already points to results[nodeId], so it's updated automatically
         }
+
+        // AFTER all nodes evaluated for period i, update all PREVSUM accumulators
+        // This ensures inner expressions reference fully-computed period i values
+        for (const nodeId of internalOrder) {
+            const parsed = parsedFormulas.get(nodeId)
+            if (!parsed) continue
+            for (const ps of parsed.prevsumCalls) {
+                const innerVal = evalExprAtPeriod(ps.innerExpr, i)
+                ps.accumulator += innerVal
+            }
+        }
     }
 
     return results
@@ -625,14 +772,19 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
  * @returns {number} Evaluated result
  */
 export function evaluateSafeExpression(expr) {
-    // Convert MIN/MAX to Math.min/Math.max before sanitizing
+    // Convert Excel-style functions to eval-safe functions
     let processedExpr = expr
+        .replace(/\bIF\s*\(/gi, '_IF(')
+        .replace(/\bAND\s*\(/gi, '_AND(')
+        .replace(/\bOR\s*\(/gi, '_OR(')
+        .replace(/\bNOT\s*\(/gi, '_NOT(')
+        .replace(/\bROUND\s*\(/gi, '_ROUND(')
         .replace(/\bMIN\s*\(/gi, 'Math.min(')
         .replace(/\bMAX\s*\(/gi, 'Math.max(')
         .replace(/\bABS\s*\(/gi, 'Math.abs(')
 
-    // Allow Math., comparison operators (>, <, =, !), logical operators (&, |), and modulo (%)
-    let safeExpr = processedExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbs,<>=!&|%]/gi, '')
+    // Allow Math., _IF, comparison operators (>, <, =, !), logical operators (&, |), and modulo (%)
+    let safeExpr = processedExpr.replace(/[^0-9+\-*/().e\s^Math.minaxbsfdoru_,<>=!&|%]/gi, '')
     safeExpr = safeExpr.replace(/\^/g, '**')
 
     // Use cached expression evaluation
