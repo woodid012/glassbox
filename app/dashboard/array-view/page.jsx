@@ -136,14 +136,18 @@ export default function ArrayViewPage() {
             let normalizedMode
             if (group.groupType === 'timing') {
                 normalizedMode = 'timing'
+            } else if (group.groupType === 'constant') {
+                normalizedMode = 'constant'
             } else {
-                const groupMode = groupInputs[0]?.mode || 'values'
-                normalizedMode = groupMode
+                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
+                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+                else normalizedMode = groupMode
             }
             modeIndices[normalizedMode]++
             const modePrefix = normalizedMode === 'timing' ? 'T' :
                               normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' : 'V'
+                              normalizedMode === 'constant' ? 'C' :
+                              normalizedMode === 'lookup' ? 'L' : 'V'
             const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
             const groupType = referenceTypeMap?.[groupRef] || 'flow'
 
@@ -171,8 +175,9 @@ export default function ArrayViewPage() {
                 yearly: groupTotals
             }
 
-            groupInputs.forEach((input, idx) => {
-                const inputRef = `${groupRef}.${idx + 1}`
+            groupInputs.forEach((input) => {
+                const inputNum = group.id === 100 ? input.id - 99 : input.id
+                const inputRef = `${groupRef}.${inputNum}`
                 const inputType = referenceTypeMap?.[inputRef] || groupType
                 const arr = inputGlassArrays[`inputtype3_${input.id}`] || []
                 debugData.inputs[inputRef] = {
@@ -541,14 +546,19 @@ function InputsSubTab({
                             let normalizedMode
                             if (group.groupType === 'timing') {
                                 normalizedMode = 'timing'
+                            } else if (group.groupType === 'constant') {
+                                normalizedMode = 'constant'
                             } else {
-                                normalizedMode = groupInputs[0]?.mode || 'values'
+                                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
+                                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+                                else normalizedMode = groupMode
                             }
 
                             modeIndices[normalizedMode]++
                             const modePrefix = normalizedMode === 'timing' ? 'T' :
                                               normalizedMode === 'series' ? 'S' :
-                                              normalizedMode === 'constant' ? 'C' : 'V'
+                                              normalizedMode === 'constant' ? 'C' :
+                                              normalizedMode === 'lookup' ? 'L' : 'V'
                             const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
                             const groupType = referenceTypeMap?.[groupRef] || 'flow'
                             const colorScheme = normalizedMode === 'timing' ? 'teal' :
@@ -597,19 +607,22 @@ function InputsSubTab({
                                         })}
                                     />
                                     {/* Individual inputs */}
-                                    {groupInputs.map((input, idx) => (
-                                        <DataRow
-                                            key={input.id}
-                                            refLabel={`${groupRef}.${idx + 1}`}
-                                            name={input.name}
-                                            viewHeaders={viewHeaders}
-                                            viewMode={viewMode}
-                                            dataArray={inputMonthlyArrays[idx] || []}
-                                            dataType={groupType}
-                                            colorScheme={colorScheme}
-                                            indent
-                                        />
-                                    ))}
+                                    {groupInputs.map((input, idx) => {
+                                        const inputNum = group.id === 100 ? input.id - 99 : input.id
+                                        return (
+                                            <DataRow
+                                                key={input.id}
+                                                refLabel={`${groupRef}.${inputNum}`}
+                                                name={input.name}
+                                                viewHeaders={viewHeaders}
+                                                viewMode={viewMode}
+                                                dataArray={inputMonthlyArrays[idx] || []}
+                                                dataType={groupType}
+                                                colorScheme={colorScheme}
+                                                indent
+                                            />
+                                        )
+                                    })}
                                 </React.Fragment>
                             )
                         })
