@@ -8,7 +8,7 @@ const RLE_COMPRESSION_THRESHOLD = 0.7
 /**
  * Round a number to specified decimal places
  */
-function round(num, decimals = 2) {
+function round(num, decimals = 6) {
     if (typeof num !== 'number' || isNaN(num)) return 0
     return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals)
 }
@@ -18,7 +18,7 @@ function round(num, decimals = 2) {
  * [840, 840, 840, 210] → [{ v: 840, r: 3 }, 210]
  * Single values stay as-is, repeated values become {v, r}
  */
-function runLengthEncode(arr, decimals = 2) {
+function runLengthEncode(arr, decimals = 6) {
     if (!arr || arr.length === 0) return []
 
     const result = []
@@ -102,7 +102,7 @@ function sparseDecodeFlags(sparse) {
  * Choose best encoding for an array based on its contents
  * Returns { encoding: 'rle'|'sparse'|'raw', data: ... }
  */
-function compactEncode(arr, type = 'flow', decimals = 2) {
+function compactEncode(arr, type = 'flow', decimals = 6) {
     if (!arr || arr.length === 0) return { encoding: 'raw', data: [] }
 
     // For flags, use sparse encoding if mostly zeros
