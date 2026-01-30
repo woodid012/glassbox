@@ -10,14 +10,16 @@ export const TEMPLATE = {
         { key: 'opsFlagRef', label: 'Operations Flag', type: 'reference', refType: 'flag', required: true },
         { key: 'taxRatePct', label: 'Tax Rate (%)', type: 'number', required: true, default: 30 }
     ],
-    outputs: [
-        { key: 'taxable_income_before_losses', label: 'Taxable Income Before Losses', type: 'flow' },
-        { key: 'losses_opening', label: 'Tax Losses - Opening', type: 'stock_start' },
-        { key: 'losses_generated', label: 'Tax Losses - Generated', type: 'flow' },
-        { key: 'losses_utilised', label: 'Tax Losses - Utilised', type: 'flow' },
-        { key: 'losses_closing', label: 'Tax Losses - Closing', type: 'stock' },
-        { key: 'net_taxable_income', label: 'Net Taxable Income', type: 'flow' },
-        { key: 'tax_payable', label: 'Tax Payable', type: 'flow' }
+    outputs: [],
+    fullyConverted: true,
+    convertedOutputs: [
+        { key: 'taxable_income_before_losses', label: 'Taxable Income Before Losses', calcRef: 'R9025' },
+        { key: 'losses_opening', label: 'Tax Losses - Opening', calcRef: 'R9026' },
+        { key: 'losses_generated', label: 'Tax Losses - Generated', calcRef: 'R9027' },
+        { key: 'losses_utilised', label: 'Tax Losses - Utilised', calcRef: 'R9028' },
+        { key: 'losses_closing', label: 'Tax Losses - Closing', calcRef: 'R9029' },
+        { key: 'net_taxable_income', label: 'Net Taxable Income', calcRef: 'R9030' },
+        { key: 'tax_payable', label: 'Tax Payable', calcRef: 'R9031' }
     ],
     outputFormulas: {
         taxable_income_before_losses: '{taxableIncomeRef}',

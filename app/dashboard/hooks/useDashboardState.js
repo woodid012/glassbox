@@ -45,7 +45,8 @@ export function useDashboardState(viewMode) {
         collapsedCalculationsGroups,
         groups,
         collapsedGroups,
-        inputs
+        inputs,
+        _mRefMap
     } = appState
 
     // Helper setter functions - maintain same API as before
@@ -329,7 +330,8 @@ export function useDashboardState(viewMode) {
         calculations,
         modules,
         referenceMap,
-        timeline
+        timeline,
+        mRefMap: _mRefMap
     })
 
     // Build reference type map (flow vs stock vs flowConverter) for each reference

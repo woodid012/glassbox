@@ -24,12 +24,14 @@ export const TEMPLATE = {
             { value: 1.0, label: '100% (1x)' }
         ], required: false, default: 2.0 }
     ],
-    outputs: [
-        { key: 'opening', label: 'Opening Book Value', type: 'stock_start' },
-        { key: 'addition', label: 'Capital Addition', type: 'flow' },
-        { key: 'depreciation', label: 'Depreciation Expense', type: 'flow' },
-        { key: 'accumulated', label: 'Accumulated Depreciation', type: 'stock' },
-        { key: 'closing', label: 'Closing Book Value', type: 'stock' }
+    outputs: [],
+    fullyConverted: true,
+    convertedOutputs: [
+        { key: 'opening_book_value', label: 'Opening Book Value', calcRef: 'R9001' },
+        { key: 'capital_addition', label: 'Capital Addition', calcRef: 'R9002' },
+        { key: 'depreciation', label: 'Depreciation Expense', calcRef: 'R9003' },
+        { key: 'accumulated_depreciation', label: 'Accumulated Depreciation', calcRef: 'R9004' },
+        { key: 'closing_book_value', label: 'Closing Book Value', calcRef: 'R9005' }
     ],
     outputFormulas: {
         opening: 'MAX(0, (CUMSUM({additionsRef}) - {additionsRef}) - CUMSUM({additionsRef}) / {lifeYears} / T.MiY × (CUMSUM({opsFlagRef}) - {opsFlagRef}))',

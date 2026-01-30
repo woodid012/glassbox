@@ -170,6 +170,62 @@
       "id": 23,
       "tabId": "all",
       "name": "Calculations"
+    },
+    {
+      "id": 50,
+      "tabId": 1,
+      "name": "Depreciation & Amortization",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "depreciation_amortization"
+    },
+    {
+      "id": 51,
+      "tabId": 1,
+      "name": "GST Paid/Received",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "gst_receivable"
+    },
+    {
+      "id": 52,
+      "tabId": 2,
+      "name": "Construction Funding",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "construction_funding"
+    },
+    {
+      "id": 53,
+      "tabId": 1,
+      "name": "Tax & Tax Losses",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "tax_losses"
+    },
+    {
+      "id": 54,
+      "tabId": 2,
+      "name": "MRA (Maintenance Reserve)",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "reserve_account"
+    },
+    {
+      "id": 55,
+      "tabId": 2,
+      "name": "Distributions",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "distributions"
+    },
+    {
+      "id": 56,
+      "tabId": 2,
+      "name": "Operations Debt Schedule",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "iterative_debt_sizing"
+    },
+    {
+      "id": 57,
+      "tabId": 2,
+      "name": "DSRF Schedule",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "dsrf"
     }
   ],
   "calculations": [
@@ -320,7 +376,7 @@
       "tabId": 1,
       "groupId": 4,
       "name": "P&L Depreciation",
-      "formula": "-M2.3",
+      "formula": "-R9003",
       "description": "From D&A module"
     },
     {
@@ -352,7 +408,7 @@
       "tabId": 1,
       "groupId": 4,
       "name": "Tax Expense",
-      "formula": "-M5.7",
+      "formula": "-R9031",
       "description": "From Tax module"
     },
     {
@@ -368,7 +424,7 @@
       "tabId": 1,
       "groupId": 4,
       "name": "Prior RE",
-      "formula": "M7.2",
+      "formula": "R9038",
       "description": "RE before current period (from Distributions module)",
       "type": "stock"
     },
@@ -377,7 +433,7 @@
       "tabId": 1,
       "groupId": 4,
       "name": "P&L Dividends Declared",
-      "formula": "-M7.6",
+      "formula": "-R9042",
       "description": "Dividends (from Distributions module)",
       "type": "flow"
     },
@@ -386,7 +442,7 @@
       "tabId": 1,
       "groupId": 4,
       "name": "Share Capital Returned",
-      "formula": "-M7.11",
+      "formula": "-R9047",
       "description": "Share capital repayment (from Distributions module)",
       "type": "flow"
     },
@@ -395,7 +451,7 @@
       "tabId": 1,
       "groupId": 4,
       "name": "RE - Movement",
-      "formula": "M7.7",
+      "formula": "R9043",
       "description": "RE movement (from Distributions module)",
       "type": "flow"
     },
@@ -404,7 +460,7 @@
       "tabId": 1,
       "groupId": 4,
       "name": "RE - Closing",
-      "formula": "M7.8",
+      "formula": "R9044",
       "description": "Retained earnings closing (from Distributions module)",
       "type": "stock"
     },
@@ -453,7 +509,7 @@
       "tabId": 3,
       "groupId": 31,
       "name": "GST Paid on Capex",
-      "formula": "M3.3",
+      "formula": "R9008",
       "description": "From GST module (gst_paid outflow)"
     },
     {
@@ -461,7 +517,7 @@
       "tabId": 3,
       "groupId": 31,
       "name": "GST Received (Operations)",
-      "formula": "M3.9",
+      "formula": "R9014",
       "description": "GST receipts during operations (from module construction/operations split)"
     },
     {
@@ -469,7 +525,7 @@
       "tabId": 3,
       "groupId": 31,
       "name": "MRA Contribution",
-      "formula": "-M6.2",
+      "formula": "-R9033",
       "description": "Cash contributed to MRA (funding outflow at F1.End)"
     },
     {
@@ -477,7 +533,7 @@
       "tabId": 3,
       "groupId": 31,
       "name": "MRA Release",
-      "formula": "M6.4",
+      "formula": "R9035",
       "description": "Cash released from MRA at end of maintenance period"
     },
     {
@@ -485,7 +541,7 @@
       "tabId": 3,
       "groupId": 31,
       "name": "MRA Drawdown (Maintenance)",
-      "formula": "M6.3",
+      "formula": "R9034",
       "description": "Cash inflow from MRA to pay maintenance (offsets OPEX in Operating CF)"
     },
     {
@@ -493,7 +549,7 @@
       "tabId": 3,
       "groupId": 31,
       "name": "GST Received (Construction)",
-      "formula": "M3.8",
+      "formula": "R9013",
       "description": "GST refund received during construction"
     },
     {
@@ -509,7 +565,7 @@
       "tabId": 3,
       "groupId": 32,
       "name": "Construction Debt Drawdown",
-      "formula": "M4.6",
+      "formula": "R9020",
       "description": "From Construction Funding module"
     },
     {
@@ -573,7 +629,7 @@
       "tabId": 3,
       "groupId": 32,
       "name": "DSRF Fees",
-      "formula": "-M8.6",
+      "formula": "-R9082",
       "description": "Total DSRF fees (establishment + commitment + refinancing) from DSRF module"
     },
     {
@@ -597,7 +653,7 @@
       "tabId": 3,
       "groupId": 32,
       "name": "IDC Paid",
-      "formula": "-M4.8",
+      "formula": "-R9022",
       "description": "Cash outflow for interest during construction"
     },
     {
@@ -605,7 +661,7 @@
       "tabId": 3,
       "groupId": 32,
       "name": "Share Capital Repayment",
-      "formula": "-M7.11",
+      "formula": "-R9047",
       "description": "Return of equity capital (from Distributions module)"
     },
     {
@@ -613,7 +669,7 @@
       "tabId": 3,
       "groupId": 32,
       "name": "Dividends Paid",
-      "formula": "-M7.6",
+      "formula": "-R9042",
       "description": "Dividend distributions to equity (from Distributions module)"
     },
     {
@@ -630,7 +686,7 @@
       "tabId": 3,
       "groupId": 36,
       "name": "IDC",
-      "formula": "M4.5",
+      "formula": "R9019",
       "description": "From Construction Funding module",
       "type": "stock"
     },
@@ -675,7 +731,7 @@
       "tabId": 3,
       "groupId": 36,
       "name": "MRA Funding",
-      "formula": "CUMSUM(M6.2)",
+      "formula": "CUMSUM(R9033)",
       "description": "MRA funded at end of construction (from MRA module)",
       "type": "stock"
     },
@@ -720,7 +776,7 @@
       "tabId": 3,
       "groupId": 37,
       "name": "GST Received",
-      "formula": "CUMSUM(M3.8)",
+      "formula": "CUMSUM(R9013)",
       "description": "GST received during construction (1-month delay, from module split)",
       "type": "stock"
     },
@@ -729,7 +785,7 @@
       "tabId": 3,
       "groupId": 37,
       "name": "Senior Debt",
-      "formula": "M4.2",
+      "formula": "R9016",
       "description": "From Construction Funding module",
       "type": "stock"
     },
@@ -765,7 +821,7 @@
       "tabId": 3,
       "groupId": 32,
       "name": "Construction Equity Injection",
-      "formula": "M4.7",
+      "formula": "R9021",
       "description": "From Construction Funding module"
     },
     {
@@ -822,21 +878,21 @@
       "id": 159,
       "groupId": 34,
       "name": "SC - Cash Available",
-      "formula": "M7.10",
+      "formula": "R9046",
       "description": "Cash available for SC repayment (from Distributions module)"
     },
     {
       "id": 160,
       "groupId": 34,
       "name": "SC - Repayment",
-      "formula": "M7.11",
+      "formula": "R9047",
       "description": "Share capital repayment (from Distributions module)"
     },
     {
       "id": 161,
       "groupId": 34,
       "name": "SC - Cumulative Returned",
-      "formula": "CUMSUM(M7.11)",
+      "formula": "CUMSUM(R9047)",
       "description": "Running total capital returned (from Distributions module)",
       "type": "stock"
     },
@@ -844,14 +900,14 @@
       "id": 123,
       "groupId": 25,
       "name": "Cash Available",
-      "formula": "M7.1",
+      "formula": "R9037",
       "description": "Cash available for distributions (from M7)"
     },
     {
       "id": 164,
       "groupId": 35,
       "name": "RE - Opening Balance",
-      "formula": "M7.2",
+      "formula": "R9038",
       "description": "Retained earnings opening (from Distributions module)",
       "type": "stock"
     },
@@ -859,14 +915,14 @@
       "id": 165,
       "groupId": 35,
       "name": "RE - NPAT",
-      "formula": "M7.3",
+      "formula": "R9039",
       "description": "NPAT (from Distributions module)"
     },
     {
       "id": 166,
       "groupId": 35,
       "name": "RE - Test Result",
-      "formula": "M7.4",
+      "formula": "R9040",
       "description": "RE test result (from Distributions module)",
       "type": "stock"
     },
@@ -874,7 +930,7 @@
       "id": 168,
       "groupId": 35,
       "name": "NPAT - Test Result",
-      "formula": "M7.5",
+      "formula": "R9041",
       "description": "NPAT test result (from Distributions module)",
       "type": "stock"
     },
@@ -973,7 +1029,7 @@
       "tabId": 4,
       "groupId": 26,
       "name": "Dividends",
-      "formula": "M7.6",
+      "formula": "R9042",
       "description": "Dividend distributions to equity (from Distributions module)"
     },
     {
@@ -981,7 +1037,7 @@
       "tabId": 4,
       "groupId": 26,
       "name": "Share Capital Repayment",
-      "formula": "M7.11",
+      "formula": "R9047",
       "description": "Return of equity capital (from Distributions module)"
     },
     {
@@ -1029,7 +1085,7 @@
       "tabId": 3,
       "groupId": 24,
       "name": "DSCR",
-      "formula": "M1.7",
+      "formula": "R9071",
       "description": "Debt Service Coverage Ratio",
       "type": "stock"
     },
@@ -1067,7 +1123,7 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Debt Opening Balance",
-      "formula": "M1.2",
+      "formula": "R9063",
       "description": "From iterative debt sizing module",
       "type": "stock_start"
     },
@@ -1076,7 +1132,7 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Debt Interest Paid",
-      "formula": "M1.3",
+      "formula": "R9066",
       "description": "From iterative debt sizing module"
     },
     {
@@ -1084,7 +1140,7 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Debt Principal Repayment",
-      "formula": "M1.4",
+      "formula": "R9067",
       "description": "From iterative debt sizing module"
     },
     {
@@ -1092,7 +1148,7 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Debt Service (P+I)",
-      "formula": "M1.5",
+      "formula": "R9068",
       "description": "Interest + Principal from iterative debt sizing module"
     },
     {
@@ -1100,7 +1156,7 @@
       "tabId": 3,
       "groupId": 15,
       "name": "Debt Closing Balance",
-      "formula": "M1.6",
+      "formula": "R9070",
       "description": "From iterative debt sizing module",
       "type": "stock"
     },
@@ -1109,7 +1165,7 @@
       "tabId": 1,
       "groupId": 16,
       "name": "Total Capital Additions",
-      "formula": "V1 + M4.8",
+      "formula": "V1 + R9022",
       "description": "Per-period capex + IDC (combined additions for D&A depreciable base)"
     },
     {
@@ -1117,7 +1173,7 @@
       "tabId": 1,
       "groupId": 16,
       "name": "D&A Opening Book Value",
-      "formula": "M2.1",
+      "formula": "R9001",
       "description": "From D&A module",
       "type": "stock_start"
     },
@@ -1126,7 +1182,7 @@
       "tabId": 1,
       "groupId": 16,
       "name": "D&A Asset Addition",
-      "formula": "M2.2",
+      "formula": "R9002",
       "description": "From D&A module"
     },
     {
@@ -1134,7 +1190,7 @@
       "tabId": 1,
       "groupId": 16,
       "name": "D&A Depreciation Expense",
-      "formula": "M2.3",
+      "formula": "R9003",
       "description": "From D&A module"
     },
     {
@@ -1142,7 +1198,7 @@
       "tabId": 1,
       "groupId": 16,
       "name": "D&A Accumulated Depreciation",
-      "formula": "M2.4",
+      "formula": "R9004",
       "description": "From D&A module",
       "type": "stock"
     },
@@ -1151,7 +1207,7 @@
       "tabId": 1,
       "groupId": 16,
       "name": "D&A Closing Book Value",
-      "formula": "M2.5",
+      "formula": "R9005",
       "description": "From D&A module",
       "type": "stock"
     },
@@ -1222,7 +1278,7 @@
       "tabId": 3,
       "groupId": 19,
       "name": "Tax Taxable Income",
-      "formula": "M5.1",
+      "formula": "R9025",
       "description": "From Tax module"
     },
     {
@@ -1230,7 +1286,7 @@
       "tabId": 3,
       "groupId": 19,
       "name": "Loss Pool Opening",
-      "formula": "M5.2",
+      "formula": "R9026",
       "description": "From Tax module",
       "type": "stock_start"
     },
@@ -1239,7 +1295,7 @@
       "tabId": 3,
       "groupId": 19,
       "name": "Losses Utilised",
-      "formula": "M5.4",
+      "formula": "R9028",
       "description": "From Tax module"
     },
     {
@@ -1247,7 +1303,7 @@
       "tabId": 3,
       "groupId": 19,
       "name": "Loss Pool Closing",
-      "formula": "M5.5",
+      "formula": "R9029",
       "description": "From Tax module",
       "type": "stock"
     },
@@ -1256,7 +1312,7 @@
       "tabId": 3,
       "groupId": 19,
       "name": "Tax Net Taxable Income",
-      "formula": "M5.6",
+      "formula": "R9030",
       "description": "From Tax module"
     },
     {
@@ -1264,7 +1320,7 @@
       "tabId": 3,
       "groupId": 19,
       "name": "Tax Payable",
-      "formula": "M5.7",
+      "formula": "R9031",
       "description": "From Tax module"
     },
     {
@@ -1319,7 +1375,7 @@
       "id": 185,
       "groupId": 39,
       "name": "GST Receivable",
-      "formula": "M3.6",
+      "formula": "R9011",
       "description": "GST receivable closing balance from GST module",
       "type": "stock"
     },
@@ -1327,7 +1383,7 @@
       "id": 186,
       "groupId": 39,
       "name": "MRA Balance",
-      "formula": "M6.5",
+      "formula": "R9036",
       "description": "Maintenance reserve account closing balance",
       "type": "stock"
     },
@@ -1343,7 +1399,7 @@
       "id": 198,
       "groupId": 40,
       "name": "Construction Debt",
-      "formula": "M4.2 * F1",
+      "formula": "R9016 * F1",
       "description": "Cumulative senior debt drawn during construction (M4.2), zero after COD",
       "type": "stock"
     },
@@ -1375,7 +1431,7 @@
       "id": 191,
       "groupId": 41,
       "name": "Share Capital",
-      "formula": "CUMSUM(M4.7) * F1 + M7.12 * F2",
+      "formula": "CUMSUM(R9021) * F1 + R9048 * F2",
       "description": "Construction: cumulative equity drawn (M4.7) gated by F1. Operations: SC closing from distributions module (M7.12) gated by F2. Both gates required - M7.12 outputs totalEquityContributed during construction, so F2 prevents double-counting.",
       "type": "stock"
     },
@@ -1410,6 +1466,717 @@
       "formula": "R187 - R194",
       "description": "Should be zero if B/S balances (Total Assets - Total L&E)",
       "type": "stock"
+    },
+    {
+      "id": 9001,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Opening Book Value",
+      "formula": "MAX(0, (CUMSUM(R9002) - R9002) - CUMSUM(R203) / C1.24 / T.MiY * (CUMSUM(F2) - F2))",
+      "type": "stock_start",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "opening"
+    },
+    {
+      "id": 9002,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Capital Addition",
+      "formula": "CUMSUM(R203) * F2.Start",
+      "type": "flow",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "addition"
+    },
+    {
+      "id": 9003,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Depreciation Expense",
+      "formula": "MIN(R9001 + R9002, CUMSUM(R203) / C1.24 / T.MiY) * F2",
+      "type": "flow",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "depreciation"
+    },
+    {
+      "id": 9004,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Accumulated Depreciation",
+      "formula": "CUMSUM(R9003)",
+      "type": "stock",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "accumulated"
+    },
+    {
+      "id": 9005,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Closing Book Value",
+      "formula": "MAX(0, CUMSUM(R9002) - CUMSUM(R203) / C1.24 / T.MiY * CUMSUM(F2))",
+      "type": "stock",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "closing"
+    },
+    {
+      "id": 9006,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Base Amount",
+      "formula": "R112",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_base"
+    },
+    {
+      "id": 9007,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Amount",
+      "formula": "R112 * C1.15 / 100 * F1",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_amount"
+    },
+    {
+      "id": 9008,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Paid (Outflow)",
+      "formula": "-R9007",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_paid"
+    },
+    {
+      "id": 9009,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Receivable - Opening",
+      "formula": "(CUMSUM(R9007) - R9007) - (CUMSUM(R9010) - R9010)",
+      "type": "stock_start",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "receivable_opening"
+    },
+    {
+      "id": 9010,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Received (Inflow)",
+      "formula": "PREVVAL(R9007)",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_received"
+    },
+    {
+      "id": 9011,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Receivable - Closing",
+      "formula": "CUMSUM(R9007) - CUMSUM(R9010)",
+      "type": "stock",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "receivable_closing"
+    },
+    {
+      "id": 9012,
+      "groupId": 51,
+      "name": "GST Paid/Received: Net GST Cash Flow",
+      "formula": "R9008 + R9010",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "net_gst_cashflow"
+    },
+    {
+      "id": 9013,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Received (Construction)",
+      "formula": "R9010 * F1",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_received_construction"
+    },
+    {
+      "id": 9014,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Received (Operations)",
+      "formula": "R9010 * F2",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_received_operations"
+    },
+    {
+      "id": 9015,
+      "groupId": 52,
+      "name": "Construction Funding: Total Funding Requirements",
+      "formula": "R9023 + CUMSUM(R9022)",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "total_uses_incl_idc"
+    },
+    {
+      "id": 9016,
+      "groupId": 52,
+      "name": "Construction Funding: Senior Debt",
+      "formula": "CUMSUM(R9020)",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "senior_debt"
+    },
+    {
+      "id": 9017,
+      "groupId": 52,
+      "name": "Construction Funding: Equity",
+      "formula": "R9015 - R9016",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "equity"
+    },
+    {
+      "id": 9018,
+      "groupId": 52,
+      "name": "Construction Funding: Gearing %",
+      "formula": "C1.19 * (CUMSUM(F1) > 0)",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "gearing_pct"
+    },
+    {
+      "id": 9019,
+      "groupId": 52,
+      "name": "Construction Funding: IDC",
+      "formula": "CUMSUM(R9022) * F1",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "cumulative_idc"
+    },
+    {
+      "id": 9020,
+      "groupId": 52,
+      "name": "Construction Funding: Debt Drawdown",
+      "formula": "MIN(R9024, MAX(0, M1.1 - (CUMSUM(R9024) - R9024))) * F1",
+      "type": "flow",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "debt_drawdown"
+    },
+    {
+      "id": 9021,
+      "groupId": 52,
+      "name": "Construction Funding: Equity Drawdown",
+      "formula": "MAX(0, R9017 - PREVVAL(R9017)) * F1",
+      "type": "flow",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "equity_drawdown"
+    },
+    {
+      "id": 9022,
+      "groupId": 52,
+      "name": "Construction Funding: IDC (Period)",
+      "formula": "(CUMSUM(R9020) - R9020) * R171 / 100 / T.MiY * F1",
+      "type": "flow",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "idc"
+    },
+    {
+      "id": 9023,
+      "groupId": 52,
+      "name": "Construction Funding: Total Uses (ex-IDC)",
+      "formula": "R60 + R61 + R173",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "total_uses_ex_idc"
+    },
+    {
+      "id": 9024,
+      "groupId": 52,
+      "name": "Construction Funding: Uncapped Debt Drawdown",
+      "formula": "MAX(0, R9023 - PREVVAL(R9023)) * C1.19 / 100 * F1",
+      "type": "flow",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "uncapped_drawdown"
+    },
+    {
+      "id": 9025,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Taxable Income Before Losses",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "taxable_income_before_losses"
+    },
+    {
+      "id": 9026,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Losses - Opening",
+      "formula": "0",
+      "type": "stock_start",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "losses_opening"
+    },
+    {
+      "id": 9027,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Losses - Generated",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "losses_generated"
+    },
+    {
+      "id": 9028,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Losses - Utilised",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "losses_utilised"
+    },
+    {
+      "id": 9029,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Losses - Closing",
+      "formula": "0",
+      "type": "stock",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "losses_closing"
+    },
+    {
+      "id": 9030,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Net Taxable Income",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "net_taxable_income"
+    },
+    {
+      "id": 9031,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Payable",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "tax_payable"
+    },
+    {
+      "id": 9032,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Opening Balance",
+      "formula": "MAX(0, (CUMSUM(R9033) - R9033) - (CUMSUM(R9034) - R9034) - (CUMSUM(R9035) - R9035))",
+      "type": "stock_start",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "opening"
+    },
+    {
+      "id": 9033,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Funding",
+      "formula": "C1.17 * F1.End",
+      "type": "flow",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "funding"
+    },
+    {
+      "id": 9034,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Drawdown",
+      "formula": "MIN(ABS(S1.19) * F12 * (1 - F12.End), MAX(0, CUMSUM(R9033) - (CUMSUM(ABS(S1.19) * F12 * (1 - F12.End)) - ABS(S1.19) * F12 * (1 - F12.End)))) * F12 * (1 - F12.End)",
+      "type": "flow",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "drawdown"
+    },
+    {
+      "id": 9035,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Release",
+      "formula": "MAX(0, CUMSUM(R9033) - CUMSUM(R9034)) * F12.End",
+      "type": "flow",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "release"
+    },
+    {
+      "id": 9036,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Closing Balance",
+      "formula": "MAX(0, CUMSUM(R9033) - CUMSUM(R9034) - CUMSUM(R9035))",
+      "type": "stock",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "closing"
+    },
+    {
+      "id": 9037,
+      "groupId": 55,
+      "name": "Distributions: Cash Available for Dist",
+      "formula": "MAX(0, CUMSUM(R170) - PREVSUM(R9049) - C1.28) * F2",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "cash_available"
+    },
+    {
+      "id": 9038,
+      "groupId": 55,
+      "name": "Distributions: RE - Opening",
+      "formula": "PREVSUM(R9043)",
+      "type": "stock_start",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_opening"
+    },
+    {
+      "id": 9039,
+      "groupId": 55,
+      "name": "Distributions: RE - NPAT",
+      "formula": "R19",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_npat"
+    },
+    {
+      "id": 9040,
+      "groupId": 55,
+      "name": "Distributions: RE Test",
+      "formula": "(R9038 + R9039 > 0)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_test"
+    },
+    {
+      "id": 9041,
+      "groupId": 55,
+      "name": "Distributions: NPAT Test",
+      "formula": "(R9039 > 0)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "npat_test"
+    },
+    {
+      "id": 9042,
+      "groupId": 55,
+      "name": "Distributions: Dividend Paid",
+      "formula": "MIN(R9046, MAX(0, R9039)) * F2 * R9040 * R9041 * (1 - R9057)",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "dividend_paid"
+    },
+    {
+      "id": 9043,
+      "groupId": 55,
+      "name": "Distributions: RE - Movement",
+      "formula": "R9039 - R9042",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_movement"
+    },
+    {
+      "id": 9044,
+      "groupId": 55,
+      "name": "Distributions: RE - Closing",
+      "formula": "PREVSUM(R9043) + R9043",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_closing"
+    },
+    {
+      "id": 9045,
+      "groupId": 55,
+      "name": "Distributions: SC - Opening",
+      "formula": "R9017",
+      "type": "stock_start",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "sc_opening"
+    },
+    {
+      "id": 9046,
+      "groupId": 55,
+      "name": "Distributions: Post-SC Cash Available",
+      "formula": "MAX(0, R9037 - R9047)",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "sc_cash_available"
+    },
+    {
+      "id": 9047,
+      "groupId": 55,
+      "name": "Distributions: SC - Repayment",
+      "formula": "MIN(R9037, MAX(0, R9045 - PREVSUM(R9047))) * F2 * (1 - R9057)",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "sc_repayment"
+    },
+    {
+      "id": 9048,
+      "groupId": 55,
+      "name": "Distributions: SC - Closing",
+      "formula": "MAX(0, R9045 - CUMSUM(R9047))",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "sc_closing"
+    },
+    {
+      "id": 9049,
+      "groupId": 55,
+      "name": "Distributions: Total Distributions",
+      "formula": "R9042 + R9047",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "total_distributions"
+    },
+    {
+      "id": 9050,
+      "groupId": 55,
+      "name": "Distributions: Withholding Tax",
+      "formula": "R9049 * 0 / 100",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "withholding_tax"
+    },
+    {
+      "id": 9051,
+      "groupId": 55,
+      "name": "Distributions: Net to Equity",
+      "formula": "R9049 - R9050",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "net_to_equity"
+    },
+    {
+      "id": 9052,
+      "groupId": 55,
+      "name": "Distributions: DSCR Test",
+      "formula": "MAX((R9071 >= C1.47), (ABS(R9068) < 0.001)) * F2",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "dscr_test"
+    },
+    {
+      "id": 9053,
+      "groupId": 55,
+      "name": "Distributions: ADSCR Test",
+      "formula": "F2",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "adscr_test"
+    },
+    {
+      "id": 9054,
+      "groupId": 55,
+      "name": "Distributions: DSRA Test",
+      "formula": "F2",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "dsra_test"
+    },
+    {
+      "id": 9055,
+      "groupId": 55,
+      "name": "Distributions: All Tests Pass",
+      "formula": "(PREVVAL(R9055) * (1 - T.QE) + R9052 * R9053 * R9054 * T.QE) * F2 + PREVVAL(R9055) * (1 - F2) * (CUMSUM(F2) > 0)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "all_tests_pass"
+    },
+    {
+      "id": 9056,
+      "groupId": 55,
+      "name": "Distributions: Consecutive Pass Qtrs",
+      "formula": "PREVVAL(R9056) * (R9055 * T.QE + (1 - T.QE)) + R9055 * T.QE",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "consec_pass_qtrs"
+    },
+    {
+      "id": 9057,
+      "groupId": 55,
+      "name": "Distributions: Lock-up Active",
+      "formula": "MAX((R9056 < C1.49) * F2, F1)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "lockup_active"
+    },
+    {
+      "id": 9058,
+      "groupId": 55,
+      "name": "Distributions: Cumulative Distributions",
+      "formula": "CUMSUM(R9049)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "cumulative_distributions"
+    },
+    {
+      "id": 9059,
+      "groupId": 55,
+      "name": "Distributions: Cumulative SC Repayment",
+      "formula": "CUMSUM(R9047)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "cumulative_sc_repayment"
+    },
+    {
+      "id": 9060,
+      "groupId": 56,
+      "name": "DS Capacity (Monthly)",
+      "formula": "(R208 / C1.25 + R209 / C1.26) * F8",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "ds_capacity_monthly"
+    },
+    {
+      "id": 9061,
+      "groupId": 56,
+      "name": "Monthly Interest",
+      "formula": "R9063 * R172 / 100 / T.MiY * F8",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "monthly_interest"
+    },
+    {
+      "id": 9062,
+      "groupId": 56,
+      "name": "Accrued Interest (Intra-Qtr)",
+      "formula": "(PREVVAL(R9062) * (1 - PREVVAL(T.QE)) + R9061) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "accrued_interest"
+    },
+    {
+      "id": 9063,
+      "groupId": 56,
+      "name": "Opening Balance",
+      "formula": "PREVVAL(R9070) + M1.1 * F8.Start",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "opening_balance"
+    },
+    {
+      "id": 9064,
+      "groupId": 56,
+      "name": "Accrued Capacity (Intra-Qtr)",
+      "formula": "(PREVVAL(R9064) * (1 - PREVVAL(T.QE)) + R9060) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "accrued_capacity"
+    },
+    {
+      "id": 9065,
+      "groupId": 56,
+      "name": "Remaining Payment Periods",
+      "formula": "IF(F8.Start, C1.27 * T.QiY, MAX(1, PREVVAL(R9065) - PREVVAL(R9073))) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "remaining_periods"
+    },
+    {
+      "id": 9066,
+      "groupId": 56,
+      "name": "Interest Payment",
+      "formula": "R9062 * R9073 * F8",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "interest_payment"
+    },
+    {
+      "id": 9067,
+      "groupId": 56,
+      "name": "Principal Payment",
+      "formula": "MIN(MAX(0, R9064 - R9066), R9063 / R9065) * R9073 * F8",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "principal_payment"
+    },
+    {
+      "id": 9068,
+      "groupId": 56,
+      "name": "Debt Service",
+      "formula": "R9066 + R9067",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "debt_service"
+    },
+    {
+      "id": 9069,
+      "groupId": 56,
+      "name": "Accrued CFADS (Intra-Qtr)",
+      "formula": "(PREVVAL(R9069) * (1 - PREVVAL(T.QE)) + R208 + R209) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "accrued_cfads"
+    },
+    {
+      "id": 9070,
+      "groupId": 56,
+      "name": "Closing Balance",
+      "formula": "MAX(0, R9063 - R9067)",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "closing_balance"
+    },
+    {
+      "id": 9071,
+      "groupId": 56,
+      "name": "Period DSCR",
+      "formula": "R9069 / MAX(R9068, 0.0001) * R9073 * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "period_dscr"
+    },
+    {
+      "id": 9072,
+      "groupId": 56,
+      "name": "Cumulative Principal",
+      "formula": "CUMSUM(R9067)",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "cumulative_principal"
+    },
+    {
+      "id": 9073,
+      "groupId": 56,
+      "name": "Payment Period Flag",
+      "formula": "(T.QE + F8.End - T.QE * F8.End) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "payment_period_flag"
+    },
+    {
+      "id": 9080,
+      "groupId": 57,
+      "name": "DSRF Establishment Fee",
+      "formula": "M8.1 * C1.51 / 100 * F2.Start",
+      "type": "flow",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "establishment_fee"
+    },
+    {
+      "id": 9081,
+      "groupId": 57,
+      "name": "DSRF Commitment Fee",
+      "formula": "M8.1 * M8.3 / 100 * C1.52 / 100 / T.QiY * T.QE * F2",
+      "type": "flow",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "commitment_fee"
+    },
+    {
+      "id": 9082,
+      "groupId": 57,
+      "name": "Total DSRF Fees",
+      "formula": "R9080 + R9081 + M8.2",
+      "type": "flow",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "total_dsrf_fees"
+    },
+    {
+      "id": 9083,
+      "groupId": 57,
+      "name": "Total DSRF Fees (Cumulative)",
+      "formula": "CUMSUM(R9082)",
+      "type": "stock",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "total_dsrf_fees_cumulative"
+    },
+    {
+      "id": 9084,
+      "groupId": 57,
+      "name": "DS + DSRF Fees",
+      "formula": "ABS(R9068) + R9082",
+      "type": "flow",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "ds_plus_dsrf"
+    },
+    {
+      "id": 9085,
+      "groupId": 57,
+      "name": "Adjusted DSCR",
+      "formula": "(R208 + R209) / MAX(R9084, 0.0001) * F2",
+      "type": "stock",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "adjusted_dscr"
     }
   ],
   "modules": [
@@ -1434,16 +2201,10 @@
         "maxIterations": 50
       },
       "outputs": [
-        "sized_debt",
-        "opening_balance",
-        "interest_payment",
-        "principal_payment",
-        "debt_service",
-        "closing_balance",
-        "period_dscr",
-        "cumulative_principal"
+        "sized_debt"
       ],
-      "solvedAt": 1769461750580
+      "solvedAt": 1769461750580,
+      "partiallyConverted": true
     },
     {
       "id": 1769317033954,
@@ -1458,13 +2219,16 @@
         "method": "straight_line",
         "dbMultiplier": 2
       },
-      "outputs": [
-        "opening",
-        "addition",
-        "depreciation",
-        "accumulated",
-        "closing"
-      ]
+      "outputs": [],
+      "converted": true,
+      "calcIds": [
+        9001,
+        9002,
+        9003,
+        9004,
+        9005
+      ],
+      "fullyConverted": true
     },
     {
       "id": 1769320996781,
@@ -1480,17 +2244,20 @@
         "constructionFlagRef": "F1",
         "operationsFlagRef": "F2"
       },
-      "outputs": [
-        "gst_base",
-        "gst_amount",
-        "gst_paid",
-        "receivable_opening",
-        "gst_received",
-        "receivable_closing",
-        "net_gst_cashflow",
-        "gst_received_construction",
-        "gst_received_operations"
-      ]
+      "outputs": [],
+      "converted": true,
+      "calcIds": [
+        9006,
+        9007,
+        9008,
+        9009,
+        9010,
+        9011,
+        9012,
+        9013,
+        9014
+      ],
+      "fullyConverted": true
     },
     {
       "id": 1769323861808,
@@ -1508,18 +2275,22 @@
         "drawdownMethod": "prorata",
         "constructionFlagRef": "F1"
       },
-      "outputs": [
-        "total_uses_incl_idc",
-        "senior_debt",
-        "equity",
-        "gearing_pct",
-        "cumulative_idc",
-        "debt_drawdown",
-        "equity_drawdown",
-        "idc",
-        "total_uses_ex_idc"
+      "outputs": [],
+      "solvedAt": null,
+      "converted": true,
+      "calcIds": [
+        9015,
+        9016,
+        9017,
+        9018,
+        9019,
+        9020,
+        9021,
+        9022,
+        9023,
+        9024
       ],
-      "solvedAt": null
+      "fullyConverted": true
     },
     {
       "id": 1769400000000,
@@ -1532,17 +2303,20 @@
         "opsFlagRef": "F2",
         "taxRatePct": "C1.11"
       },
-      "outputs": [
-        "taxable_income_before_losses",
-        "losses_opening",
-        "losses_generated",
-        "losses_utilised",
-        "losses_closing",
-        "net_taxable_income",
-        "tax_payable"
-      ],
+      "outputs": [],
       "solvedAt": null,
-      "enabled": false
+      "enabled": false,
+      "converted": true,
+      "calcIds": [
+        9025,
+        9026,
+        9027,
+        9028,
+        9029,
+        9030,
+        9031
+      ],
+      "fullyConverted": true
     },
     {
       "id": 1769500000000,
@@ -1558,13 +2332,16 @@
         "drawdownFlagRef": "F12",
         "releaseFlagRef": "F12.End"
       },
-      "outputs": [
-        "opening",
-        "funding",
-        "drawdown",
-        "release",
-        "closing"
-      ]
+      "outputs": [],
+      "converted": true,
+      "calcIds": [
+        9032,
+        9033,
+        9034,
+        9035,
+        9036
+      ],
+      "fullyConverted": true
     },
     {
       "id": 1769600000000,
@@ -1575,48 +2352,53 @@
       "inputs": {
         "availableCashRef": "R170",
         "npatRef": "R19",
-        "equityContributedRef": "M4.3",
+        "equityContributedRef": "R9017",
         "minCashReserve": "C1.28",
         "opsFlagRef": "F2",
         "withholdingTaxPct": 0,
         "lockupActive": true,
         "lockupReleasePeriods": "C1.49",
         "dscrTestActive": true,
-        "dscrRef": "M1.7",
+        "dscrRef": "R9071",
         "dscrThreshold": "C1.47",
         "adscrTestActive": true,
         "cfadsRef": "R205",
-        "debtServiceRef": "M1.5",
+        "debtServiceRef": "R9068",
         "adscrThreshold": "C1.48",
         "dsraTestActive": false,
         "dsraBalanceRef": "",
         "dsraTargetRef": "",
         "quarterEndFlagRef": "T.QE"
       },
-      "outputs": [
-        "cash_available",
-        "re_opening",
-        "re_npat",
-        "re_test",
-        "npat_test",
-        "dividend_paid",
-        "re_movement",
-        "re_closing",
-        "sc_opening",
-        "sc_cash_available",
-        "sc_repayment",
-        "sc_closing",
-        "total_distributions",
-        "withholding_tax",
-        "net_to_equity",
-        "dscr_test",
-        "adscr_test",
-        "dsra_test",
-        "all_tests_pass",
-        "consec_pass_qtrs",
-        "lockup_active"
+      "outputs": [],
+      "enabled": true,
+      "converted": true,
+      "calcIds": [
+        9037,
+        9038,
+        9039,
+        9040,
+        9041,
+        9042,
+        9043,
+        9044,
+        9045,
+        9046,
+        9047,
+        9048,
+        9049,
+        9050,
+        9051,
+        9052,
+        9053,
+        9054,
+        9055,
+        9056,
+        9057,
+        9058,
+        9059
       ],
-      "enabled": true
+      "fullyConverted": true
     },
     {
       "id": 1769700000000,
@@ -1626,7 +2408,7 @@
       "category": "financing",
       "inputs": {
         "dsrfActiveRef": "C1.50",
-        "debtServiceRef": "M1.5",
+        "debtServiceRef": "R9068",
         "operationsFlagRef": "F2",
         "establishmentFeePctRef": "C1.51",
         "commitmentFeePctOfMarginRef": "C1.52",
@@ -1667,16 +2449,11 @@
       },
       "outputs": [
         "facility_limit",
-        "establishment_fee",
-        "commitment_fee",
         "refi_fees",
-        "effective_margin",
-        "total_dsrf_fees",
-        "total_dsrf_fees_cumulative",
-        "ds_plus_dsrf",
-        "adjusted_dscr"
+        "effective_margin"
       ],
-      "enabled": true
+      "enabled": true,
+      "partiallyConverted": true
     }
   ],
   "moduleTemplates": [
@@ -2073,7 +2850,7 @@
           "key": "equityContributedRef",
           "label": "Equity Contributed",
           "type": "reference",
-          "default": "M4.3"
+          "default": "R9017"
         },
         {
           "key": "minCashReserve",
@@ -2115,7 +2892,7 @@
           "key": "dscrRef",
           "label": "DSCR (periodic)",
           "type": "reference",
-          "default": "M1.7"
+          "default": "R9071"
         },
         {
           "key": "dscrThreshold",
@@ -2139,7 +2916,7 @@
           "key": "debtServiceRef",
           "label": "Total Debt Service",
           "type": "reference",
-          "default": "M1.5"
+          "default": "R9068"
         },
         {
           "key": "adscrThreshold",
@@ -2263,5 +3040,77 @@
         "adjusted_dscr"
       ]
     }
-  ]
+  ],
+  "_mRefMap": {
+    "M2.1": "R9001",
+    "M2.2": "R9002",
+    "M2.3": "R9003",
+    "M2.4": "R9004",
+    "M2.5": "R9005",
+    "M3.1": "R9006",
+    "M3.2": "R9007",
+    "M3.3": "R9008",
+    "M3.4": "R9009",
+    "M3.5": "R9010",
+    "M3.6": "R9011",
+    "M3.7": "R9012",
+    "M3.8": "R9013",
+    "M3.9": "R9014",
+    "M4.1": "R9015",
+    "M4.2": "R9016",
+    "M4.3": "R9017",
+    "M4.4": "R9018",
+    "M4.5": "R9019",
+    "M4.6": "R9020",
+    "M4.7": "R9021",
+    "M4.8": "R9022",
+    "M4.9": "R9023",
+    "M4.10": "R9024",
+    "M5.1": "R9025",
+    "M5.2": "R9026",
+    "M5.3": "R9027",
+    "M5.4": "R9028",
+    "M5.5": "R9029",
+    "M5.6": "R9030",
+    "M5.7": "R9031",
+    "M6.1": "R9032",
+    "M6.2": "R9033",
+    "M6.3": "R9034",
+    "M6.4": "R9035",
+    "M6.5": "R9036",
+    "M7.1": "R9037",
+    "M7.2": "R9038",
+    "M7.3": "R9039",
+    "M7.4": "R9040",
+    "M7.5": "R9041",
+    "M7.6": "R9042",
+    "M7.7": "R9043",
+    "M7.8": "R9044",
+    "M7.9": "R9045",
+    "M7.10": "R9046",
+    "M7.11": "R9047",
+    "M7.12": "R9048",
+    "M7.13": "R9049",
+    "M7.14": "R9050",
+    "M7.15": "R9051",
+    "M7.16": "R9052",
+    "M7.17": "R9053",
+    "M7.18": "R9054",
+    "M7.19": "R9055",
+    "M7.20": "R9056",
+    "M7.21": "R9057",
+    "M7.22": "R9058",
+    "M7.23": "R9059",
+    "M1.2": "R9063",
+    "M1.3": "R9066",
+    "M1.4": "R9067",
+    "M1.5": "R9068",
+    "M1.6": "R9070",
+    "M1.7": "R9071",
+    "M1.8": "R9072",
+    "M8.6": "R9082",
+    "M8.7": "R9083",
+    "M8.8": "R9084",
+    "M8.9": "R9085"
+  }
 }

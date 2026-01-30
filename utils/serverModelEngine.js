@@ -264,14 +264,26 @@ function buildInputArray(input, group, config, keyPeriods, timeline, timelineLoo
     // Generate monthly values based on entry mode
     const monthlyValues = new Array(groupPeriods).fill(0)
 
+    // Determine the effective frequency for spreading
+    const freq = input.valueFrequency || input.seriesFrequency || input.timePeriod || group.frequency || 'M'
+
     if (input.entryMode === 'constant' || input.mode === 'constant') {
         const value = input.value ?? 0
-        // For constant entry within a series group, determine spread
-        const freq = input.valueFrequency || input.seriesFrequency || group.frequency || 'M'
+        // Constant entry within a series group — spread by frequency
         if (freq === 'Q') {
-            // Quarterly value spread to monthly
             for (let i = 0; i < groupPeriods; i++) monthlyValues[i] = value / 3
-        } else if (freq === 'Y') {
+        } else if (freq === 'Y' || freq === 'FY') {
+            for (let i = 0; i < groupPeriods; i++) monthlyValues[i] = value / 12
+        } else {
+            monthlyValues.fill(value)
+        }
+    } else if (input.mode === 'series' && input.value != null && !input.values) {
+        // Series mode with a constant value (e.g., OPEX: mode="series", value=0.7, timePeriod="Y")
+        // Spread the annual/quarterly value to monthly across the group period
+        const value = input.value
+        if (freq === 'Q') {
+            for (let i = 0; i < groupPeriods; i++) monthlyValues[i] = value / 3
+        } else if (freq === 'Y' || freq === 'FY') {
             for (let i = 0; i < groupPeriods; i++) monthlyValues[i] = value / 12
         } else {
             monthlyValues.fill(value)
@@ -311,7 +323,7 @@ function buildInputArray(input, group, config, keyPeriods, timeline, timelineLoo
 
 function extractDependencies(formula) {
     if (!formula) return []
-    const formulaWithoutShift = formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
+    const formulaWithoutShift = formula.replace(/(?:SHIFT\s*\([^)]+\)|PREVSUM\s*\([^)]+\)|PREVVAL\s*\([^)]+\))/gi, '')
     const deps = new Set()
 
     const rPattern = /\bR(\d+)(?!\d)/g
@@ -346,18 +358,41 @@ function extractModuleDependencies(mod, moduleIdx, allModulesCount) {
     return [...deps]
 }
 
-function buildUnifiedGraph(calculations, modules) {
+/**
+ * Rewrite M-refs in a formula string using the _mRefMap.
+ * Converts e.g. "M2.3" → "R9003" for converted modules.
+ */
+function rewriteMRefs(formula, mRefMapData) {
+    if (!formula || !mRefMapData) return formula
+    const sortedEntries = Object.entries(mRefMapData).sort((a, b) => b[0].length - a[0].length)
+    let result = formula
+    for (const [mRef, rRef] of sortedEntries) {
+        const regex = getRegexCached(mRef)
+        regex.lastIndex = 0
+        result = result.replace(regex, rRef)
+    }
+    return result
+}
+
+function buildUnifiedGraph(calculations, modules, mRefMapData) {
     const graph = new Map()
 
     if (calculations) {
         calculations.forEach(calc => {
             const nodeId = `R${calc.id}`
-            graph.set(nodeId, { type: 'calc', deps: new Set(extractDependencies(calc.formula)), item: calc })
+            const rewrittenFormula = rewriteMRefs(calc.formula, mRefMapData)
+            graph.set(nodeId, {
+                type: 'calc',
+                deps: new Set(extractDependencies(rewrittenFormula)),
+                item: { ...calc, _rewrittenFormula: rewrittenFormula }
+            })
         })
     }
 
+    // Only add non-converted modules as nodes
     if (modules) {
         modules.forEach((mod, idx) => {
+            if (mod.converted || mod.fullyConverted) return
             const nodeId = `M${idx + 1}`
             graph.set(nodeId, { type: 'module', deps: new Set(extractModuleDependencies(mod, idx, modules.length)), item: mod, index: idx })
         })
@@ -416,7 +451,7 @@ function detectShiftCycles(graph, calculations) {
     const nodeToCluster = new Map()
     const clusters = new Map()
     let nextClusterId = 0
-    if (!calculations) return { nodeToCluster, clusters }
+    if (!calculations) return { nodeToCluster, clusters, nonCyclicalShiftDeps: [] }
 
     const forwardAdj = new Map()
     graph.forEach((node, nodeId) => forwardAdj.set(nodeId, node.deps))
@@ -455,7 +490,20 @@ function detectShiftCycles(graph, calculations) {
         }
     })
 
-    if (allCycleNodeSets.length === 0) return { nodeToCluster, clusters }
+    if (allCycleNodeSets.length === 0) {
+        // No cycles, but still check for non-cyclical SHIFT deps
+        const nonCyclicalShiftDeps = []
+        calculations.forEach(calc => {
+            const nodeId = `R${calc.id}`
+            const shiftTargets = extractShiftTargets(calc.formula)
+            for (const target of shiftTargets) {
+                if (!graph.has(target)) continue
+                if (target === nodeId) continue
+                nonCyclicalShiftDeps.push({ from: nodeId, to: target })
+            }
+        })
+        return { nodeToCluster, clusters, nonCyclicalShiftDeps }
+    }
 
     // Merge overlapping sets
     const merged = []
@@ -488,7 +536,26 @@ function detectShiftCycles(graph, calculations) {
         clusters.set(clusterId, { members, internalOrder: [] })
     }
 
-    return { nodeToCluster, clusters }
+    // Also collect non-cyclical SHIFT deps: SHIFT targets that don't form cycles.
+    // These need to be added as regular deps for proper evaluation ordering.
+    const nonCyclicalShiftDeps = []
+    calculations.forEach(calc => {
+        const nodeId = `R${calc.id}`
+        const shiftTargets = extractShiftTargets(calc.formula)
+        for (const target of shiftTargets) {
+            if (!graph.has(target)) continue
+            if (target === nodeId) continue // self-ref handled by cluster
+            // Skip if both are in the same cluster (already handled by period-by-period eval)
+            if (nodeToCluster.has(nodeId) && nodeToCluster.has(target) &&
+                nodeToCluster.get(nodeId) === nodeToCluster.get(target)) continue
+            // If target can't reach back to nodeId, this is non-cyclical
+            if (!isReachable(target, nodeId)) {
+                nonCyclicalShiftDeps.push({ from: nodeId, to: target })
+            }
+        }
+    })
+
+    return { nodeToCluster, clusters, nonCyclicalShiftDeps }
 }
 
 // Regex cache for ref substitution
@@ -507,8 +574,8 @@ function evaluateSingleCalc(formula, context, timeline) {
 
     try {
         const resultArray = new Array(timeline.periods).fill(0)
-        const formulaWithoutShift = formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
-        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*|T\.[A-Za-z]+)\b/g
+        const formulaWithoutShift = formula.replace(/(?:SHIFT\s*\([^)]+\)|PREVSUM\s*\([^)]+\)|PREVVAL\s*\([^)]+\))/gi, '')
+        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g
         const refsInFormula = [...new Set([...formulaWithoutShift.matchAll(refPattern)].map(m => m[1]))]
 
         const { processedFormula, arrayFnResults } = processArrayFunctions(formula, context, timeline)
@@ -544,7 +611,7 @@ function evaluateSingleCalc(formula, context, timeline) {
  * @param {Object} inputs - Raw model-inputs.json data
  * @param {Object} calculations - Raw model-calculations.json data
  */
-export function runServerModel(inputs, calculations) {
+export function runServerModel(inputs, calculations, options = {}) {
     const config = inputs.config || {}
     const timeline = buildTimeline(config)
 
@@ -554,15 +621,60 @@ export function runServerModel(inputs, calculations) {
     // Get calculations and modules arrays
     const calcs = calculations.calculations || []
     const modules = calculations.modules || []
+    const mRefMapData = calculations._mRefMap || {}
 
-    // Build unified dependency graph
-    const graph = buildUnifiedGraph(calcs, modules)
+    // Build unified dependency graph (with M-ref rewriting for converted modules)
+    const graph = buildUnifiedGraph(calcs, modules, mRefMapData)
     if (graph.size === 0) return { calculationResults: {}, moduleOutputs: {}, timeline, referenceMap }
 
+    const { nodeToCluster, clusters, nonCyclicalShiftDeps } = detectShiftCycles(graph, calcs)
+
+    // Add non-cyclical SHIFT targets as regular deps for proper evaluation ordering
+    // (e.g., SHIFT(R9007, 1) in R9010 means R9007 must be evaluated before R9010)
+    for (const { from, to } of nonCyclicalShiftDeps) {
+        const node = graph.get(from)
+        if (node) node.deps.add(to)
+    }
+
+    // Ensure non-cluster nodes that depend on cluster members also depend on ALL
+    // members of that cluster. This ensures the topological sort places them after
+    // the cluster's trigger point (the last member in sort order).
+    if (clusters.size > 0) {
+        const clusterMembers = new Map() // clusterId -> Set of member nodeIds
+        clusters.forEach((cluster, cId) => {
+            clusterMembers.set(cId, new Set(cluster.members.map(c => `R${c.id}`)))
+        })
+
+        graph.forEach((node, nodeId) => {
+            if (nodeToCluster.has(nodeId)) return // skip cluster members
+            const clusterDeps = new Set()
+            node.deps.forEach(dep => {
+                const cId = nodeToCluster.get(dep)
+                if (cId !== undefined && !clusterDeps.has(cId)) {
+                    clusterDeps.add(cId)
+                    // Add all cluster members as deps so this node sorts after the whole cluster
+                    clusterMembers.get(cId)?.forEach(memberId => node.deps.add(memberId))
+                }
+            })
+        })
+    }
+
+    // Sort after augmenting deps
     const sortedNodes = topologicalSort(graph)
-    const { nodeToCluster, clusters } = detectShiftCycles(graph, calcs)
+
+    // Debug: log cluster info
+    if (options.debug) {
+        console.log(`[DEBUG] Clusters: ${clusters.size}, NonCyclicalShiftDeps: ${nonCyclicalShiftDeps.length}`)
+        clusters.forEach((cluster, id) => {
+            console.log(`  Cluster ${id}: ${cluster.members.map(c => 'R'+c.id).join(', ')}`)
+        })
+        for (const { from, to } of nonCyclicalShiftDeps) {
+            console.log(`  NonCyclical: ${from} → ${to}`)
+        }
+    }
 
     // Set internal order for clusters
+    // Also override cluster member formulas with rewritten versions (M-refs → R-refs)
     if (clusters.size > 0) {
         const nodePosition = new Map()
         sortedNodes.forEach((id, idx) => nodePosition.set(id, idx))
@@ -570,6 +682,16 @@ export function runServerModel(inputs, calculations) {
             cluster.internalOrder = cluster.members
                 .map(c => `R${c.id}`)
                 .sort((a, b) => (nodePosition.get(a) ?? 0) - (nodePosition.get(b) ?? 0))
+
+            // Rewrite M-refs in cluster member formulas
+            cluster.members = cluster.members.map(c => {
+                const graphNode = graph.get(`R${c.id}`)
+                const rewritten = graphNode?.item?._rewrittenFormula
+                if (rewritten && rewritten !== c.formula) {
+                    return { ...c, formula: rewritten }
+                }
+                return c
+            })
         })
     }
 
@@ -579,29 +701,106 @@ export function runServerModel(inputs, calculations) {
     const modOutputs = {}
     const evaluatedClusters = new Set()
 
+    // Pre-compute: for each cluster, find the LAST member in topological order
+    // This ensures all external deps of all members are satisfied before cluster evaluation
+    const clusterLastNodePos = new Map() // clusterId -> position of last member in sortedNodes
+    sortedNodes.forEach((nodeId, pos) => {
+        const clusterId = nodeToCluster.get(nodeId)
+        if (clusterId !== undefined) {
+            clusterLastNodePos.set(clusterId, pos)
+        }
+    })
+    const clusterTriggerPos = new Map() // position -> clusterId to evaluate at that position
+    clusterLastNodePos.forEach((pos, clusterId) => {
+        clusterTriggerPos.set(pos, clusterId)
+    })
+
     // Evaluate in topological order
-    for (const nodeId of sortedNodes) {
+    for (let nodeIdx = 0; nodeIdx < sortedNodes.length; nodeIdx++) {
+        const nodeId = sortedNodes[nodeIdx]
         const node = graph.get(nodeId)
         if (!node) continue
 
         const clusterId = nodeToCluster.get(nodeId)
 
+        // For cluster members, skip individual evaluation - handled when cluster triggers
         if (clusterId !== undefined) {
-            if (evaluatedClusters.has(clusterId)) continue
-            evaluatedClusters.add(clusterId)
+            // Check if this is the LAST member of the cluster in sort order
+            const triggerClusterId = clusterTriggerPos.get(nodeIdx)
+            if (triggerClusterId === undefined || evaluatedClusters.has(triggerClusterId)) continue
+            evaluatedClusters.add(triggerClusterId)
 
-            const cluster = clusters.get(clusterId)
+            const cluster = clusters.get(triggerClusterId)
+            if (options.debug) {
+                console.log(`[DEBUG] Evaluating cluster ${triggerClusterId}: order=${cluster.internalOrder.join(',')}, members=${cluster.members.map(c=>'R'+c.id+'='+c.formula).join(' | ')}`)
+                // Show external dep values for cluster 0 (D&A)
+                if (triggerClusterId === 0) {
+                    const r9002 = context['R9002']
+                    const r203 = context['R203']
+                    const c124 = context['C1.24']
+                    const f2 = context['F2']
+                    console.log(`[DEBUG]   R9002 in context: ${!!r9002}, first non-zero: ${r9002 ? r9002.findIndex(v=>v!==0) : 'N/A'}, val[18]: ${r9002?.[18]}`)
+                    console.log(`[DEBUG]   R203 in context: ${!!r203}, first non-zero: ${r203 ? r203.findIndex(v=>v!==0) : 'N/A'}, val[0..5]: ${r203?.slice(0,6).map(v=>v.toFixed(2)).join(',')}`)
+                    console.log(`[DEBUG]   R203 sum 0-18: ${r203?.slice(0,19).reduce((a,b)=>a+b,0).toFixed(4)}`)
+                    console.log(`[DEBUG]   C1.24 in context: ${!!c124}, val[0]: ${c124?.[0]}`)
+                    console.log(`[DEBUG]   F2 in context: ${!!f2}, first non-zero: ${f2 ? f2.findIndex(v=>v!==0) : 'N/A'}`)
+                    // Check R9022 (equity_drawdown, M4.8)
+                    const r9022 = context['R9022']
+                    console.log(`[DEBUG]   R9022 in context: ${!!r9022}, first non-zero: ${r9022 ? r9022.findIndex(v=>v!==0) : 'N/A'}, val[0..5]: ${r9022?.slice(0,6).map(v=>v.toFixed(2)).join(',')}`)
+                    const v1 = context['V1']
+                    console.log(`[DEBUG]   V1 in context: ${!!v1}, first non-zero: ${v1 ? v1.findIndex(v=>v!==0) : 'N/A'}, val[0..5]: ${v1?.slice(0,6).map(v=>v.toFixed(2)).join(',')}`)
+                }
+            }
             const clusterResults = evaluateClusterPeriodByPeriod(
                 cluster.members, cluster.internalOrder, context, timeline
             )
             Object.entries(clusterResults).forEach(([id, values]) => {
                 calcResults[id] = values
                 context[id] = values
+                if (options.debug && id.startsWith('R900')) {
+                    const nonZeroIdx = values.findIndex(v => v !== 0)
+                    console.log(`[DEBUG]   ${id}: first non-zero at period ${nonZeroIdx}, max=${Math.max(...values).toFixed(2)}`)
+                }
+                // Populate M-ref context aliases for converted module outputs in clusters
+                for (const [mRef, rRef] of Object.entries(mRefMapData)) {
+                    if (rRef === id) {
+                        context[mRef] = values
+                        modOutputs[mRef] = values
+                    }
+                }
             })
         } else if (node.type === 'calc') {
-            const values = evaluateSingleCalc(node.item.formula, context, timeline)
+            const formula = node.item._rewrittenFormula || node.item.formula
+            const values = evaluateSingleCalc(formula, context, timeline)
             calcResults[nodeId] = values
             context[nodeId] = values
+
+            // Debug specific calcs - add to debugInfo for API return
+            if (options.debug && ['R9041', 'R9039', 'R9040'].includes(nodeId)) {
+                const nonZero = values.findIndex(v => v !== 0)
+                const v18 = values[18]
+                const ctxR9039 = context['R9039']
+                if (!options._evalDebug) options._evalDebug = {}
+                options._evalDebug[nodeId] = {
+                    formula,
+                    rewritten: node.item._rewrittenFormula || 'same',
+                    nonZeroAt: nonZero,
+                    v18,
+                    ctxR9039_exists: !!ctxR9039,
+                    ctxR9039_p18: ctxR9039?.[18],
+                    evalOrder: nodeIdx,
+                    isCluster: nodeToCluster.has(nodeId),
+                    clusterId: nodeToCluster.get(nodeId),
+                }
+            }
+
+            // Populate M-ref context aliases for converted module outputs
+            for (const [mRef, rRef] of Object.entries(mRefMapData)) {
+                if (rRef === nodeId) {
+                    context[mRef] = values
+                    modOutputs[mRef] = values
+                }
+            }
         } else if (node.type === 'module') {
             const mod = node.item
             const templateKey = mod.templateId
@@ -648,10 +847,14 @@ export function runServerModel(inputs, calculations) {
             const cluster = clusters.get(clusterId)
             for (const memberId of cluster.internalOrder) {
                 const c = calcById.get(memberId)
-                if (c) sortedNodeMeta.push({ type: 'calc', ref: memberId, name: c.name, formula: c.formula || '0' })
+                if (c) {
+                    const rewrittenFormula = rewriteMRefs(c.formula, mRefMapData)
+                    sortedNodeMeta.push({ type: 'calc', ref: memberId, name: c.name, formula: rewrittenFormula || '0' })
+                }
             }
         } else if (node.type === 'calc') {
-            sortedNodeMeta.push({ type: 'calc', ref: nodeId, name: node.item.name, formula: node.item.formula || '0' })
+            const rewrittenFormula = node.item._rewrittenFormula || node.item.formula
+            sortedNodeMeta.push({ type: 'calc', ref: nodeId, name: node.item.name, formula: rewrittenFormula || '0' })
         } else if (node.type === 'module') {
             const mod = node.item
             const template = MODULE_TEMPLATES[mod.templateId]
@@ -694,29 +897,37 @@ export function runServerModel(inputs, calculations) {
                 }
             }
 
-            // Some modules can't be expressed as non-circular Excel formulas:
-            // - iterative_debt_sizing: uses binary search algorithm
-            // - reserve_account: release ↔ closing circular dependency (sequential period-by-period in JS)
-            // - distributions: re_opening → dividend_paid → re_test → re_opening cycle (sequential in JS)
-            const STATIC_ONLY_MODULES = ['iterative_debt_sizing', 'reserve_account', 'distributions']
-            const isStaticOnly = STATIC_ONLY_MODULES.includes(mod.templateId)
-
-            // Emit one entry per module output
+            // Emit one entry per remaining module output (solver/helper outputs)
+            // These are static values since they can't be expressed as formulas
+            // (e.g., binary search result, forward-looking sums, step functions)
             template.outputs.forEach((output, outputIdx) => {
                 const ref = `M${moduleNum}.${outputIdx + 1}`
-                const formula = isStaticOnly ? null : (resolvedFormulas[output.key] || null)
+                const outputObj = typeof output === 'string' ? { key: output, label: output } : output
+                const isSolverOutput = outputObj.isSolver || template.partiallyConverted
+                const formula = isSolverOutput ? null : (resolvedFormulas[outputObj.key] || null)
                 sortedNodeMeta.push({
                     type: 'module',
                     ref,
-                    name: `${mod.name}: ${output.label}`,
+                    name: `${mod.name}: ${outputObj.label}`,
                     formula,
                     moduleName: mod.name,
-                    outputLabel: output.label,
-                    outputType: output.type
+                    outputLabel: outputObj.label,
+                    outputType: outputObj.type,
+                    isSolver: !!isSolverOutput
                 })
             })
         }
     }
 
-    return { calculationResults: calcResults, moduleOutputs: modOutputs, timeline, referenceMap, sortedNodeMeta }
+    // Build cluster debug info
+    const clusterDebug = []
+    clusters.forEach((cluster, id) => {
+        clusterDebug.push({
+            id,
+            members: cluster.members.map(c => `R${c.id}`),
+            internalOrder: cluster.internalOrder
+        })
+    })
+
+    return { calculationResults: calcResults, moduleOutputs: modOutputs, timeline, referenceMap, sortedNodeMeta, clusterDebug, evalDebug: options._evalDebug || {} }
 }

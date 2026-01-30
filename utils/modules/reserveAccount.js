@@ -11,12 +11,14 @@ export const TEMPLATE = {
         { key: 'drawdownFlagRef', label: 'Drawdown Flag (e.g., F2)', type: 'reference', refType: 'flag', required: false },
         { key: 'releaseFlagRef', label: 'Release Flag (e.g., F2.End)', type: 'reference', refType: 'flag', required: false }
     ],
-    outputs: [
-        { key: 'opening', label: 'Opening Balance', type: 'stock_start' },
-        { key: 'funding', label: 'Funding', type: 'flow' },
-        { key: 'drawdown', label: 'Drawdown', type: 'flow' },
-        { key: 'release', label: 'Release', type: 'flow' },
-        { key: 'closing', label: 'Closing Balance', type: 'stock' }
+    outputs: [],
+    fullyConverted: true,
+    convertedOutputs: [
+        { key: 'opening_balance', label: 'Opening Balance', calcRef: 'R9032' },
+        { key: 'funding', label: 'Funding', calcRef: 'R9033' },
+        { key: 'drawdown', label: 'Drawdown', calcRef: 'R9034' },
+        { key: 'release', label: 'Release', calcRef: 'R9035' },
+        { key: 'closing_balance', label: 'Closing Balance', calcRef: 'R9036' }
     ],
     outputFormulas: {
         opening: 'SHIFT(closing, 1)',

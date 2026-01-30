@@ -38,9 +38,9 @@ function colToLetter(col) {
 }
 
 /**
- * The first data column for period values (column D = 4, after Ref/Name/Formula columns).
+ * First data column for period values (column E = 5, after Ref/Name/Unit-or-Formula/Total).
  */
-const FIRST_DATA_COL = 4
+const FIRST_DATA_COL = 5
 
 /**
  * Convert a GlassBox formula to an Excel formula for a specific period column.
@@ -62,7 +62,7 @@ export function convertFormula(formula, refMap, periodIndex, calcsSheet = 'Calcs
 
     let excelFormula = formula
 
-    // --- 1. Process array functions (CUMSUM, CUMPROD, SHIFT, COUNT) ---
+    // --- 1. Process array functions (CUMSUM, CUMPROD, SHIFT, PREVSUM, PREVVAL, COUNT) ---
     // Must be done before simple ref replacement
 
     // CUMSUM(expr) → running SUM from first data column to current column
@@ -144,6 +144,37 @@ export function convertFormula(formula, refMap, periodIndex, calcsSheet = 'Calcs
         }
         // Complex expression with shift - substitute refs at shifted column
         return substituteRefsInExpr(expr, refMap, shiftedCol, calcsSheet)
+    })
+
+    // PREVSUM(expr) → SUM from first data column to PREVIOUS column (excludes current)
+    // Excel: =SUM($D$row:prev_col$row) where prev_col = current - 1
+    excelFormula = processNestedFunction(excelFormula, 'PREVSUM', (innerExpr) => {
+        const prevCol = col - 1
+        if (prevCol < FIRST_DATA_COL) {
+            return '0' // No prior periods → 0
+        }
+        const innerCellRef = resolveExprToCellRef(innerExpr, refMap, col, calcsSheet)
+        if (innerCellRef.isSimple) {
+            const firstColLetter = colToLetter(FIRST_DATA_COL)
+            const prevColLetter = colToLetter(prevCol)
+            return `SUM(${innerCellRef.sheetPrefix}$${firstColLetter}$${innerCellRef.row}:${innerCellRef.sheetPrefix}${prevColLetter}$${innerCellRef.row})`
+        }
+        return null
+    })
+
+    // PREVVAL(expr) → reference 1 column to the left (same as SHIFT(expr, 1))
+    // Excel: =prev_col$row
+    excelFormula = processNestedFunction(excelFormula, 'PREVVAL', (innerExpr) => {
+        const prevCol = col - 1
+        if (prevCol < FIRST_DATA_COL) {
+            return '0' // Before first period → 0
+        }
+        const prevColLetter = colToLetter(prevCol)
+        const innerCellRef = resolveExprToCellRef(innerExpr, refMap, prevCol, calcsSheet)
+        if (innerCellRef.isSimple) {
+            return `${innerCellRef.sheetPrefix}${prevColLetter}$${innerCellRef.row}`
+        }
+        return substituteRefsInExpr(innerExpr, refMap, prevCol, calcsSheet)
     })
 
     // COUNT(expr) → COUNTIF running range <>0
@@ -286,6 +317,15 @@ export function canConvertToExcel(formula) {
     // Can't convert CUMPROD_Y or CUMSUM_Y (year-boundary logic)
     if (/CUMPROD_Y\s*\(/i.test(formula)) return false
     if (/CUMSUM_Y\s*\(/i.test(formula)) return false
+
+    // Reject descriptive text formulas (contain English words that aren't function names)
+    // Valid tokens: refs (R4, M1.2, C1.10, F6, I2, T.MiY, V1, S1, L1.2), numbers,
+    // operators (+,-,*,/,^,>,<,>=,<=,(,)), functions (CUMSUM, CUMPROD, SHIFT, PREVSUM, PREVVAL, MIN, MAX, ABS, COUNT)
+    // If formula contains lowercase words (not part of refs), it's descriptive text
+    const withoutFunctions = formula.replace(/\b(CUMSUM|CUMPROD|SHIFT|PREVSUM|PREVVAL|MIN|MAX|ABS|COUNT|SUMPRODUCT|SUM|IF)\b/gi, '')
+    const withoutRefs = withoutFunctions.replace(/\b[RMVSCFITLG]\d+(?:\.\d+)*(?:\.(?:Start|End))?\b/g, '')
+    const withoutTimeRefs = withoutRefs.replace(/\bT\.[A-Za-z]+\b/g, '')
+    if (/[a-z]{3,}/i.test(withoutTimeRefs)) return false  // 3+ consecutive letters = likely English text
 
     // Can convert: simple refs, CUMSUM, CUMPROD, SHIFT, COUNT, MIN, MAX, ABS, arithmetic
     return true

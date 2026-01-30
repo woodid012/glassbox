@@ -18,16 +18,19 @@ export const TEMPLATE = {
         ], default: 'prorata' },
         { key: 'constructionFlagRef', label: 'Construction Flag', type: 'reference', refType: 'flag', required: true }
     ],
-    outputs: [
-        { key: 'total_uses_incl_idc', label: 'Total Funding Requirements', type: 'stock' },
-        { key: 'senior_debt', label: 'Senior Debt', type: 'stock' },
-        { key: 'equity', label: 'Equity', type: 'stock' },
-        { key: 'gearing_pct', label: 'Gearing %', type: 'stock' },
-        { key: 'cumulative_idc', label: 'IDC', type: 'stock' },
-        { key: 'debt_drawdown', label: 'Debt Drawdown', type: 'flow' },
-        { key: 'equity_drawdown', label: 'Equity Drawdown', type: 'flow' },
-        { key: 'idc', label: 'IDC (Period)', type: 'flow' },
-        { key: 'total_uses_ex_idc', label: 'Total Uses (ex-IDC)', type: 'stock' }
+    outputs: [],
+    fullyConverted: true,
+    convertedOutputs: [
+        { key: 'total_funding', label: 'Total Funding Requirements', calcRef: 'R9015' },
+        { key: 'senior_debt', label: 'Senior Debt', calcRef: 'R9016' },
+        { key: 'equity', label: 'Equity', calcRef: 'R9017' },
+        { key: 'gearing_pct', label: 'Gearing %', calcRef: 'R9018' },
+        { key: 'idc', label: 'IDC', calcRef: 'R9019' },
+        { key: 'debt_drawdown', label: 'Debt Drawdown', calcRef: 'R9020' },
+        { key: 'equity_drawdown', label: 'Equity Drawdown', calcRef: 'R9021' },
+        { key: 'idc_period', label: 'IDC (Period)', calcRef: 'R9022' },
+        { key: 'total_uses_ex_idc', label: 'Total Uses (ex-IDC)', calcRef: 'R9023' },
+        { key: 'uncapped_debt_drawdown', label: 'Uncapped Debt Drawdown', calcRef: 'R9024' }
     ],
     outputFormulas: {
         total_uses_ex_idc: '{constructionCostsRef} + CUMSUM({gstPaidRef}) + CUMSUM({feesRef})',

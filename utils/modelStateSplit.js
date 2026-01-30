@@ -31,7 +31,8 @@ const CALCULATION_KEYS = [
     'calculationsGroups',
     'calculations',
     'modules',
-    'moduleTemplates'
+    'moduleTemplates',
+    '_mRefMap'
 ]
 
 const UI_STATE_KEYS = [

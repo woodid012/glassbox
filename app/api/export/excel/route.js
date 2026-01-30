@@ -179,23 +179,29 @@ function buildSheetXml(rows, addString) {
 function buildConstantsSheet(bundle, periodLabels) {
     const rows = []
     // Header row
-    const header = ['Ref', 'Name', 'Value', ...periodLabels]
+    const header = ['Ref', 'Name', 'Value', 'Total', ...periodLabels]
     rows.push(header)
 
     const constantsGroup = Object.entries(bundle.inputs || {}).find(([, g]) => g._meta?.entryMode === 'constant')
     const refRows = [] // Track refs and their row numbers for refMap
+    const periodCount = periodLabels.length
+    const firstPeriodCol = colToLetter(5) // E
+    const lastPeriodCol = colToLetter(4 + periodCount)
 
     if (constantsGroup) {
         const [, groupData] = constantsGroup
         for (const [ref, data] of Object.entries(groupData)) {
             if (ref === '_meta') continue
+            const rowNum = rows.length + 1
             const row = [ref, data.name, { type: 'number', value: data.value ?? 0 }]
-            // Replicate value across all period columns (col D onward)
-            for (let i = 0; i < periodLabels.length; i++) {
+            // Total column: SUM of all period values
+            row.push({ type: 'formula', value: `SUM(${firstPeriodCol}${rowNum}:${lastPeriodCol}${rowNum})` })
+            // Replicate value across all period columns (col E onward)
+            for (let i = 0; i < periodCount; i++) {
                 // Reference the Value column (C) so changing C propagates
-                row.push({ type: 'formula', value: `$C${rows.length + 1}` })
+                row.push({ type: 'formula', value: `$C${rowNum}` })
             }
-            refRows.push({ ref, row: rows.length + 1 }) // 1-based row
+            refRows.push({ ref, row: rowNum }) // 1-based row
             rows.push(row)
         }
     }
@@ -206,11 +212,16 @@ function buildConstantsSheet(bundle, periodLabels) {
 /**
  * Sheet 2: CAPEX — time series with period columns
  */
-function buildSeriesSheet(bundle, periodLabels, groupFilter) {
+function buildSeriesSheet(bundle, periodLabels, groupFilter, referenceMap, refAliases) {
     const rows = []
-    const header = ['Ref', 'Name', 'Unit', ...periodLabels]
+    const header = ['Ref', 'Name', 'Unit', 'Total', ...periodLabels]
     rows.push(header)
     const refRows = []
+    const periodCount = periodLabels.length
+
+    // Period data starts at column E (index 4), first period col letter = E
+    const firstPeriodCol = colToLetter(5) // E
+    const lastPeriodCol = colToLetter(4 + periodCount)
 
     for (const [, groupData] of Object.entries(bundle.inputs || {})) {
         const meta = groupData._meta
@@ -219,12 +230,21 @@ function buildSeriesSheet(bundle, periodLabels, groupFilter) {
 
         for (const [ref, data] of Object.entries(groupData)) {
             if (ref === '_meta') continue
+            const rowNum = rows.length + 1
             const row = [ref, data.name, data.unit || '']
-            const values = data.values || []
-            for (let i = 0; i < periodLabels.length; i++) {
+            // Total column: SUM of all period values
+            row.push({ type: 'formula', value: `SUM(${firstPeriodCol}${rowNum}:${lastPeriodCol}${rowNum})` })
+            // Prefer server-engine referenceMap values (correctly expanded with key period linking,
+            // frequency spreading, and date-to-timeline mapping) over bundle values which
+            // use the simplified extractSeriesGroup() that doesn't handle these.
+            // Bundle uses ID-based refs (G8.156) while referenceMap uses position-based (S2.156),
+            // so also check aliases for mismatched group refs.
+            const refMapValues = referenceMap[ref] || (refAliases && refAliases[ref] && referenceMap[refAliases[ref]])
+            const values = refMapValues || data.values || []
+            for (let i = 0; i < periodCount; i++) {
                 row.push({ type: 'number', value: values[i] ?? 0 })
             }
-            refRows.push({ ref, row: rows.length + 1 })
+            refRows.push({ ref, row: rowNum })
             rows.push(row)
         }
     }
@@ -237,47 +257,34 @@ function buildSeriesSheet(bundle, periodLabels, groupFilter) {
  */
 function buildFlagsSheet(bundle, periodLabels, referenceMap) {
     const rows = []
-    const header = ['Ref', 'Name', 'Type', ...periodLabels]
+    const header = ['Ref', 'Name', 'Type', 'Total', ...periodLabels]
     rows.push(header)
     const refRows = []
+    const periodCount = periodLabels.length
+    const firstPeriodCol = colToLetter(5) // E
+    const lastPeriodCol = colToLetter(4 + periodCount)
+
+    function addFlagRow(ref, name, type, values) {
+        const rowNum = rows.length + 1
+        const row = [ref, name, type]
+        row.push({ type: 'formula', value: `SUM(${firstPeriodCol}${rowNum}:${lastPeriodCol}${rowNum})` })
+        for (let i = 0; i < periodCount; i++) {
+            row.push({ type: 'number', value: values[i] ?? 0 })
+        }
+        refRows.push({ ref, row: rowNum })
+        rows.push(row)
+    }
 
     // Key period flags
     for (const [ref, data] of Object.entries(bundle.keyPeriods || {})) {
-        // Main flag
-        const flagRow = [ref, data.name, 'Flag']
-        for (let i = 0; i < periodLabels.length; i++) {
-            flagRow.push({ type: 'number', value: data.flag[i] ?? 0 })
-        }
-        refRows.push({ ref, row: rows.length + 1 })
-        rows.push(flagRow)
-
-        // Start flag
-        const startRef = `${ref}.Start`
-        const startRow = [startRef, `${data.name} Start`, 'Flag']
-        for (let i = 0; i < periodLabels.length; i++) {
-            startRow.push({ type: 'number', value: data.flagStart[i] ?? 0 })
-        }
-        refRows.push({ ref: startRef, row: rows.length + 1 })
-        rows.push(startRow)
-
-        // End flag
-        const endRef = `${ref}.End`
-        const endRow = [endRef, `${data.name} End`, 'Flag']
-        for (let i = 0; i < periodLabels.length; i++) {
-            endRow.push({ type: 'number', value: data.flagEnd[i] ?? 0 })
-        }
-        refRows.push({ ref: endRef, row: rows.length + 1 })
-        rows.push(endRow)
+        addFlagRow(ref, data.name, 'Flag', data.flag)
+        addFlagRow(`${ref}.Start`, `${data.name} Start`, 'Flag', data.flagStart)
+        addFlagRow(`${ref}.End`, `${data.name} End`, 'Flag', data.flagEnd)
     }
 
     // Indices
     for (const [ref, data] of Object.entries(bundle.indices || {})) {
-        const row = [ref, data.name, 'Index']
-        for (let i = 0; i < periodLabels.length; i++) {
-            row.push({ type: 'number', value: data.values[i] ?? 1 })
-        }
-        refRows.push({ ref, row: rows.length + 1 })
-        rows.push(row)
+        addFlagRow(ref, data.name, 'Index', data.values)
     }
 
     // Time constants from referenceMap
@@ -291,12 +298,7 @@ function buildFlagsSheet(bundle, periodLabels, referenceMap) {
     for (const ref of timeRefs) {
         const arr = referenceMap[ref]
         if (!arr) continue
-        const row = [ref, timeNames[ref] || ref, 'Time']
-        for (let i = 0; i < periodLabels.length; i++) {
-            row.push({ type: 'number', value: arr[i] ?? 0 })
-        }
-        refRows.push({ ref, row: rows.length + 1 })
-        rows.push(row)
+        addFlagRow(ref, timeNames[ref] || ref, 'Time', arr)
     }
 
     // Lookup refs from referenceMap (position-based L1.1, L1.2, L2.2, L3.1, etc.)
@@ -305,12 +307,7 @@ function buildFlagsSheet(bundle, periodLabels, referenceMap) {
     for (const ref of lookupRefNames) {
         const arr = referenceMap[ref]
         if (!arr) continue
-        const row = [ref, ref, 'Lookup']
-        for (let i = 0; i < periodLabels.length; i++) {
-            row.push({ type: 'number', value: arr[i] ?? 0 })
-        }
-        refRows.push({ ref, row: rows.length + 1 })
-        rows.push(row)
+        addFlagRow(ref, ref, 'Lookup', arr)
     }
 
     return { rows, refRows }
@@ -323,9 +320,14 @@ function buildFlagsSheet(bundle, periodLabels, referenceMap) {
  */
 function buildCalcsSheet(periodLabels, refMap, calcResults, moduleOutputs, sortedNodeMeta) {
     const rows = []
-    const header = ['Ref', 'Name', 'Formula', ...periodLabels]
+    const header = ['Ref', 'Name', 'Formula', 'Total', ...periodLabels]
     rows.push(header)
     const refRows = []
+    const periodCount = periodLabels.length
+
+    // Period data starts at column E (index 4), first period col letter = E
+    const firstPeriodCol = colToLetter(5) // E
+    const lastPeriodCol = colToLetter(4 + periodCount)
 
     // All results in one map for static fallback lookup
     const allResults = { ...calcResults, ...moduleOutputs }
@@ -339,10 +341,12 @@ function buildCalcsSheet(periodLabels, refMap, calcResults, moduleOutputs, sorte
         const canConvert = glassFormula && canConvertToExcel(glassFormula)
 
         const row = [ref, node.name, glassFormula || '(pre-computed)']
+        // Total column: SUM of all period values
+        row.push({ type: 'formula', value: `SUM(${firstPeriodCol}${rowNum}:${lastPeriodCol}${rowNum})` })
 
         if (canConvert && glassFormula !== '0') {
             // Try to convert each period to an Excel formula
-            for (let i = 0; i < periodLabels.length; i++) {
+            for (let i = 0; i < periodCount; i++) {
                 const { formula: excelFormula } = convertFormula(glassFormula, refMap, i, 'Calcs')
                 if (excelFormula) {
                     row.push({ type: 'formula', value: excelFormula.substring(1) }) // Remove leading '='
@@ -354,13 +358,13 @@ function buildCalcsSheet(periodLabels, refMap, calcResults, moduleOutputs, sorte
             }
         } else if (glassFormula === '0') {
             // Zero-formula rows — plain numbers, nothing to convert
-            for (let i = 0; i < periodLabels.length; i++) {
+            for (let i = 0; i < periodCount; i++) {
                 row.push({ type: 'number', value: 0 })
             }
         } else {
             // Static values: null formula (pre-computed module) or unconvertible
             const staticValues = allResults[ref] || []
-            for (let i = 0; i < periodLabels.length; i++) {
+            for (let i = 0; i < periodCount; i++) {
                 row.push({ type: 'static', value: staticValues[i] ?? 0 })
             }
         }
@@ -395,17 +399,142 @@ function buildSummarySheet(bundle) {
         ['Calcs', 'Calculations (R) + module outputs (M) interleaved in dependency order'],
         [''],
         ['Formula Notes'],
-        ['- Calcs sheet contains both R-calcs and M-module outputs in topological order'],
-        ['- Module outputs with GlassBox formulas are converted to Excel formulas'],
-        ['- Iterative debt sizing (M1) uses pre-computed static values (amber cells)'],
+        ['- Calcs sheet contains R-calcs and remaining M-module outputs in topological order'],
+        ['- Most module outputs are now transparent GlassBox formulas (converted to Excel)'],
+        ['- Solver outputs (debt sizing, forward-looking sums) use pre-computed static values'],
         ['- Change a constant on the Constants sheet and Calcs will recalculate'],
-        ['- Amber/italic cells = pre-computed static values (formula too complex for Excel)']
+        ['- Amber/italic cells = pre-computed static values (solver output, too complex for Excel)']
     ]
+}
+
+/**
+ * Build a mapping from bundle-style refs (G8.156, G101.141) to server-engine position-based refs (S2.156, S3.141).
+ * This allows buildSeriesSheet to find values in the referenceMap for groups that use different naming.
+ */
+function buildBundleToServerAliases(inputs) {
+    const aliases = {}
+    const inputGlassGroups = inputs.inputGlassGroups || []
+    const inputGlass = inputs.inputGlass || []
+
+    const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
+    const activeGroups = inputGlassGroups.filter(group =>
+        inputGlass.some(input => input.groupId === group.id)
+    )
+
+    for (const group of activeGroups) {
+        const groupInputs = inputGlass.filter(input => input.groupId === group.id)
+
+        let normalizedMode
+        if (group.groupType === 'timing') normalizedMode = 'timing'
+        else if (group.groupType === 'constant') normalizedMode = 'constant'
+        else {
+            const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
+            if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+            else normalizedMode = groupMode
+        }
+
+        modeIndices[normalizedMode]++
+        const modePrefix = normalizedMode === 'timing' ? 'T' :
+                          normalizedMode === 'series' ? 'S' :
+                          normalizedMode === 'constant' ? 'C' :
+                          normalizedMode === 'lookup' ? 'L' : 'V'
+        const serverRef = `${modePrefix}${modeIndices[normalizedMode]}`
+
+        // Bundle ref
+        const entryMode = group.entryMode || group.groupType || 'series'
+        let bundleRef
+        if (group.id === 100 || entryMode === 'constant') bundleRef = 'C1'
+        else if (group.id === 1) bundleRef = 'V1'
+        else if (group.id === 2) bundleRef = 'S1'
+        else if (entryMode === 'lookup') bundleRef = `L${group.id}`
+        else bundleRef = `G${group.id}`
+
+        if (serverRef === bundleRef) continue
+
+        // Map bundle group total → server group total
+        aliases[bundleRef] = serverRef
+
+        // Map per-input refs
+        for (const input of groupInputs) {
+            const inputNum = group.id === 100 ? input.id - 99 : input.id
+            aliases[`${bundleRef}.${inputNum}`] = `${serverRef}.${inputNum}`
+        }
+    }
+
+    return aliases
+}
+
+/**
+ * Add aliases for position-based refs that the formula engine uses but the export bundle doesn't.
+ * The formula engine uses position-based refs (S1, S2, S3...) while the export bundle
+ * uses ID-based refs for non-standard groups (G8, G101). This bridges the gap.
+ *
+ * Replays the same group classification logic as serverModelEngine.buildReferenceMap
+ * to build a mapping of position-based ref → export-bundle ref, then adds aliases.
+ */
+function addPositionBasedAliases(refMap, bundle, referenceMap, inputs) {
+    const inputGlassGroups = inputs.inputGlassGroups || []
+    const inputGlass = inputs.inputGlass || []
+
+    // Replay position-based ref assignment (same logic as serverModelEngine.buildReferenceMap)
+    const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
+    const activeGroups = inputGlassGroups.filter(group =>
+        inputGlass.some(input => input.groupId === group.id)
+    )
+
+    for (const group of activeGroups) {
+        const groupInputs = inputGlass.filter(input => input.groupId === group.id)
+
+        let normalizedMode
+        if (group.groupType === 'timing') normalizedMode = 'timing'
+        else if (group.groupType === 'constant') normalizedMode = 'constant'
+        else {
+            const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
+            if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
+            else normalizedMode = groupMode
+        }
+
+        modeIndices[normalizedMode]++
+        const modePrefix = normalizedMode === 'timing' ? 'T' :
+                          normalizedMode === 'series' ? 'S' :
+                          normalizedMode === 'constant' ? 'C' :
+                          normalizedMode === 'lookup' ? 'L' : 'V'
+        const positionRef = `${modePrefix}${modeIndices[normalizedMode]}` // e.g., S3
+
+        // Determine the export bundle ref for this group
+        const entryMode = group.entryMode || group.groupType || 'series'
+        let exportRef
+        if (group.id === 100 || entryMode === 'constant') exportRef = 'C1'
+        else if (group.id === 1) exportRef = 'V1'
+        else if (group.id === 2) exportRef = 'S1'
+        else if (entryMode === 'lookup') exportRef = `L${group.id}`
+        else exportRef = `G${group.id}`
+
+        // Skip if position ref === export ref (no alias needed)
+        if (positionRef === exportRef) continue
+
+        // Add alias: position-based group subtotal → export bundle's row
+        if (refMap.has(exportRef) && !refMap.has(positionRef)) {
+            refMap.set(positionRef, refMap.get(exportRef))
+        }
+
+        // Add aliases for per-input refs
+        // Position-based: S3.{inputNum}, Export-based: G101.{inputNum}
+        for (const input of groupInputs) {
+            const inputNum = group.id === 100 ? input.id - 99 : input.id
+            const posInputRef = `${positionRef}.${inputNum}`
+            const exportInputRef = `${exportRef}.${inputNum}`
+
+            if (refMap.has(exportInputRef) && !refMap.has(posInputRef)) {
+                refMap.set(posInputRef, refMap.get(exportInputRef))
+            }
+        }
+    }
 }
 
 // ─── Main Generator ───
 
-function generateXlsxFiles(bundle, modelResults) {
+function generateXlsxFiles(bundle, modelResults, rawInputs) {
     const files = {}
     const periodLabels = bundle.timeline.periodLabels || []
     const { calculationResults, moduleOutputs, referenceMap, sortedNodeMeta } = modelResults
@@ -422,6 +551,11 @@ function generateXlsxFiles(bundle, modelResults) {
         return stringIndex[str]
     }
 
+    // ─── Build bundle-ref → server-ref aliases ───
+    // The export bundle uses ID-based refs (G8.156, G101.141) while the server engine's
+    // referenceMap uses position-based refs (S2.156, S3.141). Build a mapping to bridge them.
+    const refAliases = buildBundleToServerAliases(rawInputs)
+
     // ─── Build sheet data ───
 
     // Sheet 1: Constants
@@ -430,12 +564,12 @@ function generateXlsxFiles(bundle, modelResults) {
     // Sheet 2: CAPEX
     const capex = buildSeriesSheet(bundle, periodLabels, (meta) =>
         meta.refPrefix === 'V1' && meta.entryMode !== 'constant'
-    )
+    , referenceMap, refAliases)
 
     // Sheet 3: OPEX (S1 + any other series groups like S3)
     const opex = buildSeriesSheet(bundle, periodLabels, (meta) =>
         (meta.refPrefix?.startsWith('S') || meta.refPrefix?.startsWith('G')) && meta.entryMode !== 'constant'
-    )
+    , referenceMap, refAliases)
 
     // Sheet 4: Flags & Time
     const flags = buildFlagsSheet(bundle, periodLabels, referenceMap)
@@ -456,6 +590,11 @@ function generateXlsxFiles(bundle, modelResults) {
     sheetLayout.calcs = { sheetName: 'Calcs', refs: calcsRefRows }
 
     const refMap = buildRefMap(sheetLayout)
+
+    // Add position-based ref aliases (e.g., S3 → G101's row on OPEX sheet)
+    // The formula engine uses position-based refs (S1, S2, S3...) while the export
+    // bundle uses ID-based refs (S1, G8, G101). Bridge them here.
+    addPositionBasedAliases(refMap, bundle, referenceMap, rawInputs)
 
     // Sheet 5: Calcs (interleaved calcs + modules, with formulas)
     const calcs = buildCalcsSheet(periodLabels, refMap, calculationResults, moduleOutputs, sortedNodeMeta)
@@ -575,7 +714,7 @@ export async function GET() {
         const bundle = generateExportBundle(inputs, calculations)
 
         // Generate XLSX files with formula-based Calcs sheet
-        const xlsxFiles = generateXlsxFiles(bundle, modelResults)
+        const xlsxFiles = generateXlsxFiles(bundle, modelResults, inputs)
 
         // Create ZIP archive
         const zipBuffer = createZipArchive(xlsxFiles)

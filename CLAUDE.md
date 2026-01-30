@@ -646,6 +646,10 @@ Key formatting functions:
 - `formatValue()` in `utils/valueAggregation.js`
 - `formatAccounting()` in `app/dashboard/calculations/page.jsx`
 
+## Future Tasks
+
+- **Module definitions as data file:** Move module template definitions (name, description, input schema, output-to-calc mappings) from JS files (`utils/modules/*.js`) into a JSON data file (`data/model-modules.json`), consistent with `model-inputs.json` and `model-calculations.json`. Only solver functions (M1 binary search, M8 forward-looking sums) remain as JS. The Modules page becomes a template launcher that reads from this data file, creates calc groups, and links inputs — no JS module execution for fully converted modules.
+
 ## Notes
 
 - Some glassinputs components are placeholder stubs - replace with full implementations if available

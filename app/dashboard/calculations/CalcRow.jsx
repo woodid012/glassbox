@@ -57,6 +57,11 @@ const CalcRow = memo(function CalcRow({
                         <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100">
                             {calcRef}
                         </span>
+                        {calc._moduleId && (
+                            <span className="text-[10px] px-1 py-0.5 rounded font-medium text-orange-700 bg-orange-100">
+                                {calc._moduleId}
+                            </span>
+                        )}
                         <DeferredInput
                             type="text"
                             value={calc.name}
@@ -138,6 +143,7 @@ const CalcRow = memo(function CalcRow({
         prevProps.calc.name === nextProps.calc.name &&
         prevProps.calc.formula === nextProps.calc.formula &&
         prevProps.calc.type === nextProps.calc.type &&
+        prevProps.calc._moduleId === nextProps.calc._moduleId &&
         prevProps.calcIndex === nextProps.calcIndex &&
         prevProps.calcRef === nextProps.calcRef &&
         prevProps.isSelected === nextProps.isSelected &&

@@ -719,6 +719,11 @@ export default function CalculationsPage() {
                                                                 <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100">
                                                                     R{calcIndexMap.get(calc.id)}
                                                                 </span>
+                                                                {calc._moduleId && (
+                                                                    <span className="text-[10px] px-1 py-0.5 rounded font-medium text-orange-700 bg-orange-100">
+                                                                        {calc._moduleId}
+                                                                    </span>
+                                                                )}
                                                                 <span className="text-sm font-semibold text-slate-900">
                                                                     {calc.name}
                                                                 </span>
@@ -836,13 +841,22 @@ export default function CalculationsPage() {
 
                                 {tabGroups.map((group) => {
                                     const groupCalcs = tabCalcs.filter(c => c.groupId === group.id)
-                                    const isCollapsed = collapsedCalculationsGroups?.has(group.id)
+                                    const isModuleGroup = group._isModuleGroup === true
+                                    // Module groups default to collapsed
+                                    const isCollapsed = isModuleGroup
+                                        ? (collapsedCalculationsGroups?.has(group.id) ?? true)
+                                        : collapsedCalculationsGroups?.has(group.id)
+                                    const hasSolverCalcs = isModuleGroup && groupCalcs.some(c => c.formula && /\bM\d+\.\d+\b/.test(c.formula))
 
                                     return (
-                                        <div key={group.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                                        <div key={group.id} className={`border rounded-lg overflow-hidden ${isModuleGroup ? 'border-orange-200 border-l-4 border-l-orange-300 bg-orange-50/30' : 'border-slate-200'}`}>
                                             {/* Group Header */}
                                             <div
-                                                className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200 cursor-pointer hover:bg-slate-100"
+                                                className={`flex items-center justify-between px-4 py-3 border-b cursor-pointer ${
+                                                    isModuleGroup
+                                                        ? 'bg-orange-50/50 border-orange-200 hover:bg-orange-50'
+                                                        : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                                                }`}
                                                 onClick={() => toggleGroupCollapse(group.id)}
                                             >
                                                 <div className="flex items-center gap-3">
@@ -851,15 +865,30 @@ export default function CalculationsPage() {
                                                     ) : (
                                                         <ChevronDown className="w-4 h-4 text-slate-500" />
                                                     )}
-                                                    <DeferredInput
-                                                        type="text"
-                                                        value={group.name}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        onChange={(val) => updateCalculationsGroup(group.id, 'name', val)}
-                                                        className="text-sm font-semibold text-slate-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white rounded px-1"
-                                                    />
+                                                    {isModuleGroup ? (
+                                                        <span className="text-sm font-semibold text-slate-900">{group.name}</span>
+                                                    ) : (
+                                                        <DeferredInput
+                                                            type="text"
+                                                            value={group.name}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(val) => updateCalculationsGroup(group.id, 'name', val)}
+                                                            className="text-sm font-semibold text-slate-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white rounded px-1"
+                                                        />
+                                                    )}
                                                     <span className="text-xs text-slate-500">({groupCalcs.length} calculations)</span>
+                                                    {isModuleGroup && (
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-orange-100 text-orange-700">
+                                                            Module
+                                                        </span>
+                                                    )}
+                                                    {hasSolverCalcs && (
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-700">
+                                                            + Solver
+                                                        </span>
+                                                    )}
                                                 </div>
+                                                {!isModuleGroup && (
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={(e) => {
@@ -884,6 +913,7 @@ export default function CalculationsPage() {
                                                         </button>
                                                     )}
                                                 </div>
+                                                )}
                                             </div>
 
                                             {/* Group Content */}

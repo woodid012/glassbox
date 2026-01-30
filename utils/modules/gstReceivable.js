@@ -13,16 +13,18 @@ export const TEMPLATE = {
         { key: 'constructionFlagRef', label: 'Construction Period Flag', type: 'reference', refType: 'flag', required: false },
         { key: 'operationsFlagRef', label: 'Operations Period Flag', type: 'reference', refType: 'flag', required: false }
     ],
-    outputs: [
-        { key: 'gst_base', label: 'GST Base Amount', type: 'flow' },
-        { key: 'gst_amount', label: 'GST Amount', type: 'flow' },
-        { key: 'gst_paid', label: 'GST Paid (Outflow)', type: 'flow' },
-        { key: 'receivable_opening', label: 'GST Receivable - Opening', type: 'stock_start' },
-        { key: 'gst_received', label: 'GST Received (Inflow)', type: 'flow' },
-        { key: 'receivable_closing', label: 'GST Receivable - Closing', type: 'stock' },
-        { key: 'net_gst_cashflow', label: 'Net GST Cash Flow', type: 'flow' },
-        { key: 'gst_received_construction', label: 'GST Received (Construction)', type: 'flow' },
-        { key: 'gst_received_operations', label: 'GST Received (Operations)', type: 'flow' }
+    outputs: [],
+    fullyConverted: true,
+    convertedOutputs: [
+        { key: 'gst_base', label: 'GST Base Amount', calcRef: 'R9006' },
+        { key: 'gst_amount', label: 'GST Amount', calcRef: 'R9007' },
+        { key: 'gst_paid', label: 'GST Paid (Outflow)', calcRef: 'R9008' },
+        { key: 'gst_receivable_opening', label: 'GST Receivable - Opening', calcRef: 'R9009' },
+        { key: 'gst_received', label: 'GST Received (Inflow)', calcRef: 'R9010' },
+        { key: 'gst_receivable_closing', label: 'GST Receivable - Closing', calcRef: 'R9011' },
+        { key: 'net_gst_cashflow', label: 'Net GST Cash Flow', calcRef: 'R9012' },
+        { key: 'gst_received_construction', label: 'GST Received (Construction)', calcRef: 'R9013' },
+        { key: 'gst_received_operations', label: 'GST Received (Operations)', calcRef: 'R9014' }
     ],
     outputFormulas: {
         gst_base: '{gstBaseRef}',

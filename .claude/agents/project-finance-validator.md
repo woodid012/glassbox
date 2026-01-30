@@ -215,3 +215,25 @@ When reporting validation results, structure your findings as:
 6. NEVER ignore circular dependency warnings - these cause calculation failures
 7. ALWAYS trace the full calculation chain when validating results
 8. ALWAYS check semantic name matching for module references - a calc named "Received" should not use a "paid" output
+
+### 10. Blueprint Analysis (Model Review Report)
+
+When `data/model-review-report.md` exists, read it for a structured completeness analysis. The report maps current calculations against a blueprint of expected project finance components.
+
+**Workflow:**
+1. Read `data/model-review-report.md` if it exists
+2. Review the "Missing Items" section — these are gaps in the model
+3. For each missing item, assess:
+   - Is it truly needed for this project type?
+   - What calculations/modules would need to be added?
+   - Are there existing calculations that partially cover it?
+4. For matched items, spot-check that the match is correct (name pattern matches can be wrong)
+5. Provide a prioritized action plan for addressing gaps
+
+**Report sections to analyze:**
+- **Summary** — overall completeness percentages
+- **Integrity Checks** — B/S balance and S&U check pass/fail
+- **Calculation Sections** — matched/missing by financial statement area
+- **Modules** — which module templates are present vs expected
+- **Key Inputs** — key periods and constants coverage
+- **Missing Items** — prioritized list of gaps to address

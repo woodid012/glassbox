@@ -20,9 +20,9 @@ const getRegexCached = (ref) => {
 function extractDependencies(formula) {
     if (!formula) return []
 
-    // Remove SHIFT(...) patterns - these are lagged dependencies (prior period)
+    // Remove SHIFT/PREVSUM/PREVVAL patterns - these are lagged dependencies (prior period)
     // and don't create true cycles in the dependency graph
-    const formulaWithoutShift = formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
+    const formulaWithoutShift = formula.replace(/(?:SHIFT\s*\([^)]+\)|PREVSUM\s*\([^)]+\)|PREVVAL\s*\([^)]+\))/gi, '')
 
     const deps = new Set()
 
@@ -76,9 +76,11 @@ function extractModuleDependencies(module, moduleIdx, allModulesCount) {
 }
 
 /**
- * Build unified dependency graph of calculations AND modules
+ * Build unified dependency graph of calculations AND modules.
+ * For converted modules, M-refs in formulas are rewritten to R-refs.
+ * Converted module nodes are excluded from the graph (their calcs handle evaluation).
  */
-function buildUnifiedGraph(calculations, modules) {
+function buildUnifiedGraph(calculations, modules, mRefMapData) {
     const graph = new Map() // nodeId -> { type, deps: Set, item, index? }
     const allCalcIds = new Set()
 
@@ -87,14 +89,23 @@ function buildUnifiedGraph(calculations, modules) {
         calculations.forEach(calc => {
             const nodeId = `R${calc.id}`
             allCalcIds.add(calc.id)
-            const deps = extractDependencies(calc.formula)
-            graph.set(nodeId, { type: 'calc', deps: new Set(deps), item: calc })
+            // Rewrite M-refs in formula to R-refs for converted modules
+            const rewrittenFormula = rewriteMRefs(calc.formula, mRefMapData)
+            const deps = extractDependencies(rewrittenFormula)
+            graph.set(nodeId, {
+                type: 'calc',
+                deps: new Set(deps),
+                item: { ...calc, _rewrittenFormula: rewrittenFormula }
+            })
         })
     }
 
-    // Add all modules as nodes (M1, M2, etc.)
+    // Add only non-converted modules as nodes (M1, M8 etc.)
     if (modules) {
         modules.forEach((mod, idx) => {
+            // Skip fully converted modules — their outputs are now regular R-ref calcs
+            if (mod.converted || mod.fullyConverted) return
+
             const nodeId = `M${idx + 1}`
             const deps = extractModuleDependencies(mod, idx, modules.length)
             graph.set(nodeId, { type: 'module', deps: new Set(deps), item: mod, index: idx })
@@ -102,7 +113,7 @@ function buildUnifiedGraph(calculations, modules) {
     }
 
     // Filter out dependencies that don't exist in the graph
-    // (e.g., references to deleted calculations)
+    // (e.g., references to deleted calculations or converted module nodes)
     graph.forEach(node => {
         const validDeps = new Set()
         node.deps.forEach(dep => {
@@ -131,7 +142,7 @@ function detectShiftCycles(graph, calculations) {
     const clusters = new Map()
     let nextClusterId = 0
 
-    if (!calculations) return { nodeToCluster, clusters }
+    if (!calculations) return { nodeToCluster, clusters, nonCyclicalShiftDeps: [] }
 
     // Build a reverse adjacency map for regular deps (non-SHIFT)
     // reverseAdj[X] = set of nodes that X depends on (regular deps)
@@ -221,7 +232,20 @@ function detectShiftCycles(graph, calculations) {
         }
     })
 
-    if (allCycleNodeSets.length === 0) return { nodeToCluster, clusters }
+    if (allCycleNodeSets.length === 0) {
+        // No cycles, but still check for non-cyclical SHIFT deps
+        const nonCyclicalShiftDeps = []
+        calculations.forEach(calc => {
+            const nodeId = `R${calc.id}`
+            const shiftTargets = extractShiftTargets(calc.formula)
+            for (const target of shiftTargets) {
+                if (!graph.has(target)) continue
+                if (target === nodeId) continue
+                nonCyclicalShiftDeps.push({ from: nodeId, to: target })
+            }
+        })
+        return { nodeToCluster, clusters, nonCyclicalShiftDeps }
+    }
 
     // Merge overlapping sets
     const merged = []
@@ -259,7 +283,26 @@ function detectShiftCycles(graph, calculations) {
         clusters.set(clusterId, { members, internalOrder: [] })
     }
 
-    return { nodeToCluster, clusters }
+    // Also collect non-cyclical SHIFT deps: SHIFT targets that don't form cycles.
+    // These need to be added as regular deps for proper evaluation ordering.
+    const nonCyclicalShiftDeps = []
+    calculations.forEach(calc => {
+        const nodeId = `R${calc.id}`
+        const shiftTargets = extractShiftTargets(calc.formula)
+        for (const target of shiftTargets) {
+            if (!graph.has(target)) continue
+            if (target === nodeId) continue // self-ref handled by cluster
+            // Skip if both are in the same cluster (already handled by period-by-period eval)
+            if (nodeToCluster.has(nodeId) && nodeToCluster.has(target) &&
+                nodeToCluster.get(nodeId) === nodeToCluster.get(target)) continue
+            // If target can't reach back to nodeId, this is non-cyclical
+            if (!isReachable(target, nodeId)) {
+                nonCyclicalShiftDeps.push({ from: nodeId, to: target })
+            }
+        }
+    })
+
+    return { nodeToCluster, clusters, nonCyclicalShiftDeps }
 }
 
 /**
@@ -339,9 +382,9 @@ function evaluateSingleCalc(formula, context, timeline) {
         const resultArray = new Array(timeline.periods).fill(0)
 
         // Check for unresolved references before evaluation
-        const formulaWithoutShift = formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
-        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*|T\.[A-Za-z]+)\b/g
-        const refsInFormula = [...new Set([...formulaWithoutShift.matchAll(refPattern)].map(m => m[1]))]
+        const formulaWithoutLag = formula.replace(/(?:SHIFT\s*\([^)]+\)|PREVSUM\s*\([^)]+\)|PREVVAL\s*\([^)]+\))/gi, '')
+        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g
+        const refsInFormula = [...new Set([...formulaWithoutLag.matchAll(refPattern)].map(m => m[1]))]
         const missingRefs = refsInFormula.filter(ref => !context[ref])
 
         if (missingRefs.length > 0) {
@@ -381,25 +424,40 @@ function evaluateSingleCalc(formula, context, timeline) {
 }
 
 /**
+ * Rewrite M-refs in a formula string using the _mRefMap.
+ * Converts e.g. "M2.3" → "R9003" for converted modules.
+ * Unconverted M-refs (e.g., M1.x for iterative_debt_sizing) are left as-is.
+ */
+function rewriteMRefs(formula, mRefMap) {
+    if (!formula || !mRefMap) return formula
+    // Sort M-refs longest first to avoid partial matches
+    const sortedEntries = Object.entries(mRefMap).sort((a, b) => b[0].length - a[0].length)
+    let result = formula
+    for (const [mRef, rRef] of sortedEntries) {
+        const regex = getRegexCached(mRef)
+        regex.lastIndex = 0
+        result = result.replace(regex, rRef)
+    }
+    return result
+}
+
+/**
  * Unified Calculation Hook
  * Replaces the 3-pass architecture with a single topologically-sorted evaluation
  *
- * Key insight: Instead of "all calcs -> all modules -> re-eval calcs",
- * we treat everything as one dependency graph and evaluate in topological order:
- *   R1, R2, ..., R13 (no module deps)
- *   M1 (Debt) - its deps are ready
- *   M2 (D&A) - its deps are ready
- *   R14 = M2.3 - M2 now exists!
- *   R16 = M1.3 - M1 now exists!
- *   R17 = R15 - R16 - R14 - correct EBT!
- *   M5 (Tax) - R17 is correct now
- *   R18 = -M5.7 - Tax is correct!
+ * Converted modules: Their outputs are regular R-ref calculations. M-refs in
+ * formulas are rewritten to R-refs via _mRefMap. The module node is skipped
+ * during evaluation (its calcs handle everything).
+ *
+ * Non-converted modules (iterative_debt_sizing, dsrf): Still evaluated via
+ * calculateModuleOutputs() as before.
  */
 export function useUnifiedCalculation({
     calculations,
     modules,
     referenceMap,
-    timeline
+    timeline,
+    mRefMap
 }) {
     // Store committed results for preview function
     const committedResultsRef = useRef({ calculations: {}, modules: {} })
@@ -412,20 +470,56 @@ export function useUnifiedCalculation({
 
         const startTime = performance.now()
 
+        // Build M-ref map for rewriting converted module references
+        const mRefMapData = mRefMap || {}
+
         // Build unified dependency graph
-        const graph = buildUnifiedGraph(calculations, modules)
+        const graph = buildUnifiedGraph(calculations, modules, mRefMapData)
 
         if (graph.size === 0) {
             return { calculationResults: calcResults, moduleOutputs: modOutputs, calculationErrors: errors }
         }
 
-        // Topological sort
+        // Detect SHIFT-based soft cycles
+        const { nodeToCluster, clusters, nonCyclicalShiftDeps } = detectShiftCycles(graph, calculations)
+
+        // Add non-cyclical SHIFT targets as regular deps for proper evaluation ordering
+        // (e.g., SHIFT(R9007, 1) in R9010 means R9007 must be evaluated before R9010)
+        for (const { from, to } of nonCyclicalShiftDeps) {
+            const node = graph.get(from)
+            if (node) node.deps.add(to)
+        }
+
+        // CRITICAL: For non-cluster nodes that depend on a cluster member,
+        // add deps on ALL members of that cluster. This ensures the topo sort
+        // places the node after the cluster trigger (last member), so cluster
+        // results are available in the context when the node is evaluated.
+        if (nodeToCluster.size > 0) {
+            graph.forEach((node, nodeId) => {
+                if (nodeToCluster.has(nodeId)) return // skip cluster members
+                let needsAugment = false
+                node.deps.forEach(dep => {
+                    if (nodeToCluster.has(dep)) needsAugment = true
+                })
+                if (needsAugment) {
+                    node.deps.forEach(dep => {
+                        const cId = nodeToCluster.get(dep)
+                        if (cId !== undefined) {
+                            const cluster = clusters.get(cId)
+                            if (cluster) {
+                                cluster.members.forEach(m => node.deps.add(`R${m.id}`))
+                            }
+                        }
+                    })
+                }
+            })
+        }
+
+        // Topological sort (after augmenting deps with non-cyclical SHIFT targets)
         const sortedNodes = topologicalSort(graph)
 
-        // Detect SHIFT-based soft cycles
-        const { nodeToCluster, clusters } = detectShiftCycles(graph, calculations)
-
         // Set internal order for clusters based on topological sort order
+        // Also override cluster member formulas with rewritten versions (M-refs → R-refs)
         if (clusters.size > 0) {
             const nodePosition = new Map()
             sortedNodes.forEach((id, idx) => nodePosition.set(id, idx))
@@ -434,6 +528,16 @@ export function useUnifiedCalculation({
                 cluster.internalOrder = cluster.members
                     .map(c => `R${c.id}`)
                     .sort((a, b) => (nodePosition.get(a) ?? 0) - (nodePosition.get(b) ?? 0))
+
+                // Rewrite M-refs in cluster member formulas
+                cluster.members = cluster.members.map(c => {
+                    const graphNode = graph.get(`R${c.id}`)
+                    const rewritten = graphNode?.item?._rewrittenFormula
+                    if (rewritten && rewritten !== c.formula) {
+                        return { ...c, formula: rewritten }
+                    }
+                    return c
+                })
             })
 
             console.log(`[UnifiedCalc] Detected ${clusters.size} SHIFT cycle cluster(s):`,
@@ -448,8 +552,23 @@ export function useUnifiedCalculation({
         let moduleCount = 0
         const evaluatedClusters = new Set()
 
+        // Pre-compute: for each cluster, find the LAST member in topological order
+        // This ensures all external deps of all members are satisfied before cluster evaluation
+        const clusterLastNodePos = new Map()
+        sortedNodes.forEach((nodeId, pos) => {
+            const cId = nodeToCluster.get(nodeId)
+            if (cId !== undefined) {
+                clusterLastNodePos.set(cId, pos)
+            }
+        })
+        const clusterTriggerPos = new Map()
+        clusterLastNodePos.forEach((pos, cId) => {
+            clusterTriggerPos.set(pos, cId)
+        })
+
         // Evaluate in topological order
-        for (const nodeId of sortedNodes) {
+        for (let nodeIdx = 0; nodeIdx < sortedNodes.length; nodeIdx++) {
+            const nodeId = sortedNodes[nodeIdx]
             const node = graph.get(nodeId)
             if (!node) continue
 
@@ -457,26 +576,50 @@ export function useUnifiedCalculation({
 
             if (clusterId !== undefined) {
                 // This node belongs to a SHIFT cycle cluster
-                if (evaluatedClusters.has(clusterId)) continue
-                evaluatedClusters.add(clusterId)
+                // Only trigger cluster evaluation at the LAST member position
+                const triggerClusterId = clusterTriggerPos.get(nodeIdx)
+                if (triggerClusterId === undefined || evaluatedClusters.has(triggerClusterId)) continue
+                evaluatedClusters.add(triggerClusterId)
 
                 // Evaluate entire cluster period-by-period
-                const cluster = clusters.get(clusterId)
+                const cluster = clusters.get(triggerClusterId)
                 const clusterResults = evaluateClusterPeriodByPeriod(
                     cluster.members, cluster.internalOrder, context, timeline
                 )
                 Object.entries(clusterResults).forEach(([id, values]) => {
                     calcResults[id] = values
                     context[id] = values
+                    // Populate M-ref context aliases for converted module outputs in clusters
+                    if (mRefMapData) {
+                        for (const [mRef, rRef] of Object.entries(mRefMapData)) {
+                            if (rRef === id) {
+                                context[mRef] = values
+                                modOutputs[mRef] = values
+                            }
+                        }
+                    }
                 })
                 calcCount += cluster.members.length
             } else if (node.type === 'calc') {
                 // Evaluate calculation (standard array path)
-                const { values, error } = evaluateSingleCalc(node.item.formula, context, timeline)
+                // Use rewritten formula (M-refs resolved to R-refs for converted modules)
+                const formula = node.item._rewrittenFormula || node.item.formula
+                const { values, error } = evaluateSingleCalc(formula, context, timeline)
                 calcResults[nodeId] = values
                 context[nodeId] = values // Add to context for downstream nodes
                 if (error) errors[nodeId] = error
                 calcCount++
+
+                // If this calc is a converted module output, also populate M-ref context
+                // so non-converted modules can still reference it via M-refs in their inputs
+                if (mRefMapData) {
+                    for (const [mRef, rRef] of Object.entries(mRefMapData)) {
+                        if (rRef === nodeId) {
+                            context[mRef] = values
+                            modOutputs[mRef] = values
+                        }
+                    }
+                }
             } else if (node.type === 'module') {
                 // Evaluate module
                 const mod = node.item
@@ -516,6 +659,10 @@ export function useUnifiedCalculation({
                     modOutputs[ref] = outputValues
                     context[ref] = outputValues // Add to context for downstream nodes
                 })
+                // Preserve solver log metadata if present
+                if (calculatedOutputs._solverLog) {
+                    modOutputs[`_solverLog_M${node.index + 1}`] = calculatedOutputs._solverLog
+                }
                 moduleCount++
             }
         }
@@ -527,7 +674,7 @@ export function useUnifiedCalculation({
         console.log(`[UnifiedCalc] Evaluated ${calcCount} calculations and ${moduleCount} modules in ${elapsed.toFixed(0)}ms (single pass)`)
 
         return { calculationResults: calcResults, moduleOutputs: modOutputs, calculationErrors: errors }
-    }, [calculations, modules, referenceMap, timeline])
+    }, [calculations, modules, referenceMap, timeline, mRefMap])
 
     // Get flow/stock type for each calculation from stored type (default: flow)
     const calculationTypes = useMemo(() => {

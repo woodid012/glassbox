@@ -30,24 +30,20 @@ export const TEMPLATE = {
         { key: 'maxIterations', label: 'Max Iterations', type: 'number', required: false, default: 50 }
     ],
     outputs: [
-        { key: 'sized_debt', label: 'Sized Debt Amount', type: 'stock' },
-        { key: 'opening_balance', label: 'Opening Balance', type: 'stock' },
-        { key: 'interest_payment', label: 'Interest Payment', type: 'flow' },
-        { key: 'principal_payment', label: 'Principal Payment', type: 'flow' },
-        { key: 'debt_service', label: 'Total Debt Service', type: 'flow' },
-        { key: 'closing_balance', label: 'Closing Balance', type: 'stock' },
-        { key: 'period_dscr', label: 'Period DSCR', type: 'stock' },
-        { key: 'cumulative_principal', label: 'Cumulative Principal', type: 'stock' }
+        { key: 'sized_debt', label: 'Sized Debt Amount', type: 'stock', isSolver: true }
+    ],
+    partiallyConverted: true,
+    convertedOutputs: [
+        { key: 'opening_balance', label: 'Opening Balance', calcRef: 'R9063' },
+        { key: 'interest_payment', label: 'Interest Payment', calcRef: 'R9066' },
+        { key: 'principal_payment', label: 'Principal Payment', calcRef: 'R9067' },
+        { key: 'debt_service', label: 'Total Debt Service', calcRef: 'R9068' },
+        { key: 'closing_balance', label: 'Closing Balance', calcRef: 'R9070' },
+        { key: 'period_dscr', label: 'Period DSCR', calcRef: 'R9071' },
+        { key: 'cumulative_principal', label: 'Cumulative Principal', calcRef: 'R9072' }
     ],
     outputFormulas: {
-        sized_debt: 'BinarySearch(MaxDebt where DebtService ≤ DSCapacity for all periods)\n  where DSCapacity = {contractedCfadsRef}/{contractedDSCR} + {merchantCfadsRef}/{merchantDSCR}\n  subject to: Debt ≤ {totalFundingRef} × {maxGearingPct}/100',
-        opening_balance: 'SHIFT(closing_balance, 1) + sized_debt × {debtFlagRef}.Start',
-        interest_payment: 'opening_balance × {interestRatePct}/100 / T.MiY × {debtFlagRef}',
-        principal_payment: 'MIN(DSCapacity - interest_payment, opening_balance / remaining_periods) × {debtFlagRef}',
-        debt_service: 'interest_payment + principal_payment',
-        closing_balance: 'opening_balance - principal_payment',
-        period_dscr: '({contractedCfadsRef} + {merchantCfadsRef}) / debt_service',
-        cumulative_principal: 'CUMSUM(principal_payment)'
+        sized_debt: 'BinarySearch(MaxDebt where DebtService ≤ DSCapacity for all periods)\n  where DSCapacity = {contractedCfadsRef}/{contractedDSCR} + {merchantCfadsRef}/{merchantDSCR}\n  subject to: Debt ≤ {totalFundingRef} × {maxGearingPct}/100'
     }
 }
 
@@ -56,14 +52,7 @@ export const TEMPLATE = {
  */
 function emptyDebtSizingOutputs(arrayLength) {
     return {
-        sized_debt: new Array(arrayLength).fill(0),
-        opening_balance: new Array(arrayLength).fill(0),
-        interest_payment: new Array(arrayLength).fill(0),
-        principal_payment: new Array(arrayLength).fill(0),
-        debt_service: new Array(arrayLength).fill(0),
-        closing_balance: new Array(arrayLength).fill(0),
-        period_dscr: new Array(arrayLength).fill(0),
-        cumulative_principal: new Array(arrayLength).fill(0)
+        sized_debt: new Array(arrayLength).fill(0)
     }
 }
 
@@ -223,21 +212,30 @@ export function calculate(inputs, arrayLength, context) {
         }
     }
 
-    // Return output arrays from best schedule
+    // Return only sized_debt — all other outputs are now regular calcs (R9060-R9072)
     if (bestSchedule) {
-        // Update sized_debt to show the base debt (excluding IDC)
-        bestSchedule.sized_debt.fill(bestDebt)
+        const sized_debt = new Array(arrayLength).fill(bestDebt)
+        const iterationsUsed = Math.ceil(Math.log2((totalFunding * (parsedMaxGearing / 100)) / parsedTolerance))
         return {
-            sized_debt: bestSchedule.sized_debt,
-            opening_balance: bestSchedule.opening_balance,
-            interest_payment: bestSchedule.interest_payment,
-            principal_payment: bestSchedule.principal_payment,
-            debt_service: bestSchedule.debt_service,
-            closing_balance: bestSchedule.closing_balance,
-            period_dscr: bestSchedule.period_dscr,
-            cumulative_principal: bestSchedule.cumulative_principal
+            sized_debt,
+            _solverLog: {
+                iterations: Math.min(iterationsUsed, parsedMaxIterations),
+                finalTolerance: upperBound - lowerBound,
+                converged: (upperBound - lowerBound) <= parsedTolerance,
+                sizedDebt: bestDebt,
+                maxGearingCap: totalFunding * (parsedMaxGearing / 100)
+            }
         }
     }
 
-    return emptyDebtSizingOutputs(arrayLength)
+    return {
+        ...emptyDebtSizingOutputs(arrayLength),
+        _solverLog: {
+            iterations: parsedMaxIterations,
+            finalTolerance: upperBound - lowerBound,
+            converged: false,
+            sizedDebt: 0,
+            maxGearingCap: totalFunding * (parsedMaxGearing / 100)
+        }
+    }
 }

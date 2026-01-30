@@ -125,7 +125,7 @@ function checkUnknownReferences(formula, allRefs) {
     if (!formula) return issues
 
     // Match patterns like V1, V1.1, S1, C1, T1, F1, I1, L1, L1.1, L1.1.1, R1, M1, M1.1, T.DiM, etc.
-    const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*|T\.[A-Za-z]+)\b/g
+    const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g
     const refsInFormula = [...formula.matchAll(refPattern)].map(m => m[1])
     const uniqueRefs = [...new Set(refsInFormula)]
 
