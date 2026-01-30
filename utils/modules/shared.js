@@ -165,27 +165,28 @@ export function generateCapacitySchedule(totalDebt, debtServiceCapacity, totalCf
             // Max debt service from capacity constraint (already DSCR-adjusted)
             const maxDebtService = accruedCapacity
 
-            // Minimum principal to fully repay within tenor
-            const minPrincipalForTenor = remainingPeriods > 0 ? balance / remainingPeriods : balance
+            // Fully sculpted: principal = capacity minus interest, capped at balance
             const maxPrincipalFromCapacity = Math.max(0, maxDebtService - interest)
 
             let principal
             if (i === end) {
                 // Final period: pay off remaining balance
                 principal = balance
-            } else if (maxPrincipalFromCapacity >= minPrincipalForTenor) {
-                // Capacity allows adequate principal - use minimum to stretch debt to full tenor
-                principal = minPrincipalForTenor
             } else {
-                // Capacity constraint limits principal - pay what DSCR allows
+                // DSCR-sculpted: pay what capacity allows after interest
                 principal = maxPrincipalFromCapacity
-                if (principal < minPrincipalForTenor * 0.9) {
-                    dscrBreached = true // Can't meet amortization schedule within tenor
-                }
             }
 
             principal = Math.min(principal, balance)
             if (principal < 0) hasNegativePrincipal = true
+
+            // Check if debt won't fully repay within tenor at this rate
+            if (!dscrBreached && i < end && balance > 0) {
+                const minPrincipalForTenor = remainingPeriods > 0 ? balance / remainingPeriods : balance
+                if (principal < minPrincipalForTenor * 0.5) {
+                    dscrBreached = true
+                }
+            }
 
             outputs.principal_payment[i] = principal
             outputs.debt_service[i] = interest + principal
@@ -288,27 +289,26 @@ export function generateDSCRSchedule(totalDebt, cfads, start, end, monthlyRate, 
 
             // Max debt service from DSCR constraint (using accrued CFADS)
             const maxDebtService = targetDSCR > 0 ? accruedCfads / targetDSCR : 0
-
-            // Minimum principal to fully repay within tenor
-            const minPrincipalForTenor = remainingPeriods > 0 ? balance / remainingPeriods : balance
             const maxPrincipalFromDSCR = Math.max(0, maxDebtService - interest)
 
             let principal
             if (i === end) {
                 // Final period: pay off remaining balance
                 principal = balance
-            } else if (maxPrincipalFromDSCR >= minPrincipalForTenor) {
-                // DSCR allows adequate principal payment
-                principal = maxPrincipalFromDSCR
             } else {
-                // DSCR constraint limits principal
+                // Fully DSCR-sculpted: pay what capacity allows after interest
                 principal = maxPrincipalFromDSCR
-                if (principal < minPrincipalForTenor * 0.9) {
-                    dscrBreached = true // Can't meet amortization schedule
-                }
             }
 
             principal = Math.min(principal, balance)
+
+            // Check if debt won't fully repay within tenor
+            if (!dscrBreached && i < end && balance > 0) {
+                const minPrincipalForTenor = remainingPeriods > 0 ? balance / remainingPeriods : balance
+                if (principal < minPrincipalForTenor * 0.5) {
+                    dscrBreached = true
+                }
+            }
             if (principal < 0) hasNegativePrincipal = true
 
             outputs.principal_payment[i] = principal

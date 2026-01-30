@@ -24,6 +24,10 @@
     {
       "id": 6,
       "name": "Cashflow"
+    },
+    {
+      "id": 7,
+      "name": "Debug"
     }
   ],
   "calculationsGroups": [
@@ -231,6 +235,16 @@
       "id": 58,
       "tabId": 4,
       "name": "Valuation Metrics"
+    },
+    {
+      "id": 60,
+      "tabId": 7,
+      "name": "CF Waterfall (Levered)"
+    },
+    {
+      "id": 61,
+      "tabId": 7,
+      "name": "P&L"
     }
   ],
   "calculations": [
@@ -398,7 +412,7 @@
       "tabId": 1,
       "groupId": 4,
       "name": "EBT",
-      "formula": "R15 + R16 + R174 - R144 - R146 + R153",
+      "formula": "R15 + R16 + R151 + R174 - R144 - R146 + R153",
       "description": "Earnings before taxes (incl. agency fee, upfront fees, commitment fees, DSRF fees)"
     },
     {
@@ -612,7 +626,7 @@
       "groupId": 32,
       "name": "Interest Income",
       "formula": "SHIFT(R42, 1) * C1.58 / 100 / T.MiY",
-      "description": "Interest earned on prior period closing cash balance at C1.58 (% pa), paid monthly"
+      "description": "Interest earned on prior period closing cash at C1.58 (% pa), monthly"
     },
     {
       "id": 152,
@@ -1613,7 +1627,7 @@
       "id": 9017,
       "groupId": 52,
       "name": "Construction Funding: Equity",
-      "formula": "R9015 - R9016",
+      "formula": "CUMSUM(R9021) + CUMSUM(R9022)",
       "type": "stock",
       "_moduleId": "M4",
       "_moduleOutputKey": "equity"
@@ -1640,7 +1654,7 @@
       "id": 9020,
       "groupId": 52,
       "name": "Construction Funding: Debt Drawdown",
-      "formula": "MIN(R9024, MAX(0, M1.1 - (CUMSUM(R9024) - R9024))) * F1",
+      "formula": "MAX(0, CUMSUM(R9024) - R9099) - MAX(0, CUMSUM(R9024) - R9024 - R9099)",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "debt_drawdown"
@@ -1649,7 +1663,7 @@
       "id": 9021,
       "groupId": 52,
       "name": "Construction Funding: Equity Drawdown",
-      "formula": "MAX(0, R9017 - PREVVAL(R9017)) * F1",
+      "formula": "(R9024 - R9020) * F1",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "equity_drawdown"
@@ -1676,7 +1690,7 @@
       "id": 9024,
       "groupId": 52,
       "name": "Construction Funding: Period Cost",
-      "formula": "MAX(0, R9023 - PREVVAL(R9023)) * C1.19 / 100 * F1",
+      "formula": "MAX(0, R9023 - PREVVAL(R9023)) * F1",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "period_cost"
@@ -1865,7 +1879,7 @@
       "id": 9045,
       "groupId": 55,
       "name": "Distributions: SC - Opening",
-      "formula": "R9017",
+      "formula": "CUMSUM(R9021)",
       "type": "stock_start",
       "_moduleId": "M7",
       "_moduleOutputKey": "sc_opening"
@@ -2063,10 +2077,11 @@
       "id": 9067,
       "groupId": 56,
       "name": "Principal Payment",
-      "formula": "MIN(MAX(0, R9064 - R9066), R9063 / R9065) * R9073 * F8",
+      "formula": "MIN(MAX(0, R9064 - R9066), R9063) * R9073 * F8",
       "type": "flow",
       "_moduleId": "M1",
-      "_moduleOutputKey": "principal_payment"
+      "_moduleOutputKey": "principal_payment",
+      "description": "Fully DSCR-sculpted: capacity minus interest, capped at outstanding balance"
     },
     {
       "id": 9068,
@@ -2171,7 +2186,7 @@
       "id": 9085,
       "groupId": 57,
       "name": "Adjusted DSCR",
-      "formula": "(R208 + R209) / MAX(R9084, 0.0001) * F2",
+      "formula": "(R208 + R209) / MAX(R9084, 0.0001) * F8",
       "type": "stock",
       "_moduleId": "M8",
       "_moduleOutputKey": "adjusted_dscr"
@@ -2236,7 +2251,7 @@
       "id": 217,
       "groupId": 24,
       "name": "ADSCR (Average)",
-      "formula": "R215 / MAX(R216, 0.0001)",
+      "formula": "R215 / MAX(R216, 0.0001) * F8",
       "description": "Average DSCR: cumulative CFADS / cumulative debt service. Measures overall project debt coverage.",
       "type": "stock"
     },
@@ -2310,6 +2325,356 @@
       "name": "Total OPEX Breakdown",
       "formula": "R220 + R221 + R222 + R223 + R224 + R225 + R226 + R227",
       "description": "Sum of all OPEX components (should reconcile to -R9, i.e. S1 * I2)"
+    },
+    {
+      "id": 300,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Contracted Revenue",
+      "formula": "R4"
+    },
+    {
+      "id": 301,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Merchant Revenue",
+      "formula": "R7"
+    },
+    {
+      "id": 302,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Total Revenue",
+      "formula": "R8"
+    },
+    {
+      "id": 303,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "OPEX",
+      "formula": "R9"
+    },
+    {
+      "id": 304,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "EBITDA",
+      "formula": "R13"
+    },
+    {
+      "id": 305,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Working Capital Adj",
+      "formula": "-R98"
+    },
+    {
+      "id": 306,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Operating Cash Flows",
+      "formula": "R22"
+    },
+    {
+      "id": 310,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Total Capex",
+      "formula": "-R3 * F1",
+      "description": "Total capex incl contingency (per period)"
+    },
+    {
+      "id": 313,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "IDC: Senior Debt",
+      "formula": "-R9022"
+    },
+    {
+      "id": 314,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Upfront Fees: Senior Debt",
+      "formula": "-R144"
+    },
+    {
+      "id": 315,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Upfront Fees: DSRF",
+      "formula": "-R9080 * F1"
+    },
+    {
+      "id": 316,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Commitment Fees: Senior Debt",
+      "formula": "-R146"
+    },
+    {
+      "id": 317,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Commitment Fees: DSRF",
+      "formula": "-R9081 * F1"
+    },
+    {
+      "id": 318,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Agency Fee (Construction)",
+      "formula": "-S3 * I2 * F1"
+    },
+    {
+      "id": 319,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "MRA: Initial Funding",
+      "formula": "-R9033"
+    },
+    {
+      "id": 320,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "GST Paid",
+      "formula": "R24"
+    },
+    {
+      "id": 321,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Total Capital Expenditure",
+      "formula": "R310 + R313 + R314 + R315 + R316 + R317 + R318 + R319 + R320",
+      "description": "All construction uses: capex + IDC + fees + MRA + GST"
+    },
+    {
+      "id": 325,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "GST Received (Funding)",
+      "formula": "R9013 * F1"
+    },
+    {
+      "id": 326,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Committed Equity",
+      "formula": "R9021"
+    },
+    {
+      "id": 327,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Senior Debt",
+      "formula": "R9020"
+    },
+    {
+      "id": 328,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Total Funding",
+      "formula": "R325 + R326 + R327",
+      "description": "GST received + equity drawdown + debt drawdown"
+    },
+    {
+      "id": 330,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Cash Flow After Funding",
+      "formula": "R306 + R321 + R328"
+    },
+    {
+      "id": 331,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Interest Income",
+      "formula": "R151"
+    },
+    {
+      "id": 332,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "GST Received (Ops)",
+      "formula": "R25"
+    },
+    {
+      "id": 333,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Tax",
+      "formula": "R18"
+    },
+    {
+      "id": 335,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "MRA Release",
+      "formula": "R9035"
+    },
+    {
+      "id": 336,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Maintenance Capex",
+      "formula": "-R9034"
+    },
+    {
+      "id": 340,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Interest Expense",
+      "formula": "R16"
+    },
+    {
+      "id": 341,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Principal Repayment",
+      "formula": "R31"
+    },
+    {
+      "id": 342,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Agency Fee (Ops)",
+      "formula": "R174"
+    },
+    {
+      "id": 343,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Total Debt Service",
+      "formula": "R340 + R341 + R342"
+    },
+    {
+      "id": 344,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "DSRF Fees",
+      "formula": "R153"
+    },
+    {
+      "id": 350,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Dividends",
+      "formula": "R155"
+    },
+    {
+      "id": 351,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Share Capital Repayment",
+      "formula": "R154"
+    },
+    {
+      "id": 352,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Net Cash Flow",
+      "formula": "R40"
+    },
+    {
+      "id": 353,
+      "tabId": 7,
+      "groupId": 60,
+      "name": "Cash Balance c/f",
+      "formula": "R42",
+      "type": "stock"
+    },
+    {
+      "id": 360,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "Revenue Accrued",
+      "formula": "R8"
+    },
+    {
+      "id": 361,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "OPEX Accrued",
+      "formula": "R9"
+    },
+    {
+      "id": 362,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "EBITDA",
+      "formula": "R13"
+    },
+    {
+      "id": 363,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "Depreciation",
+      "formula": "R14"
+    },
+    {
+      "id": 364,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "EBIT",
+      "formula": "R15"
+    },
+    {
+      "id": 365,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "Interest Income",
+      "formula": "R151"
+    },
+    {
+      "id": 366,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "Interest Expense",
+      "formula": "R16"
+    },
+    {
+      "id": 367,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "DSRF Fees",
+      "formula": "R153"
+    },
+    {
+      "id": 368,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "Agency Fee",
+      "formula": "R174"
+    },
+    {
+      "id": 369,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "EBT",
+      "formula": "R17"
+    },
+    {
+      "id": 370,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "Tax",
+      "formula": "R18"
+    },
+    {
+      "id": 371,
+      "tabId": 7,
+      "groupId": 61,
+      "name": "NPAT",
+      "formula": "R19"
+    },
+    {
+      "id": 9099,
+      "groupId": 52,
+      "name": "Construction Funding: Equity Target (ex-IDC)",
+      "formula": "MAXVAL(R60) - M1.1",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "equity_target",
+      "description": "Equity target: total capex minus sized debt (both based on R60)"
     }
   ],
   "modules": [
@@ -2405,7 +2770,7 @@
         "sizedDebtRef": "M1.1",
         "gearingCapPct": "C1.19",
         "interestRatePct": "R171",
-        "drawdownMethod": "prorata",
+        "drawdownMethod": "equity_first",
         "constructionFlagRef": "F1"
       },
       "outputs": [],
@@ -2983,7 +3348,7 @@
           "key": "equityContributedRef",
           "label": "Equity Contributed",
           "type": "reference",
-          "default": "R9017"
+          "default": "M4.3"
         },
         {
           "key": "minCashReserve",
@@ -3025,7 +3390,7 @@
           "key": "dscrRef",
           "label": "DSCR (periodic)",
           "type": "reference",
-          "default": "R9071"
+          "default": "M1.7"
         },
         {
           "key": "dscrThreshold",
@@ -3049,7 +3414,7 @@
           "key": "debtServiceRef",
           "label": "Total Debt Service",
           "type": "reference",
-          "default": "R9068"
+          "default": "M1.5"
         },
         {
           "key": "adscrThreshold",
