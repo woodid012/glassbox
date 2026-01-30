@@ -358,6 +358,23 @@ export function count(innerArray, periods) {
 }
 
 /**
+ * MAXVAL - Maximum value across all periods (broadcast to every period)
+ * MAXVAL([10, 50, 30]) returns [50, 50, 50]
+ * Useful for getting the peak/final cumulative value as a constant across all periods.
+ * @param {number[]} innerArray - Array of values
+ * @param {number} periods - Number of periods
+ * @returns {number[]} Array filled with the max value
+ */
+export function maxval(innerArray, periods) {
+    let max = -Infinity
+    for (let i = 0; i < periods; i++) {
+        if (innerArray[i] > max) max = innerArray[i]
+    }
+    if (max === -Infinity) max = 0
+    return new Array(periods).fill(max)
+}
+
+/**
  * Process array functions in a formula and return the processed formula with placeholders
  * @param {string} formula - The formula string containing array functions
  * @param {Object} allRefs - Map of reference names to their value arrays
@@ -394,6 +411,19 @@ export function processArrayFunctions(formula, allRefs, timeline) {
         arrayFnResults[placeholder] = resultArray
         processedFormula = processedFormula.replace(match[0], placeholder)
         cumprodRegex.lastIndex = 0
+    }
+
+    // MAXVAL(expr) - Maximum value across all periods (broadcast)
+    const maxvalRegex = /MAXVAL\s*\(([^)]+)\)/gi
+    while ((match = maxvalRegex.exec(processedFormula)) !== null) {
+        const innerExpr = match[1]
+        const innerArray = evalExprForAllPeriods(innerExpr, allRefs, timeline.periods)
+        const resultArray = maxval(innerArray, timeline.periods)
+
+        const placeholder = `__ARRAYFN${arrayFnCounter++}__`
+        arrayFnResults[placeholder] = resultArray
+        processedFormula = processedFormula.replace(match[0], placeholder)
+        maxvalRegex.lastIndex = 0
     }
 
     // CUMSUM_Y(expr) - Cumulative sum at year boundaries only
@@ -546,6 +576,7 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
             cumsumCalls: [],    // { placeholder, innerExpr, accumulator }
             cumprodCalls: [],   // { placeholder, innerExpr, accumulator }
             countCalls: [],     // { placeholder, innerExpr, accumulator }
+            maxvalCalls: [],    // { placeholder, innerExpr, resolvedValue }
             processedFormula: formula,
             refs: []            // { ref, regex }
         }
@@ -635,6 +666,20 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
             })
             processedF = processedF.replace(match[0], placeholder)
             countRegex.lastIndex = 0
+        }
+
+        // Extract MAXVAL calls - resolved via full-array pre-computation
+        const maxvalRegex2 = /MAXVAL\s*\(([^)]+)\)/gi
+        while ((match = maxvalRegex2.exec(processedF)) !== null) {
+            const placeholder = `__CLMAXVAL${placeholderIdx++}__`
+            parsed.maxvalCalls.push({
+                placeholder,
+                innerExpr: match[1].trim(),
+                resolvedValue: null,
+                original: match[0]
+            })
+            processedF = processedF.replace(match[0], placeholder)
+            maxvalRegex2.lastIndex = 0
         }
 
         parsed.processedFormula = processedF
@@ -733,6 +778,21 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
                 const innerVal = evalExprAtPeriod(ct.innerExpr, i)
                 if (innerVal !== 0) ct.accumulator++
                 expr = expr.replace(ct.placeholder, ct.accumulator.toString())
+            }
+
+            // Resolve MAXVAL placeholders (compute once on first encounter, cache the scalar)
+            for (const mv of parsed.maxvalCalls) {
+                if (mv.resolvedValue === null) {
+                    // Evaluate inner expression for all periods to find max
+                    let max = -Infinity
+                    for (let p = 0; p < periods; p++) {
+                        const val = evalExprAtPeriod(mv.innerExpr, p)
+                        if (val > max) max = val
+                    }
+                    mv.resolvedValue = max === -Infinity ? 0 : max
+                }
+                const v = mv.resolvedValue
+                expr = expr.replace(mv.placeholder, v < 0 ? `(${v})` : v.toString())
             }
 
             // Substitute regular refs at period i

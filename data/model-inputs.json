@@ -4032,7 +4032,7 @@
       "value": 0,
       "valueFrequency": "Y",
       "spreadMethod": "spread",
-      "seriesAnnualValue": 0.9,
+      "seriesAnnualValue": 0.09,
       "seriesFrequency": "Y",
       "seriesPaymentMonth": "4"
     }

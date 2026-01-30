@@ -833,8 +833,8 @@
       "tabId": 3,
       "groupId": 32,
       "name": "Construction Equity Injection",
-      "formula": "R9021",
-      "description": "From Construction Funding module"
+      "formula": "R9021 + R9022",
+      "description": "Equity drawdown + IDC (both equity-funded)"
     },
     {
       "id": 169,
@@ -1443,8 +1443,8 @@
       "id": 191,
       "groupId": 41,
       "name": "Share Capital",
-      "formula": "CUMSUM(R9021) * F1 + R9048 * F2",
-      "description": "Construction: cumulative equity drawn (R9021) gated by F1. Operations: SC closing from distributions module (M7.12) gated by F2.",
+      "formula": "(CUMSUM(R9021) + CUMSUM(R9022)) * F1 + R9048 * F2",
+      "description": "Construction: cumulative equity drawn + IDC (both equity-funded) gated by F1. Operations: SC closing from distributions module gated by F2.",
       "type": "stock"
     },
     {
@@ -1879,7 +1879,7 @@
       "id": 9045,
       "groupId": 55,
       "name": "Distributions: SC - Opening",
-      "formula": "CUMSUM(R9021)",
+      "formula": "CUMSUM(R9021) + CUMSUM(R9022)",
       "type": "stock_start",
       "_moduleId": "M7",
       "_moduleOutputKey": "sc_opening"
