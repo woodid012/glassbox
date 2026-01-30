@@ -40,6 +40,11 @@ const CALC_REFS = {
     agencyFee: 'R174',
     dsrfFees: 'R153',
     totalDebtService: 'R178',
+    // Debt detail components
+    debtOpening: 'R70',
+    dscr: 'R118',
+    cumulativePrincipal: 'R9072',
+    adscr: 'R217',
     // Equity IRR components
     contingentEquity: 'R131',
     equityInjections: 'R132',
@@ -141,6 +146,8 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
                 agencyFee: getValue(CALC_REFS.agencyFee),
                 dsrfFees: getValue(CALC_REFS.dsrfFees),
                 totalDebtService: getValue(CALC_REFS.totalDebtService),
+                dscr: getValue(CALC_REFS.dscr, 'stock'),
+                debtOpening: getValue(CALC_REFS.debtOpening, 'stock'),
             }
         })
     }, [viewHeaders, calculationResults, calculationTypes, viewMode])
@@ -219,6 +226,48 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
             totalTerminalValue,
             totalInvestorTax,
             totalNetCFToEquity,
+        }
+    }, [calculationResults, calculationTypes, viewHeaders, viewMode])
+
+    // Calculate debt metrics
+    const debtMetrics = useMemo(() => {
+        const getTotal = (ref, type = 'flow') => {
+            const arr = calculationResults[ref] || []
+            const calcType = calculationTypes?.[ref] || type
+            const periodValues = calculatePeriodValues(arr, viewHeaders, viewMode, calcType)
+            return calculateTotal(periodValues, calcType)
+        }
+
+        // Sized debt = max of opening balance array (first period it appears)
+        const openingArr = calculationResults[CALC_REFS.debtOpening] || []
+        const sizedDebt = openingArr.length > 0 ? Math.max(...openingArr) : 0
+
+        const totalPrincipal = getTotal(CALC_REFS.principalRepayment)
+        const totalInterest = getTotal(CALC_REFS.interestPaid)
+        const totalAgencyFee = getTotal(CALC_REFS.agencyFee)
+        const totalDsrfFees = getTotal(CALC_REFS.dsrfFees)
+        const totalDebtService = getTotal(CALC_REFS.totalDebtService)
+
+        // DSCR stats - only for periods where DSCR > 0 (debt service periods)
+        const dscrArr = calculationResults[CALC_REFS.dscr] || []
+        const activeDscr = dscrArr.filter(v => v > 0)
+        const minDscr = activeDscr.length > 0 ? Math.min(...activeDscr) : 0
+        const avgDscr = activeDscr.length > 0 ? activeDscr.reduce((s, v) => s + v, 0) / activeDscr.length : 0
+
+        // Closing balance at end
+        const closingArr = calculationResults[CALC_REFS.debtClosing] || []
+        const finalBalance = closingArr.length > 0 ? closingArr[closingArr.length - 1] : 0
+
+        return {
+            sizedDebt,
+            totalPrincipal,
+            totalInterest,
+            totalAgencyFee,
+            totalDsrfFees,
+            totalDebtService,
+            minDscr,
+            avgDscr,
+            finalBalance,
         }
     }, [calculationResults, calculationTypes, viewHeaders, viewMode])
 
@@ -458,10 +507,39 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
                 </div>
             </div>
 
-            {/* ==================== DEBT ==================== */}
+            {/* ==================== DEBT DETAILS ==================== */}
             <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-xl border border-red-200 p-6">
-                <h2 className="text-lg font-bold text-red-900 mb-4">Debt</h2>
-                <div className="grid grid-cols-2 gap-6">
+                <h2 className="text-lg font-bold text-red-900 mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white text-sm">$</span>
+                    Debt Details
+                </h2>
+
+                {/* Debt Metrics Row */}
+                <div className="grid grid-cols-5 gap-4 mb-6">
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-red-100">
+                        <div className="text-xs text-slate-500 uppercase tracking-wide">Sized Debt</div>
+                        <div className="text-2xl font-bold text-red-600">{formatCurrency(debtMetrics.sizedDebt)}</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-red-100">
+                        <div className="text-xs text-slate-500 uppercase tracking-wide">Total Interest</div>
+                        <div className="text-2xl font-bold text-orange-600">{formatCurrency(Math.abs(debtMetrics.totalInterest))}</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-red-100">
+                        <div className="text-xs text-slate-500 uppercase tracking-wide">Total Debt Service</div>
+                        <div className="text-2xl font-bold text-rose-600">{formatCurrency(Math.abs(debtMetrics.totalDebtService))}</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-red-100">
+                        <div className="text-xs text-slate-500 uppercase tracking-wide">Min DSCR</div>
+                        <div className="text-2xl font-bold text-amber-600">{debtMetrics.minDscr.toFixed(2)}x</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-red-100">
+                        <div className="text-xs text-slate-500 uppercase tracking-wide">Avg DSCR</div>
+                        <div className="text-2xl font-bold text-emerald-600">{debtMetrics.avgDscr.toFixed(2)}x</div>
+                    </div>
+                </div>
+
+                {/* Charts Row */}
+                <div className="grid grid-cols-2 gap-6 mb-6">
                     {/* Debt Service Breakdown */}
                     <div className="bg-white rounded-xl border border-slate-200 p-4">
                         <h3 className="text-sm font-semibold text-slate-700 mb-4">Debt Service Breakdown ($M)</h3>
@@ -483,21 +561,114 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
                         </ResponsiveContainer>
                     </div>
 
-                    {/* Debt Balance */}
+                    {/* Debt Balance with DSCR overlay */}
                     <div className="bg-white rounded-xl border border-slate-200 p-4">
-                        <h3 className="text-sm font-semibold text-slate-700 mb-4">Debt Balance ($M)</h3>
+                        <h3 className="text-sm font-semibold text-slate-700 mb-4">Debt Balance & DSCR</h3>
                         <ResponsiveContainer width="100%" height={250}>
-                            <AreaChart data={chartData}>
+                            <ComposedChart data={chartData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                                 <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
-                                <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                                <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickLine={false} axisLine={false}
+                                    domain={[0, 'auto']} />
                                 <Tooltip
-                                    formatter={(value) => [`$${value.toFixed(1)}M`, '']}
+                                    formatter={(value, name) => {
+                                        if (name === 'DSCR') return [`${value.toFixed(2)}x`, name]
+                                        return [`$${value.toFixed(1)}M`, name]
+                                    }}
                                     contentStyle={{ fontSize: 12 }}
                                 />
-                                <Area type="monotone" dataKey="debtBalance" fill="#fca5a5" stroke="#ef4444" name="Debt Balance" />
-                            </AreaChart>
+                                <Legend wrapperStyle={{ fontSize: 10 }} />
+                                <Area yAxisId="left" type="monotone" dataKey="debtBalance" fill="#fca5a5" stroke="#ef4444" name="Debt Balance" />
+                                <Line yAxisId="right" type="monotone" dataKey="dscr" stroke="#10b981" strokeWidth={2} dot={false} name="DSCR" />
+                            </ComposedChart>
                         </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Debt Summary Table */}
+                <div className="grid grid-cols-2 gap-6">
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-4">Debt Service Summary</h3>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">Sized Debt</span>
+                                <span className="text-sm font-semibold text-red-600">{formatCurrency(debtMetrics.sizedDebt)}</span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">Total Principal Repaid</span>
+                                <span className="text-sm font-semibold text-red-600">({formatCurrency(Math.abs(debtMetrics.totalPrincipal))})</span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">Total Interest Paid</span>
+                                <span className="text-sm font-semibold text-orange-600">({formatCurrency(Math.abs(debtMetrics.totalInterest))})</span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">Agency Fees</span>
+                                <span className="text-sm font-semibold text-amber-600">({formatCurrency(Math.abs(debtMetrics.totalAgencyFee))})</span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">DSRF Fees</span>
+                                <span className="text-sm font-semibold text-yellow-600">({formatCurrency(Math.abs(debtMetrics.totalDsrfFees))})</span>
+                            </div>
+                            <div className="flex justify-between items-center py-3 bg-red-50 rounded-lg px-3 mt-4">
+                                <span className="text-sm font-semibold text-red-900">Total Debt Service</span>
+                                <span className="text-lg font-bold text-red-600">({formatCurrency(Math.abs(debtMetrics.totalDebtService))})</span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">Final Outstanding Balance</span>
+                                <span className="text-sm font-semibold text-slate-700">{formatCurrency(debtMetrics.finalBalance)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Covenant Summary */}
+                    <div className="bg-white rounded-xl border border-slate-200 p-4">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-4">Covenant Metrics</h3>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">Minimum DSCR</span>
+                                <span className={`text-sm font-semibold ${debtMetrics.minDscr >= 1.2 ? 'text-emerald-600' : debtMetrics.minDscr >= 1.0 ? 'text-amber-600' : 'text-red-600'}`}>
+                                    {debtMetrics.minDscr.toFixed(2)}x
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">Average DSCR</span>
+                                <span className={`text-sm font-semibold ${debtMetrics.avgDscr >= 1.3 ? 'text-emerald-600' : debtMetrics.avgDscr >= 1.1 ? 'text-amber-600' : 'text-red-600'}`}>
+                                    {debtMetrics.avgDscr.toFixed(2)}x
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">Interest / Sized Debt</span>
+                                <span className="text-sm font-semibold text-slate-700">
+                                    {debtMetrics.sizedDebt !== 0 ? `${(Math.abs(debtMetrics.totalInterest) / debtMetrics.sizedDebt * 100).toFixed(1)}%` : 'N/A'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span className="text-sm text-slate-600">Interest / Total Service</span>
+                                <span className="text-sm font-semibold text-slate-700">
+                                    {debtMetrics.totalDebtService !== 0 ? `${(Math.abs(debtMetrics.totalInterest) / Math.abs(debtMetrics.totalDebtService) * 100).toFixed(1)}%` : 'N/A'}
+                                </span>
+                            </div>
+                        </div>
+                        {/* DSCR color legend */}
+                        <div className="mt-6 pt-4 border-t border-slate-200">
+                            <div className="text-xs text-slate-500 mb-2">DSCR Health</div>
+                            <div className="flex gap-4">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                    <span className="text-xs text-slate-600">Strong (&gt;1.2x)</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                                    <span className="text-xs text-slate-600">Adequate (1.0-1.2x)</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <span className="text-xs text-slate-600">Breach (&lt;1.0x)</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
