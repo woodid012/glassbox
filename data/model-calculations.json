@@ -1177,8 +1177,8 @@
       "tabId": 1,
       "groupId": 16,
       "name": "Total Capital Additions",
-      "formula": "V1 + R9022",
-      "description": "Per-period capex + IDC (combined additions for D&A depreciable base)"
+      "formula": "(R3 + R9022 + R144 + R146) * F1",
+      "description": "Per-period capex+contingency (R3) + IDC (R9022) + Financing Fees (R144+R146) during construction only - D&A depreciable base"
     },
     {
       "id": 80,
@@ -1363,8 +1363,8 @@
       "id": 196,
       "groupId": 39,
       "name": "Construction WIP",
-      "formula": "(CUMSUM(V1 * F1) + R63) * F1",
-      "description": "Capex + capitalised IDC during construction (zero after COD — asset transfers to PP&E via D&A module)",
+      "formula": "(R60 + R173 + R9019) * F1",
+      "description": "Capex+Cont (R60) + Financing Fees (R173) + IDC (R9019) during construction (zero after COD — asset transfers to PP&E via D&A module)",
       "type": "stock"
     },
     {
