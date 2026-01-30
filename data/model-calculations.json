@@ -362,19 +362,11 @@
       "type": "stock"
     },
     {
-      "id": 229,
-      "tabId": 1,
-      "groupId": 4,
-      "name": "Maintenance Capex",
-      "formula": "-S2 * I2 * F12",
-      "description": "Base maintenance capex (CPI-indexed, during maintenance period F12)"
-    },
-    {
       "id": 13,
       "tabId": 1,
       "groupId": 4,
       "name": "EBITDA",
-      "formula": "R10 + R229",
+      "formula": "R10",
       "description": "Earnings before interest, taxes, depreciation, amortization"
     },
     {
@@ -619,8 +611,8 @@
       "tabId": 3,
       "groupId": 32,
       "name": "Interest Income",
-      "formula": "0",
-      "description": "Placeholder - interest earned on cash balances"
+      "formula": "SHIFT(R42, 1) * C1.58 / 100 / T.MiY",
+      "description": "Interest earned on prior period closing cash balance at C1.58 (% pa), paid monthly"
     },
     {
       "id": 152,
@@ -1438,7 +1430,7 @@
       "groupId": 41,
       "name": "Share Capital",
       "formula": "CUMSUM(R9021) * F1 + R9048 * F2",
-      "description": "Construction: cumulative equity drawn (M4.7) gated by F1. Operations: SC closing from distributions module (M7.12) gated by F2. Both gates required - M7.12 outputs totalEquityContributed during construction, so F2 prevents double-counting.",
+      "description": "Construction: cumulative equity drawn (R9021) gated by F1. Operations: SC closing from distributions module (M7.12) gated by F2.",
       "type": "stock"
     },
     {
@@ -1621,7 +1613,7 @@
       "id": 9017,
       "groupId": 52,
       "name": "Construction Funding: Equity",
-      "formula": "CUMSUM(R9021) + CUMSUM(R9022)",
+      "formula": "R9015 - R9016",
       "type": "stock",
       "_moduleId": "M4",
       "_moduleOutputKey": "equity"
@@ -1648,7 +1640,7 @@
       "id": 9020,
       "groupId": 52,
       "name": "Construction Funding: Debt Drawdown",
-      "formula": "MAX(0, CUMSUM(R9024) - R9099) - MAX(0, CUMSUM(R9024) - R9024 - R9099)",
+      "formula": "MIN(R9024, MAX(0, M1.1 - (CUMSUM(R9024) - R9024))) * F1",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "debt_drawdown"
@@ -1657,7 +1649,7 @@
       "id": 9021,
       "groupId": 52,
       "name": "Construction Funding: Equity Drawdown",
-      "formula": "(R9024 - R9020) * F1",
+      "formula": "MAX(0, R9017 - PREVVAL(R9017)) * F1",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "equity_drawdown"
@@ -1684,20 +1676,10 @@
       "id": 9024,
       "groupId": 52,
       "name": "Construction Funding: Period Cost",
-      "formula": "MAX(0, R9023 - PREVVAL(R9023)) * F1",
+      "formula": "MAX(0, R9023 - PREVVAL(R9023)) * C1.19 / 100 * F1",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "period_cost"
-    },
-    {
-      "id": 9099,
-      "groupId": 52,
-      "name": "Construction Funding: Equity Target (ex-IDC)",
-      "formula": "MAXVAL(R9023) - M1.1",
-      "type": "stock",
-      "_moduleId": "M4",
-      "_moduleOutputKey": "equity_target",
-      "description": "Total equity required (ex-IDC): total uses at construction end minus sized debt"
     },
     {
       "id": 9025,
@@ -2423,7 +2405,7 @@
         "sizedDebtRef": "M1.1",
         "gearingCapPct": "C1.19",
         "interestRatePct": "R171",
-        "drawdownMethod": "equity_first",
+        "drawdownMethod": "prorata",
         "constructionFlagRef": "F1"
       },
       "outputs": [],
@@ -2439,8 +2421,7 @@
         9021,
         9022,
         9023,
-        9024,
-        9099
+        9024
       ],
       "fullyConverted": true
     },

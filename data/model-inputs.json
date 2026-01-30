@@ -3993,6 +3993,19 @@
       "description": "Revenue reduction factor applied to merchant revenues during life extension period"
     },
     {
+      "id": 157,
+      "groupId": 100,
+      "subgroupId": 7,
+      "name": "Cash Interest Rate (% pa)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 1,
+      "valueFrequency": "Y",
+      "spreadMethod": "lookup",
+      "unit": "%"
+    },
+    {
       "id": 156,
       "groupId": 8,
       "subgroupId": null,

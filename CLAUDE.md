@@ -445,6 +445,17 @@ This ensures:
 - DSCR lock-up: `* (R118 > 1.20)` - no dividends if DSCR below threshold
 - DSRA lock-up: `* (DSRA_Balance >= Target)` - no dividends until DSRA funded
 
+### Maintenance Capex (Below EBITDA, Not In It)
+
+Maintenance capex (S2, Base Maintenance) is a **capital expenditure**, not an operating expense. It must NOT be added to EBITDA (R13). Adding it to EBITDA reduces retained earnings on the P&L without a matching reduction on the asset side of the balance sheet, causing the BS to not balance.
+
+**Correct treatment:**
+- EBITDA = Revenue - OPEX only (`R10`). S1 (OPEX group) is the only deduction.
+- Maintenance capex (S2) should be deducted **below EBITDA** in the cash flow waterfall (capex section), where it reduces cash available and is matched by the asset/cash movement on the BS.
+- S1.19 ("Maintenance Capex & O&M Charges") is already in S1/OPEX — that's the O&M component. S2 is a separate capital item.
+
+**Never put capex in the P&L.** Capex flows through the cash flow statement and balance sheet (asset additions), not through EBITDA/net income.
+
 ## Ledger Pattern (Gold Standard)
 
 Ledger-style calculations (Opening → Addition → Reduction → Closing) create circular dependencies because Opening depends on prior Closing, and Closing depends on Opening. The gold standard solution uses CUMSUM to eliminate these cycles entirely.

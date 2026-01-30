@@ -9,11 +9,10 @@ import { resolveModuleInput, resolveModuleInputArray } from './shared'
 export const DRAWDOWN_FORMULAS = {
     prorata: {
         // Pro-rata: debt draws at gearing % of each period's cost, equity fills the gap
-        9024: "MAX(0, R9023 - PREVVAL(R9023)) * F1",
-        9099: "0",
-        9020: "MIN(R9024 * C1.19 / 100, MAX(0, M1.1 - (CUMSUM(R9024 * C1.19 / 100) - R9024 * C1.19 / 100))) * F1",
-        9021: "(R9024 - R9020) * F1",
-        9017: "CUMSUM(R9021) + CUMSUM(R9022)",
+        9024: "MAX(0, R9023 - PREVVAL(R9023)) * C1.19 / 100 * F1",
+        9020: "MIN(R9024, MAX(0, M1.1 - (CUMSUM(R9024) - R9024))) * F1",
+        9021: "MAX(0, R9017 - PREVVAL(R9017)) * F1",
+        9017: "R9015 - R9016",
     },
     equity_first: {
         // Equity-first: draw all equity first (up to target), then debt

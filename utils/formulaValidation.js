@@ -371,6 +371,19 @@ function checkArrayFunctions(formula) {
 }
 
 /**
+ * Strip cross-period functions from a formula for dependency analysis.
+ * SHIFT, PREVVAL, PREVSUM reference prior-period values, so they don't
+ * create same-period circular dependencies.
+ */
+function stripCrossPeriodFunctions(formula) {
+    if (!formula) return ''
+    return formula
+        .replace(/SHIFT\s*\([^)]+\)/gi, '')
+        .replace(/PREVVAL\s*\([^)]+\)/gi, '')
+        .replace(/PREVSUM\s*\([^)]+\)/gi, '')
+}
+
+/**
  * Check for circular dependencies
  */
 function checkCircularDependencies(calculations, allIds) {
@@ -378,8 +391,8 @@ function checkCircularDependencies(calculations, allIds) {
 
     const getDependencies = (formula) => {
         if (!formula) return []
-        // Remove SHIFT patterns - these are lagged dependencies
-        const formulaWithoutShift = formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
+        // Remove cross-period function patterns - these are lagged dependencies, not same-period cycles
+        const formulaWithoutShift = stripCrossPeriodFunctions(formula)
         const deps = []
         const regex = /R(\d+)(?![0-9])/g
         let match
@@ -502,8 +515,8 @@ function checkSelfReference(calc) {
 
     const calcRef = `R${calc.id}`
 
-    // Remove SHIFT patterns first
-    const formulaWithoutShift = calc.formula.replace(/SHIFT\s*\([^)]+\)/gi, '')
+    // Remove cross-period function patterns (SHIFT, PREVVAL, PREVSUM use prior period values)
+    const formulaWithoutShift = stripCrossPeriodFunctions(calc.formula)
 
     // Check if the calculation references itself
     const selfRefPattern = new RegExp(`\\b${calcRef}\\b`)
