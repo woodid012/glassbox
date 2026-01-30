@@ -1,6 +1,30 @@
 // Construction Funding Module
 import { resolveModuleInput, resolveModuleInputArray } from './shared'
 
+/**
+ * Formula sets for each drawdown method.
+ * When the user toggles drawdownMethod, these formulas are swapped
+ * into the corresponding calculation IDs in model-calculations.json.
+ */
+export const DRAWDOWN_FORMULAS = {
+    prorata: {
+        // Pro-rata: debt draws at gearing % of each period's cost, equity fills the gap
+        9024: "MAX(0, R9023 - PREVVAL(R9023)) * F1",
+        9099: "0",
+        9020: "MIN(R9024 * C1.19 / 100, MAX(0, M1.1 - (CUMSUM(R9024 * C1.19 / 100) - R9024 * C1.19 / 100))) * F1",
+        9021: "(R9024 - R9020) * F1",
+        9017: "CUMSUM(R9021) + CUMSUM(R9022)",
+    },
+    equity_first: {
+        // Equity-first: draw all equity first (up to target), then debt
+        9024: "MAX(0, R9023 - PREVVAL(R9023)) * F1",
+        9099: "MAXVAL(R9023) - M1.1",
+        9020: "MAX(0, CUMSUM(R9024) - R9099) - MAX(0, CUMSUM(R9024) - R9024 - R9099)",
+        9021: "(R9024 - R9020) * F1",
+        9017: "CUMSUM(R9021) + CUMSUM(R9022)",
+    }
+}
+
 export const TEMPLATE = {
     type: 'construction_funding',
     name: 'Construction Funding',
@@ -30,7 +54,8 @@ export const TEMPLATE = {
         { key: 'equity_drawdown', label: 'Equity Drawdown', calcRef: 'R9021' },
         { key: 'idc_period', label: 'IDC (Period)', calcRef: 'R9022' },
         { key: 'total_uses_ex_idc', label: 'Total Uses (ex-IDC)', calcRef: 'R9023' },
-        { key: 'uncapped_debt_drawdown', label: 'Uncapped Debt Drawdown', calcRef: 'R9024' }
+        { key: 'uncapped_debt_drawdown', label: 'Uncapped Debt Drawdown', calcRef: 'R9024' },
+        { key: 'equity_target', label: 'Equity Target (ex-IDC)', calcRef: 'R9099' }
     ],
     outputFormulas: {
         total_uses_ex_idc: '{constructionCostsRef} + CUMSUM({gstPaidRef}) + CUMSUM({feesRef})',
