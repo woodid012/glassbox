@@ -28,13 +28,15 @@ class Sensitivity:
     name: str          # Human-readable name
     values: list       # Values to test (e.g., [50, 55, 60, 65, 70])
     base_value: float | None = None  # Base case value (auto-detected if None)
+    mode: str = 'absolute'  # 'absolute' = set value, 'scale' = multiply base by factor
 
 
 @dataclass
 class Scenario:
     """A named scenario with multiple input overrides."""
     name: str
-    overrides: dict[str, float]  # ref -> value
+    overrides: dict[str, float]  # ref -> value (absolute)
+    scales: dict[str, float] | None = None  # ref -> multiplier (e.g., 1.2 = +20%)
 
 
 @dataclass
@@ -122,26 +124,71 @@ class ScenarioManager:
         )
 
     def add_sensitivity(self, ref: str, name: str, values: list, base_value: float | None = None) -> None:
-        """Add a sensitivity to vary."""
+        """Add a sensitivity with absolute values."""
         self._sensitivities.append(Sensitivity(ref=ref, name=name, values=values, base_value=base_value))
 
-    def add_scenario(self, name: str, overrides: dict[str, float]) -> None:
-        """Add a named scenario with multiple overrides."""
-        self._scenarios.append(Scenario(name=name, overrides=overrides))
+    def add_sensitivity_scale(self, ref: str, name: str, factors: list) -> None:
+        """Add a sensitivity that scales the base array by factors.
+
+        Args:
+            ref: Input reference (e.g., 'V1' for total CAPEX array)
+            name: Human-readable name
+            factors: Multipliers to test (e.g., [0.8, 0.9, 1.0, 1.1, 1.2] for -20% to +20%)
+        """
+        self._sensitivities.append(Sensitivity(ref=ref, name=name, values=factors, mode='scale'))
+
+    def add_scenario(self, name: str, overrides: dict[str, float] | None = None,
+                     scales: dict[str, float] | None = None) -> None:
+        """Add a named scenario with absolute overrides and/or scaling factors.
+
+        Args:
+            name: Scenario name
+            overrides: ref -> absolute value
+            scales: ref -> multiplier (e.g., {'V1': 1.2} = +20% CAPEX)
+        """
+        self._scenarios.append(Scenario(name=name, overrides=overrides or {}, scales=scales))
 
     def add_output(self, ref: str, name: str, metric: str = 'sum', periods: tuple | None = None) -> None:
         """Add an output metric to collect."""
         self._outputs.append(OutputSpec(ref=ref, name=name, metric=metric, periods=periods))
 
-    def _run_single(self, overrides: dict[str, float | np.ndarray]) -> dict[str, Any]:
-        """Run engine with overrides and collect outputs."""
+    def _run_single(self, overrides: dict[str, float | np.ndarray] | None = None,
+                     scales: dict[str, float] | None = None) -> dict[str, Any]:
+        """Run engine with overrides and/or scaling factors, collect outputs.
+
+        Args:
+            overrides: ref -> absolute value (scalar or array)
+            scales: ref -> multiplier applied to base array (e.g., 1.2 = +20%)
+        """
         engine = self._create_engine()
 
-        # Apply overrides before building reference map
-        # We need to run the reference map build first, then override
+        # Build reference map first so we have base arrays to scale
         engine._build_reference_map()
-        for ref, value in overrides.items():
-            engine.override_input(ref, value)
+
+        # Apply absolute overrides
+        if overrides:
+            for ref, value in overrides.items():
+                engine.override_input(ref, value)
+
+        # Apply scaling factors (multiply existing base arrays)
+        # When scaling a group ref (e.g., 'L1', 'V1', 'S1'), also scale all
+        # child refs that share the same prefix (e.g., L1.1, L1.2, L1.1.1)
+        if scales:
+            for ref, factor in scales.items():
+                prefix = ref + '.'
+                scaled_any = False
+                for ctx_ref in list(engine.context.keys()):
+                    if ctx_ref == ref or ctx_ref.startswith(prefix):
+                        base = engine.context[ctx_ref]
+                        if base is not None and hasattr(base, '__mul__'):
+                            engine.context[ctx_ref] = base * factor
+                            scaled_any = True
+                if not scaled_any:
+                    # Fallback: try exact ref
+                    base = engine.context.get(ref)
+                    if base is not None:
+                        engine.context[ref] = base * factor
+
         engine._evaluate_all()
 
         # Collect outputs
@@ -204,10 +251,14 @@ class ScenarioManager:
 
             for val in sens.values:
                 current_run += 1
+                label = f'{sens.name}=x{val:.2f}' if sens.mode == 'scale' else f'{sens.name}={val}'
                 if progress_callback:
-                    progress_callback(current_run, total_runs, f'{sens.name}={val}')
+                    progress_callback(current_run, total_runs, label)
 
-                results = self._run_single({sens.ref: val})
+                if sens.mode == 'scale':
+                    results = self._run_single(scales={sens.ref: val})
+                else:
+                    results = self._run_single(overrides={sens.ref: val})
                 sens_result['results'].append({
                     'input_value': val,
                     'outputs': results,
@@ -241,10 +292,14 @@ class ScenarioManager:
             if progress_callback:
                 progress_callback(i + 1, len(self._scenarios), scenario.name)
 
-            results = self._run_single(scenario.overrides)
+            results = self._run_single(
+                overrides=scenario.overrides if scenario.overrides else None,
+                scales=scenario.scales,
+            )
             output['scenarios'].append({
                 'name': scenario.name,
                 'overrides': scenario.overrides,
+                'scales': scenario.scales,
                 'outputs': results,
             })
 
@@ -284,12 +339,19 @@ class ScenarioManager:
                 progress_callback(idx + 1, total, str(combo))
 
             overrides = {}
+            scale_overrides = {}
             inputs_record = {}
             for i, sens in enumerate(self._sensitivities):
-                overrides[sens.ref] = combo[i]
+                if sens.mode == 'scale':
+                    scale_overrides[sens.ref] = combo[i]
+                else:
+                    overrides[sens.ref] = combo[i]
                 inputs_record[sens.ref] = combo[i]
 
-            results = self._run_single(overrides)
+            results = self._run_single(
+                overrides=overrides if overrides else None,
+                scales=scale_overrides if scale_overrides else None,
+            )
             output['results'].append({
                 'inputs': inputs_record,
                 'outputs': results,

@@ -377,7 +377,7 @@ def build_input_group_refs(
             subtotal += a
         refs[group_ref] = subtotal
 
-        # Individual refs
+        # Individual refs by input id
         for inp in group_inputs:
             if group['id'] == 100:
                 inp_num = inp['id'] - 99
@@ -385,6 +385,43 @@ def build_input_group_refs(
                 inp_num = inp['id']
             item_ref = f'{group_ref}.{inp_num}'
             refs[item_ref] = input_arrays.get(inp['id'], np.zeros(periods))
+
+        # Lookup subgroup refs (L1.1, L1.2, etc.)
+        # Mirrors JS useReferenceMap: subgroup refs point to the selected input
+        if norm == 'lookup':
+            subgroups = group.get('subgroups', [])
+            selected_indices = group.get('selectedIndices', {})
+
+            if subgroups:
+                # WITH subgroups: L1.1 = selected from subgroup 1, L1.2 = selected from subgroup 2
+                root_inputs = [inp for inp in group_inputs if not inp.get('subgroupId')]
+                subgrouped = []
+                if root_inputs:
+                    subgrouped.append({'id': None, 'inputs': root_inputs})
+                for sg in subgroups:
+                    sg_inputs = [inp for inp in group_inputs if inp.get('subgroupId') == sg['id']]
+                    subgrouped.append({'id': sg['id'], 'inputs': sg_inputs})
+
+                for sg_idx, sg in enumerate(subgrouped):
+                    if not sg['inputs']:
+                        continue
+                    key = str(sg['id']) if sg['id'] is not None else 'root'
+                    sel_idx = selected_indices.get(key, 0)
+                    if isinstance(sel_idx, str):
+                        sel_idx = int(sel_idx)
+                    selected_input = sg['inputs'][sel_idx] if sel_idx < len(sg['inputs']) else sg['inputs'][0]
+                    sg_ref = f'{group_ref}.{sg_idx + 1}'
+                    refs[sg_ref] = input_arrays.get(selected_input['id'], np.zeros(periods))
+
+                    # Individual option refs (L1.1.1, L1.1.2, etc.)
+                    for opt_idx, inp in enumerate(sg['inputs']):
+                        opt_ref = f'{sg_ref}.{opt_idx + 1}'
+                        refs[opt_ref] = input_arrays.get(inp['id'], np.zeros(periods))
+            else:
+                # NO subgroups: L2.1 = first input, L2.2 = second, etc.
+                for inp_idx, inp in enumerate(group_inputs):
+                    sg_ref = f'{group_ref}.{inp_idx + 1}'
+                    refs[sg_ref] = input_arrays.get(inp['id'], np.zeros(periods))
 
     return refs
 

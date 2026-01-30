@@ -7,7 +7,7 @@ Usage:
     python run_model.py --tornado       # Run tornado sensitivity
     python run_model.py --scenarios     # Run named scenarios
     python run_model.py --grid          # Run combinatorial grid
-    python run_model.py --export FILE   # Export full results to CSV/Excel/JSON
+    python run_model.py --export FILE   # Export results to CSV/Excel/JSON
 """
 
 import argparse
@@ -25,10 +25,51 @@ def print_progress(current, total, label=''):
     bar_len = 30
     filled = int(bar_len * current / total)
     bar = '=' * filled + '-' * (bar_len - filled)
-    print(f'\r  [{bar}] {current}/{total} {label}', end='', flush=True)
+    print(f'\r  [{bar}] {current}/{total} {label:<50s}', end='', flush=True)
     if current == total:
         print()
 
+
+# ---------------------------------------------------------------------------
+# Standard output specs (reused across analysis modes)
+# ---------------------------------------------------------------------------
+
+def _add_standard_outputs(sm: ScenarioManager):
+    """Add the standard set of output metrics to measure."""
+    sm.add_output('R8',   'Total Revenue',       metric='sum')
+    sm.add_output('R13',  'EBITDA',              metric='sum')
+    sm.add_output('R19',  'NPAT',                metric='sum')
+    sm.add_output('R205', 'Total CFADS',         metric='sum')
+    sm.add_output('R115', 'Contracted CFADS',    metric='sum')
+    sm.add_output('R116', 'Merchant CFADS',      metric='sum')
+    sm.add_output('R9071','Min DSCR',            metric='min')
+    sm.add_output('R178', 'Total Debt Service',  metric='sum')
+    sm.add_output('R133', 'Dividends',           metric='sum')
+    sm.add_output('R137', 'Net CF to Equity',    metric='sum')
+
+
+def _print_output_row(label: str, outputs: dict, compact=False):
+    """Print a single row of output results."""
+    rev = outputs.get('R8', 0) or 0
+    ebitda = outputs.get('R13', 0) or 0
+    cfads = outputs.get('R205', 0) or 0
+    dscr = outputs.get('R9071', 0) or 0
+    divs = outputs.get('R133', 0) or 0
+    if compact:
+        print(f'  {label:45s}  Rev={rev:>8.2f}  EBITDA={ebitda:>8.2f}  CFADS={cfads:>8.2f}  MinDSCR={dscr:>6.2f}  Divs={divs:>8.2f}')
+    else:
+        npat = outputs.get('R19', 0) or 0
+        ds = outputs.get('R178', 0) or 0
+        ncf = outputs.get('R137', 0) or 0
+        print(f'  {label:45s}')
+        print(f'    Revenue={rev:>10.2f}  EBITDA={ebitda:>10.2f}  NPAT={npat:>10.2f}')
+        print(f'    CFADS={cfads:>10.2f}  DS={ds:>10.2f}  MinDSCR={dscr:>8.4f}')
+        print(f'    Divs={divs:>10.2f}  Net CF Equity={ncf:>10.2f}')
+
+
+# ---------------------------------------------------------------------------
+# Base case
+# ---------------------------------------------------------------------------
 
 def run_base_case(data_dir: str):
     """Run the base case model and print key outputs."""
@@ -50,18 +91,16 @@ def run_base_case(data_dir: str):
             print(f'  {ref}: {err}')
 
     # Print summary of key calculations
-    print('\n--- Key Results (annual sums where applicable) ---')
+    print('\n--- Key Results ---')
     calcs = engine._calcs_data.get('calculations', [])
 
-    # Find some key calcs by common names
     key_names = [
-        'Revenue', 'Total Revenue', 'EBITDA', 'Net Profit', 'NPAT',
-        'CFADS', 'Total CFADS', 'Contracted CFADS', 'Merchant CFADS',
-        'DSCR', 'Project DSCR', 'Period DSCR',
-        'Equity IRR', 'Project IRR',
+        'Total Revenue', 'Tolling Revenue', 'Merchant Revenue',
+        'EBITDA', 'NPAT',
+        'Total CFADS', 'Contracted CFADS', 'Merchant CFADS',
         'Total Debt Service', 'Interest Expense',
-        'Depreciation', 'Tax Expense',
-        'Dividend', 'Dividends',
+        'Dividends', 'Net Cash Flow to Equity',
+        'Period DSCR',
         'Model Period',
     ]
 
@@ -73,84 +112,222 @@ def run_base_case(data_dir: str):
                 arr = engine.results.get(ref)
                 if arr is not None:
                     total = float(arr.sum())
-                    mean = float(arr.mean())
                     mn = float(arr.min())
                     mx = float(arr.max())
                     nonzero = int((arr != 0).sum())
-                    print(f'  {ref:8s} {c["name"]:30s}  sum={total:>14.2f}  mean={mean:>10.4f}  min={mn:>10.4f}  max={mx:>10.4f}  nonzero={nonzero}')
+                    print(f'  {ref:8s} {c["name"]:35s}  sum={total:>12.2f}  min={mn:>10.4f}  max={mx:>10.4f}  nonzero={nonzero}')
                     printed.add(c['id'])
                 break
 
     return engine
 
 
+# ---------------------------------------------------------------------------
+# Tornado sensitivity
+# ---------------------------------------------------------------------------
+
 def run_tornado(data_dir: str, export_path: str | None = None):
-    """Run tornado sensitivity analysis."""
+    """Run tornado sensitivity analysis across key project finance variables.
+
+    Sensitivities:
+    1. CAPEX          - Scale total V1 array by -20% to +20%
+    2. OPEX           - Scale total S1 array (feeds into EBITDA, CFADS)
+    3. Merchant Rev   - Scale market prices L1 (arb + FCAS)
+    4. Tolling Price   - Vary C1.10 ($/MW/hr)
+    5. Interest Rates  - Vary operations debt margin C1.33
+    6. Max Gearing     - Vary C1.19 (% of project cost as debt)
+    7. DSCR Target     - Vary C1.25 (contracted DSCR for debt sizing)
+    """
     print('Setting up tornado analysis...')
     sm = ScenarioManager(data_dir)
+    _add_standard_outputs(sm)
 
-    # Define sensitivities (common project finance variables)
-    sm.add_sensitivity('C1.19', 'Max Gearing (%)', [50, 55, 60, 65, 70, 75, 80])
-    sm.add_sensitivity('C1.24', 'Depreciation Life (years)', [15, 20, 25, 30])
+    # --- Capex: scale entire CAPEX array ---
+    sm.add_sensitivity_scale('V1', 'CAPEX (scale)', [0.80, 0.90, 1.00, 1.10, 1.20])
 
-    # Define outputs to measure
-    sm.add_output('R4', 'Revenue', metric='sum')
+    # --- Opex: scale entire OPEX array ---
+    sm.add_sensitivity_scale('S1', 'OPEX (scale)', [0.80, 0.90, 1.00, 1.10, 1.20])
 
-    print(f'Running {sum(len(s.values) for s in sm._sensitivities)} sensitivity cases...')
+    # --- Merchant Revenue: scale market arb prices ---
+    sm.add_sensitivity_scale('L1', 'Market Prices (scale)', [0.70, 0.85, 1.00, 1.15, 1.30])
+
+    # --- Tolling Price (contracted revenue driver) ---
+    # Base: C1.10 = 21 $/MW/hr
+    sm.add_sensitivity('C1.10', 'Tolling Cost ($/MW/hr)', [15, 18, 21, 24, 27], base_value=21)
+
+    # --- Interest Rates (ops debt margin) ---
+    # Base: C1.33 = 1.75%
+    sm.add_sensitivity('C1.33', 'Ops Debt Margin (%)', [1.25, 1.50, 1.75, 2.00, 2.25], base_value=1.75)
+
+    # --- Gearing ---
+    # Base: C1.19 = 65%
+    sm.add_sensitivity('C1.19', 'Max Gearing (%)', [50, 55, 60, 65, 70, 75], base_value=65)
+
+    # --- DSCR Target ---
+    # Base: C1.25 = 1.40
+    sm.add_sensitivity('C1.25', 'Contracted DSCR Target', [1.20, 1.30, 1.40, 1.50, 1.60], base_value=1.40)
+
+    total_runs = sum(len(s.values) for s in sm._sensitivities)
+    print(f'Running {total_runs} sensitivity cases across {len(sm._sensitivities)} variables...')
     t0 = time.time()
     results = sm.run_tornado(progress_callback=print_progress)
     elapsed = time.time() - t0
-    print(f'Done in {elapsed:.2f}s')
+    print(f'Done in {elapsed:.1f}s')
 
     # Print results
     print('\n--- Tornado Results ---')
-    print(f'Base case: {results["base"]}')
+    print('\nBase case:')
+    _print_output_row('Base', results['base'])
+
     for sens in results['sensitivities']:
-        print(f'\n{sens["name"]} (base={sens["base_value"]}):')
+        is_scale = any(s.mode == 'scale' and s.ref == sens['ref'] for s in sm._sensitivities)
+        print(f'\n{sens["name"]}:')
         for r in sens['results']:
-            print(f'  {r["input_value"]:>8} -> {r["outputs"]}')
+            val = r['input_value']
+            if is_scale:
+                label = f'x{val:.2f} ({val*100-100:+.0f}%)'
+            else:
+                label = str(val)
+            _print_output_row(f'  {label}', r['outputs'], compact=True)
 
     if export_path:
-        if export_path.endswith('.xlsx'):
-            sm.export_excel(results, export_path)
-        elif export_path.endswith('.json'):
-            sm.export_json(results, export_path)
-        else:
-            sm.export_csv(results, export_path)
-        print(f'\nExported to {export_path}')
+        _export(sm, results, export_path)
 
     return results
 
 
+# ---------------------------------------------------------------------------
+# Named scenarios
+# ---------------------------------------------------------------------------
+
 def run_scenarios(data_dir: str, export_path: str | None = None):
-    """Run named scenarios."""
+    """Run named scenarios combining multiple variable changes.
+
+    Scenarios represent realistic combined shifts:
+    - Downside: higher capex, higher opex, lower prices, higher rates
+    - Upside: lower capex, lower opex, higher prices, lower rates
+    - Stress: extreme adverse conditions
+    """
     print('Setting up scenario analysis...')
     sm = ScenarioManager(data_dir)
+    _add_standard_outputs(sm)
 
-    # Define scenarios
-    sm.add_scenario('Base Case', {})
-    sm.add_scenario('Downside - Low Gearing', {'C1.19': 50})
-    sm.add_scenario('Upside - High Gearing', {'C1.19': 80})
+    # Base case
+    sm.add_scenario('Base Case')
 
-    # Define outputs
-    sm.add_output('R4', 'Revenue', metric='sum')
+    # --- Capex-driven scenarios ---
+    sm.add_scenario('Capex +20%',
+                    scales={'V1': 1.20})
+    sm.add_scenario('Capex -20%',
+                    scales={'V1': 0.80})
+
+    # --- Opex-driven scenarios ---
+    sm.add_scenario('Opex +20%',
+                    scales={'S1': 1.20})
+    sm.add_scenario('Opex -20%',
+                    scales={'S1': 0.80})
+
+    # --- Merchant revenue scenarios ---
+    sm.add_scenario('Market Prices +30%',
+                    scales={'L1': 1.30})
+    sm.add_scenario('Market Prices -30%',
+                    scales={'L1': 0.70})
+
+    # --- Interest rate scenarios ---
+    sm.add_scenario('High Interest (margin +50bps)',
+                    overrides={'C1.33': 2.25, 'C1.32': 2.30})
+    sm.add_scenario('Low Interest (margin -50bps)',
+                    overrides={'C1.33': 1.25, 'C1.32': 1.30})
+
+    # --- Combined downside ---
+    sm.add_scenario('Downside Combined',
+                    overrides={'C1.33': 2.25, 'C1.10': 18},
+                    scales={'V1': 1.15, 'S1': 1.10, 'L1': 0.80})
+
+    # --- Combined upside ---
+    sm.add_scenario('Upside Combined',
+                    overrides={'C1.33': 1.25, 'C1.10': 24},
+                    scales={'V1': 0.90, 'S1': 0.90, 'L1': 1.20})
+
+    # --- Stress test ---
+    sm.add_scenario('Stress Test',
+                    overrides={'C1.33': 2.50, 'C1.10': 15, 'C1.19': 55},
+                    scales={'V1': 1.25, 'S1': 1.20, 'L1': 0.60})
 
     print(f'Running {len(sm._scenarios)} scenarios...')
     t0 = time.time()
     results = sm.run_scenarios(progress_callback=print_progress)
     elapsed = time.time() - t0
-    print(f'Done in {elapsed:.2f}s')
+    print(f'Done in {elapsed:.1f}s')
 
     print('\n--- Scenario Results ---')
-    print(f'Base: {results["base"]}')
+    print('\nBase case:')
+    _print_output_row('Base', results['base'])
+
     for s in results['scenarios']:
-        print(f'{s["name"]:30s} -> {s["outputs"]}')
+        print()
+        _print_output_row(s['name'], s['outputs'])
 
     if export_path:
-        sm.export_csv(results, export_path)
-        print(f'\nExported to {export_path}')
+        _export(sm, results, export_path)
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Grid analysis
+# ---------------------------------------------------------------------------
+
+def run_grid(data_dir: str, export_path: str | None = None):
+    """Run combinatorial grid: Capex scale x Tolling Price x Gearing.
+
+    3 x 3 x 3 = 27 combinations.
+    """
+    print('Setting up grid analysis...')
+    sm = ScenarioManager(data_dir)
+    _add_standard_outputs(sm)
+
+    sm.add_sensitivity_scale('V1', 'CAPEX (scale)', [0.85, 1.00, 1.15])
+    sm.add_sensitivity('C1.10', 'Tolling Cost ($/MW/hr)', [18, 21, 24])
+    sm.add_sensitivity('C1.19', 'Max Gearing (%)', [55, 65, 75])
+
+    total = 1
+    for s in sm._sensitivities:
+        total *= len(s.values)
+
+    print(f'Running {total} grid combinations...')
+    t0 = time.time()
+    results = sm.run_grid(progress_callback=print_progress)
+    elapsed = time.time() - t0
+    print(f'Done in {elapsed:.1f}s')
+
+    print('\n--- Grid Results (top 10 by EBITDA) ---')
+    sorted_results = sorted(results['results'],
+                           key=lambda r: r['outputs'].get('R13', 0) or 0,
+                           reverse=True)
+    for r in sorted_results[:10]:
+        inputs_str = ', '.join(f'{k}={v}' for k, v in r['inputs'].items())
+        _print_output_row(inputs_str, r['outputs'], compact=True)
+
+    if export_path:
+        _export(sm, results, export_path)
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _export(sm, results, export_path):
+    """Export results to the appropriate format."""
+    if export_path.endswith('.xlsx'):
+        sm.export_excel(results, export_path)
+    elif export_path.endswith('.json'):
+        sm.export_json(results, export_path)
+    else:
+        sm.export_csv(results, export_path)
+    print(f'\nExported to {export_path}')
 
 
 def main():
@@ -191,7 +368,7 @@ def main():
     elif args.scenarios:
         run_scenarios(args.data_dir, args.export)
     elif args.grid:
-        print('Grid analysis - configure sensitivities in run_model.py')
+        run_grid(args.data_dir, args.export)
     else:
         run_base_case(args.data_dir)
 
