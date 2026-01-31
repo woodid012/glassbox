@@ -760,8 +760,8 @@
       "tabId": 3,
       "groupId": 37,
       "name": "GST Received",
-      "formula": "0",
-      "description": "GST self-funds (refunds offset payments). No separate source needed in S&U.",
+      "formula": "CUMSUM(R9013)",
+      "description": "Cumulative GST refunds received during construction",
       "type": "stock"
     },
     {
@@ -1656,8 +1656,8 @@
       "tabId": 7,
       "groupId": 60,
       "name": "Total Capex",
-      "formula": "-R3 * F1",
-      "description": "Total capex incl contingency (per period)"
+      "formula": "-V1 * F1",
+      "description": "Total capex ex contingency (per period)"
     },
     {
       "id": 313,
@@ -1719,9 +1719,9 @@
       "id": 321,
       "tabId": 7,
       "groupId": 60,
-      "name": "Total Capital Expenditure",
+      "name": "Total Construction Outflows",
       "formula": "R310 + R313 + R314 + R315 + R316 + R317 + R318 + R319 + R320",
-      "description": "All construction uses: capex + IDC + fees + MRA + GST"
+      "description": "All construction outflows: capex + IDC + fees + MRA + GST"
     },
     {
       "id": 325,
@@ -1734,8 +1734,8 @@
       "id": 326,
       "tabId": 7,
       "groupId": 60,
-      "name": "Committed Equity",
-      "formula": "R9021"
+      "name": "Committed Equity (incl IDC)",
+      "formula": "R9021 + R9022"
     },
     {
       "id": 327,

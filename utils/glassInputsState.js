@@ -222,7 +222,7 @@ export function getDefaultState() {
                 inputs: [
                     { key: 'availableCashRef', label: 'Available Cashflow (pre-dist)', type: 'reference', default: 'R170' },
                     { key: 'npatRef', label: 'NPAT', type: 'reference', default: 'R19' },
-                    { key: 'equityContributedRef', label: 'Equity Contributed', type: 'reference', default: 'M4.3' },
+                    { key: 'equityContributedRef', label: 'Equity Contributed', type: 'reference', default: 'M4.4' },
                     { key: 'minCashReserve', label: 'Minimum Cash Reserve', type: 'number_or_ref', default: 0 },
                     { key: 'opsFlagRef', label: 'Operations Flag', type: 'reference', default: 'F2' },
                     { key: 'withholdingTaxPct', label: 'Withholding Tax %', type: 'number_or_ref', default: 0 },

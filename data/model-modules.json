@@ -90,15 +90,18 @@
         "constructionCostsRef": "R60",
         "gstPaidRef": "R61",
         "feesRef": "R219",
+        "gstAmountRef": "R9007",
+        "gstReceivedRef": "R9010",
         "sizedDebtRef": "M1.1",
         "gearingCapPct": "C1.19",
         "interestRatePct": "R171",
         "drawdownMethod": "equity_first",
         "constructionFlagRef": "R9999"
       },
-      "outputs": [],
+      "outputs": [
+        "net_period_cost"
+      ],
       "solvedAt": null,
-      "converted": true,
       "calcIds": [
         9015,
         9016,
@@ -111,7 +114,7 @@
         9023,
         9024
       ],
-      "fullyConverted": true
+      "partiallyConverted": true
     },
     {
       "id": 1769400000000,
@@ -538,17 +541,17 @@
       "id": 9023,
       "groupId": 52,
       "name": "Construction Funding: Total Uses (ex-IDC)",
-      "formula": "CUMSUM(V1 * F1) + R61 + R219",
+      "formula": "CUMSUM(M4.1)",
       "type": "stock",
       "_moduleId": "M4",
       "_moduleOutputKey": "total_uses_ex_idc",
-      "description": "Cumulative construction costs + GST receivable + funded finance fees"
+      "description": "Cumulative net period costs (GST-netted) from solver"
     },
     {
       "id": 9024,
       "groupId": 52,
       "name": "Construction Funding: Period Cost",
-      "formula": "MAX(0, R9023 - PREVVAL(R9023)) * R9999",
+      "formula": "M4.1",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "period_cost"
@@ -1075,16 +1078,16 @@
     "M3.7": "R9012",
     "M3.8": "R9013",
     "M3.9": "R9014",
-    "M4.1": "R9015",
-    "M4.2": "R9016",
-    "M4.3": "R9017",
-    "M4.4": "R9018",
-    "M4.5": "R9019",
-    "M4.6": "R9020",
-    "M4.7": "R9021",
-    "M4.8": "R9022",
-    "M4.9": "R9023",
-    "M4.10": "R9024",
+    "M4.2": "R9015",
+    "M4.3": "R9016",
+    "M4.4": "R9017",
+    "M4.5": "R9018",
+    "M4.6": "R9019",
+    "M4.7": "R9020",
+    "M4.8": "R9021",
+    "M4.9": "R9022",
+    "M4.10": "R9023",
+    "M4.11": "R9024",
     "M5.1": "R9025",
     "M5.2": "R9026",
     "M5.3": "R9027",
@@ -1158,6 +1161,18 @@
           "default": ""
         },
         {
+          "key": "gstAmountRef",
+          "label": "GST Amount (period)",
+          "type": "reference",
+          "default": "R9007"
+        },
+        {
+          "key": "gstReceivedRef",
+          "label": "GST Received (period)",
+          "type": "reference",
+          "default": "R9010"
+        },
+        {
           "key": "sizedDebtRef",
           "label": "Sized Debt (from Debt Module)",
           "type": "reference",
@@ -1199,6 +1214,7 @@
         }
       ],
       "outputs": [
+        "net_period_cost",
         "total_uses_incl_idc",
         "senior_debt",
         "equity",
@@ -1526,7 +1542,7 @@
           "key": "equityContributedRef",
           "label": "Equity Contributed",
           "type": "reference",
-          "default": "M4.3"
+          "default": "M4.4"
         },
         {
           "key": "minCashReserve",

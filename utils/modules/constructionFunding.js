@@ -16,10 +16,10 @@ export const DRAWDOWN_FORMULAS = {
     },
     equity_first: {
         // Equity-first: draw all equity first (up to target), then debt
-        9024: "MAX(0, R9023 - PREVVAL(R9023)) * F1",
+        9024: "M4.1",
         9099: "MAXVAL(R9023) - M1.1",
         9020: "MAX(0, CUMSUM(R9024) - R9099) - MAX(0, CUMSUM(R9024) - R9024 - R9099)",
-        9021: "(R9024 - R9020) * F1",
+        9021: "(R9024 - R9020) * R9999",
         9017: "CUMSUM(R9021) + CUMSUM(R9022)",
     }
 }
@@ -32,6 +32,8 @@ export const TEMPLATE = {
         { key: 'constructionCostsRef', label: 'Construction Costs (cumulative)', type: 'reference', refType: 'any', required: true },
         { key: 'gstPaidRef', label: 'GST Paid (cumulative)', type: 'reference', refType: 'any', required: false },
         { key: 'feesRef', label: 'Fees/Other Uses (cumulative)', type: 'reference', refType: 'any', required: false },
+        { key: 'gstAmountRef', label: 'GST Amount (period)', type: 'reference', refType: 'any', required: false },
+        { key: 'gstReceivedRef', label: 'GST Received (period)', type: 'reference', refType: 'any', required: false },
         { key: 'sizedDebtRef', label: 'Sized Debt (from Debt Module)', type: 'reference', refType: 'any', required: true },
         { key: 'gearingCapPct', label: 'Gearing Cap (%)', type: 'number', required: true, default: 65 },
         { key: 'interestRatePct', label: 'IDC Interest Rate (%)', type: 'number', required: true, default: 5 },
@@ -41,8 +43,10 @@ export const TEMPLATE = {
         ], default: 'prorata' },
         { key: 'constructionFlagRef', label: 'Construction Flag', type: 'reference', refType: 'flag', required: true }
     ],
-    outputs: [],
-    fullyConverted: true,
+    outputs: [
+        { key: 'net_period_cost', label: 'Net Period Cost (GST-netted)', type: 'flow', isSolver: true }
+    ],
+    partiallyConverted: true,
     convertedOutputs: [
         { key: 'total_funding', label: 'Total Funding Requirements', calcRef: 'R9015' },
         { key: 'senior_debt', label: 'Senior Debt', calcRef: 'R9016' },
@@ -53,7 +57,7 @@ export const TEMPLATE = {
         { key: 'equity_drawdown', label: 'Equity Drawdown', calcRef: 'R9021' },
         { key: 'idc_period', label: 'IDC (Period)', calcRef: 'R9022' },
         { key: 'total_uses_ex_idc', label: 'Total Uses (ex-IDC)', calcRef: 'R9023' },
-        { key: 'uncapped_debt_drawdown', label: 'Uncapped Debt Drawdown', calcRef: 'R9024' },
+        { key: 'uncapped_debt_drawdown', label: 'Period Cost', calcRef: 'R9024' },
         { key: 'equity_target', label: 'Equity Target (ex-IDC)', calcRef: 'R9099' }
     ],
     outputFormulas: {
@@ -70,171 +74,70 @@ export const TEMPLATE = {
 }
 
 /**
- * Construction Funding using Gold Standard CUMSUM pattern.
- * Calculates debt/equity split with IDC equity-funded.
+ * Construction Funding solver: computes net period costs after GST refunds.
  *
- * Key Formula:
- *   Senior Debt = MIN(Sized Debt from DSCR module, Total Uses × Gearing Cap)
- *   Drawdown is PRO-RATA at gearing cap % (debt draws at gearing %, equity fills the gap)
- *   If sized debt is reached, remaining costs funded 100% by equity
- *   IDC = calculated on debt drawdown during construction (equity-funded)
- *   Equity = Total Uses (incl IDC) - Senior Debt
+ * This is a single forward pass (not iterative) since all inputs are known:
+ *   - Period capex (V1 * F1)
+ *   - GST paid (R9007) and GST received/refunded (R9010)
+ *   - Fees delta (R219[i] - R219[i-1])
+ *   - GST receivable delta (R61[i] - R61[i-1])
  *
- * This breaks the circular dependency because:
- *   - Debt sizing uses Total Uses EX-IDC
- *   - IDC is calculated AFTER debt is sized
- *   - IDC is funded by equity, not added to debt
+ * The net period cost = capex + GST paid - GST received + fees delta
+ * This nets out the 1-period GST timing difference so construction cash ≈ 0.
  */
 export function calculate(inputs, arrayLength, context) {
     const {
         constructionCostsRef = null,
-        gstPaidRef = null,
         feesRef = null,
-        sizedDebtRef = null,
-        gearingCapPct = 65,
-        interestRatePct = 5,
-        drawdownMethod = 'prorata',
+        gstAmountRef = null,
+        gstReceivedRef = null,
         constructionFlagRef = null
     } = inputs
 
-    // Initialize outputs
-    const outputs = {
-        total_uses_ex_idc: new Array(arrayLength).fill(0),
-        senior_debt: new Array(arrayLength).fill(0),
-        debt_drawdown: new Array(arrayLength).fill(0),
-        gearing_pct: new Array(arrayLength).fill(0),
-        idc: new Array(arrayLength).fill(0),
-        cumulative_idc: new Array(arrayLength).fill(0),
-        total_uses_incl_idc: new Array(arrayLength).fill(0),
-        equity: new Array(arrayLength).fill(0),
-        equity_drawdown: new Array(arrayLength).fill(0)
-    }
+    // Initialize output
+    const net_period_cost = new Array(arrayLength).fill(0)
 
-    // Get input arrays
-    const constructionCosts = constructionCostsRef && context[constructionCostsRef]
-        ? context[constructionCostsRef]
+    // Get input arrays from context
+    const constructionFlag = constructionFlagRef && context[constructionFlagRef]
+        ? context[constructionFlagRef]
         : new Array(arrayLength).fill(0)
 
-    const gstPaid = gstPaidRef && context[gstPaidRef]
-        ? context[gstPaidRef]
+    const gstAmount = gstAmountRef && context[gstAmountRef]
+        ? context[gstAmountRef]
+        : new Array(arrayLength).fill(0)
+
+    const gstReceived = gstReceivedRef && context[gstReceivedRef]
+        ? context[gstReceivedRef]
         : new Array(arrayLength).fill(0)
 
     const fees = feesRef && context[feesRef]
         ? context[feesRef]
         : new Array(arrayLength).fill(0)
 
-    const sizedDebt = sizedDebtRef && context[sizedDebtRef]
-        ? context[sizedDebtRef]
-        : new Array(arrayLength).fill(0)
-
-    const constructionFlag = constructionFlagRef && context[constructionFlagRef]
-        ? context[constructionFlagRef]
-        : new Array(arrayLength).fill(0)
-
-    // Rates - support both direct values and references using shared resolver
-    const gearingCap = resolveModuleInput(gearingCapPct, context, 0) / 100
-    // Interest rate as time-series array (supports time-varying rates like R171)
-    const interestRateArray = resolveModuleInputArray(interestRatePct, context, arrayLength, 0)
+    // Get V1 (period capex) from context
+    const v1 = context['V1'] || new Array(arrayLength).fill(0)
 
     // Find construction period
     const consStart = constructionFlag.findIndex(f => f === 1 || f === true)
-    if (consStart < 0) return outputs
-
-    let consEnd = consStart
-    for (let i = arrayLength - 1; i >= consStart; i--) {
-        if (constructionFlag[i] === 1 || constructionFlag[i] === true) {
-            consEnd = i
-            break
-        }
-    }
-
-    // Get the sized debt amount (constant from debt module)
-    // Use the value at construction end (when debt is sized)
-    const sizedDebtAmount = sizedDebt[consEnd] || sizedDebt[0] || 0
-
-    // Step 1: Calculate cumulative uses (ex-IDC) during construction
-    for (let i = 0; i < arrayLength; i++) {
-        // Cumulative construction costs + GST + fees
-        const cumCosts = constructionCosts[i] || 0
-        const cumGst = gstPaid[i] || 0
-        const cumFees = fees[i] || 0
-
-        outputs.total_uses_ex_idc[i] = cumCosts + cumGst + cumFees
-    }
-
-    // Step 2: Calculate max debt = MIN(Sized Debt, Total Uses × Gearing Cap)
-    const totalUsesAtEnd = outputs.total_uses_ex_idc[consEnd]
-    const maxDebtByGearing = totalUsesAtEnd * gearingCap
-    const maxSeniorDebt = Math.min(sizedDebtAmount, maxDebtByGearing)
-
-    // For equity first: calculate total equity requirement
-    const totalEquityRequired = totalUsesAtEnd * (1 - gearingCap)
-
-    // Step 3: Calculate debt and equity drawdowns based on method
-    let cumDebtDrawdown = 0
-    let cumEquityDrawdown = 0
-    let cumIDC = 0
+    if (consStart < 0) return { net_period_cost }
 
     for (let i = 0; i < arrayLength; i++) {
         const isCons = constructionFlag[i] === 1 || constructionFlag[i] === true
+        if (!isCons) continue
 
-        if (isCons) {
-            // Period uses = change in cumulative uses
-            const priorUses = i > 0 ? outputs.total_uses_ex_idc[i - 1] : 0
-            const periodUses = outputs.total_uses_ex_idc[i] - priorUses
+        // Period capex (ex-GST)
+        const capex = v1[i] || 0
 
-            let periodDebt = 0
-            let periodEquityBase = 0
+        // GST: paid this period minus refund received this period
+        const gstPaidThisPeriod = gstAmount[i] || 0
+        const gstReceivedThisPeriod = gstReceived[i] || 0
 
-            if (drawdownMethod === 'equity_first') {
-                // EQUITY FIRST: Draw equity until equity target reached, then debt
-                const remainingEquityTarget = Math.max(0, totalEquityRequired - cumEquityDrawdown)
-                periodEquityBase = Math.min(periodUses, remainingEquityTarget)
+        // Fees delta (cumulative fees change)
+        const feesDelta = (fees[i] || 0) - (i > 0 ? (fees[i - 1] || 0) : 0)
 
-                // Debt fills the remainder, capped at sized debt
-                const remainingDebtCapacity = Math.max(0, maxSeniorDebt - cumDebtDrawdown)
-                periodDebt = Math.min(periodUses - periodEquityBase, remainingDebtCapacity)
-            } else {
-                // PRO-RATA: Debt draws at gearing %, equity fills gap
-                const targetDebtDraw = periodUses * gearingCap
-                const remainingDebtCapacity = Math.max(0, maxSeniorDebt - cumDebtDrawdown)
-                periodDebt = Math.min(targetDebtDraw, remainingDebtCapacity)
-                periodEquityBase = periodUses - periodDebt
-            }
-
-            cumDebtDrawdown += periodDebt
-            outputs.debt_drawdown[i] = periodDebt
-
-            // IDC = opening debt balance × monthly rate (period-specific)
-            // Opening debt = cumulative drawdown at start of period
-            const openingDebt = cumDebtDrawdown - periodDebt
-            const monthlyRate = (interestRateArray[i] || 0) / 100 / 12
-            const periodIDC = openingDebt * monthlyRate
-            cumIDC += periodIDC
-            outputs.idc[i] = periodIDC
-            outputs.cumulative_idc[i] = cumIDC
-
-            // Equity drawdown = base equity + IDC (equity funds all IDC)
-            const periodEquity = periodEquityBase + periodIDC
-            cumEquityDrawdown += periodEquity
-            outputs.equity_drawdown[i] = periodEquity
-        }
-
-        // Update cumulative values
-        outputs.senior_debt[i] = cumDebtDrawdown
-        outputs.total_uses_incl_idc[i] = outputs.total_uses_ex_idc[i] + cumIDC
-        outputs.equity[i] = cumEquityDrawdown
-
-        // Gearing % = actual gearing (Debt / Total Uses ex-IDC)
-        const totalUses = outputs.total_uses_ex_idc[i]
-        if (drawdownMethod === 'equity_first') {
-            // For equity first, show actual gearing (changes over time)
-            outputs.gearing_pct[i] = totalUses > 0 ? (cumDebtDrawdown / totalUses) * 100 : 0
-        } else {
-            // For pro-rata, show constant gearing cap
-            outputs.gearing_pct[i] = isCons ? gearingCap * 100 : (i > 0 ? outputs.gearing_pct[i - 1] : 0)
-        }
+        // Net period cost = capex + net GST outflow + fees change
+        net_period_cost[i] = Math.max(0, capex + gstPaidThisPeriod - gstReceivedThisPeriod + feesDelta)
     }
 
-    return outputs
+    return { net_period_cost }
 }
