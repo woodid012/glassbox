@@ -64,7 +64,7 @@ Exports (full audit trail available)
 
 - `app/glassinputs/page.jsx` - Input arrays page
 - `app/model-builder/page.jsx` - Calculations page with formula editor
-- `utils/formulaEngine.js` - Formula parsing and evaluation
+- `utils/formulaEvaluator.js` - Formula parsing and evaluation
 - `utils/moduleTemplates.js` - Preset modules (debt, depreciation, etc.)
 
 ## Tech Stack
@@ -660,6 +660,54 @@ Key formatting functions:
 ## Future Tasks
 
 - **Module definitions as data file:** Move module template definitions (name, description, input schema, output-to-calc mappings) from JS files (`utils/modules/*.js`) into a JSON data file (`data/model-modules.json`), consistent with `model-inputs.json` and `model-calculations.json`. Only solver functions (M1 binary search, M8 forward-looking sums) remain as JS. The Modules page becomes a template launcher that reads from this data file, creates calc groups, and links inputs — no JS module execution for fully converted modules.
+
+## Debugging BS Imbalances (Proven Process)
+
+When R195 (Balance Check) is non-zero, follow this systematic process:
+
+### Step 1: Ensure test loads ALL data files
+
+The server engine needs merged data from BOTH `model-calculations.json` AND `model-modules.json`. Use `loadModelData()` from `utils/loadModelData.js` or manually merge module data (moduleCalculations, modules, _mRefMap) into the calculations object. Missing module data causes R9000+ calcs to be absent, producing massive false imbalances.
+
+### Step 2: Write a vitest diagnostic that identifies the FIRST non-zero R195 period
+
+```javascript
+// Find first period where |R195| > threshold (use very small threshold like 1e-7)
+// Print the date and R195 value
+// Show whether drift is cumulative, periodic, or one-time
+```
+
+### Step 3: Movement analysis at the transition period
+
+For the period BEFORE and AFTER the first imbalance appears, compute deltas for every BS line:
+
+```
+ΔAssets:  ΔR182(cash) + ΔR196(WIP) + ΔR183(PP&E) + ΔR184(recv) + ΔR230(fees) + ΔR231(upfront)
+ΔL+E:    ΔR190(liab) + ΔR193(equity)
+Mismatch: ΔAssets - ΔL+E  (should equal R195)
+```
+
+### Step 4: Stock-Flow verification
+
+For each BS stock, verify its movement equals the corresponding flow:
+- ΔCash = R40 (Net CF)
+- ΔRE = R19 (NPAT)
+- ΔPP&E = R81 (addition) - R82 (depreciation)
+- ΔDebt = R29 (drawdown) + R31 (repayment)
+
+The mismatched component reveals which ledger/module has the bug.
+
+### Step 5: Trace the root cause in the mismatched component
+
+Common causes:
+- **Ungated CUMSUMs**: A CUMSUM that should freeze after construction keeps accumulating during operations (e.g., `R9083` instead of `CUMSUM(R9082 * R9999)`)
+- **Double-counting**: An item appears on BOTH the P&L (expense) and as a capitalised asset movement
+- **Missing flags**: A stock formula lacks F1/F2 gating, so values bleed across construction/operations boundary
+- **Client vs server divergence**: Client engine zeros out calcs with missing refs instead of substituting 0 (fixed in useUnifiedCalculation.js)
+
+### Key Principle
+
+The BS imbalance always equals exactly one (or a sum of) mismatched stock-flow pairs. Narrow it down component by component rather than guessing. The mismatch amount and its pattern (quarterly, monthly, one-time) are strong clues.
 
 ## Notes
 

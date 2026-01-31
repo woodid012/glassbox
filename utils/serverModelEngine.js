@@ -733,23 +733,6 @@ export function runServerModel(inputs, calculations, options = {}) {
             const cluster = clusters.get(triggerClusterId)
             if (options.debug) {
                 console.log(`[DEBUG] Evaluating cluster ${triggerClusterId}: order=${cluster.internalOrder.join(',')}, members=${cluster.members.map(c=>'R'+c.id+'='+c.formula).join(' | ')}`)
-                // Show external dep values for cluster 0 (D&A)
-                if (triggerClusterId === 0) {
-                    const r9002 = context['R9002']
-                    const r203 = context['R203']
-                    const c124 = context['C1.24']
-                    const f2 = context['F2']
-                    console.log(`[DEBUG]   R9002 in context: ${!!r9002}, first non-zero: ${r9002 ? r9002.findIndex(v=>v!==0) : 'N/A'}, val[18]: ${r9002?.[18]}`)
-                    console.log(`[DEBUG]   R203 in context: ${!!r203}, first non-zero: ${r203 ? r203.findIndex(v=>v!==0) : 'N/A'}, val[0..5]: ${r203?.slice(0,6).map(v=>v.toFixed(2)).join(',')}`)
-                    console.log(`[DEBUG]   R203 sum 0-18: ${r203?.slice(0,19).reduce((a,b)=>a+b,0).toFixed(4)}`)
-                    console.log(`[DEBUG]   C1.24 in context: ${!!c124}, val[0]: ${c124?.[0]}`)
-                    console.log(`[DEBUG]   F2 in context: ${!!f2}, first non-zero: ${f2 ? f2.findIndex(v=>v!==0) : 'N/A'}`)
-                    // Check R9022 (equity_drawdown, M4.8)
-                    const r9022 = context['R9022']
-                    console.log(`[DEBUG]   R9022 in context: ${!!r9022}, first non-zero: ${r9022 ? r9022.findIndex(v=>v!==0) : 'N/A'}, val[0..5]: ${r9022?.slice(0,6).map(v=>v.toFixed(2)).join(',')}`)
-                    const v1 = context['V1']
-                    console.log(`[DEBUG]   V1 in context: ${!!v1}, first non-zero: ${v1 ? v1.findIndex(v=>v!==0) : 'N/A'}, val[0..5]: ${v1?.slice(0,6).map(v=>v.toFixed(2)).join(',')}`)
-                }
             }
             const clusterResults = evaluateClusterPeriodByPeriod(
                 cluster.members, cluster.internalOrder, context, timeline
@@ -770,29 +753,15 @@ export function runServerModel(inputs, calculations, options = {}) {
                 }
             })
         } else if (node.type === 'calc') {
-            const formula = node.item._rewrittenFormula || node.item.formula
-            const values = evaluateSingleCalc(formula, context, timeline)
+            let values
+            if (options.overrides && options.overrides[nodeId]) {
+                values = options.overrides[nodeId]
+            } else {
+                const formula = node.item._rewrittenFormula || node.item.formula
+                values = evaluateSingleCalc(formula, context, timeline)
+            }
             calcResults[nodeId] = values
             context[nodeId] = values
-
-            // Debug specific calcs - add to debugInfo for API return
-            if (options.debug && ['R9041', 'R9039', 'R9040'].includes(nodeId)) {
-                const nonZero = values.findIndex(v => v !== 0)
-                const v18 = values[18]
-                const ctxR9039 = context['R9039']
-                if (!options._evalDebug) options._evalDebug = {}
-                options._evalDebug[nodeId] = {
-                    formula,
-                    rewritten: node.item._rewrittenFormula || 'same',
-                    nonZeroAt: nonZero,
-                    v18,
-                    ctxR9039_exists: !!ctxR9039,
-                    ctxR9039_p18: ctxR9039?.[18],
-                    evalOrder: nodeIdx,
-                    isCluster: nodeToCluster.has(nodeId),
-                    clusterId: nodeToCluster.get(nodeId),
-                }
-            }
 
             // Populate M-ref context aliases for converted module outputs
             for (const [mRef, rRef] of Object.entries(mRefMapData)) {

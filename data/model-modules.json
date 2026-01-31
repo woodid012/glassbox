@@ -41,7 +41,6 @@
         "dbMultiplier": 2
       },
       "outputs": [],
-      "converted": true,
       "calcIds": [
         9001,
         9002,
@@ -66,7 +65,6 @@
         "operationsFlagRef": "F2"
       },
       "outputs": [],
-      "converted": true,
       "calcIds": [
         9006,
         9007,
@@ -130,7 +128,6 @@
       "outputs": [],
       "solvedAt": null,
       "enabled": false,
-      "converted": true,
       "calcIds": [
         9025,
         9026,
@@ -157,7 +154,6 @@
         "releaseFlagRef": "F12.End"
       },
       "outputs": [],
-      "converted": true,
       "calcIds": [
         9032,
         9033,
@@ -196,7 +192,6 @@
       },
       "outputs": [],
       "enabled": true,
-      "converted": true,
       "calcIds": [
         9037,
         9038,

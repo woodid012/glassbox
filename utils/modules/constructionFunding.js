@@ -1,5 +1,5 @@
 // Construction Funding Module
-import { resolveModuleInput, resolveModuleInputArray } from './shared'
+import { resolveModuleInput } from './shared'
 
 /**
  * Formula sets for each drawdown method.
@@ -60,17 +60,7 @@ export const TEMPLATE = {
         { key: 'uncapped_debt_drawdown', label: 'Period Cost', calcRef: 'R9024' },
         { key: 'equity_target', label: 'Equity Target (ex-IDC)', calcRef: 'R9099' }
     ],
-    outputFormulas: {
-        total_uses_ex_idc: '{constructionCostsRef} + CUMSUM({gstPaidRef}) + CUMSUM({feesRef})',
-        senior_debt: 'MIN({sizedDebtRef}, total_uses_ex_idc × {gearingCapPct}/100)',
-        debt_drawdown: 'senior_debt - SHIFT(senior_debt, 1)',
-        gearing_pct: 'senior_debt / total_uses_ex_idc × 100',
-        idc: 'SHIFT(senior_debt, 1) × {interestRatePct}/100 / T.MiY × {constructionFlagRef}',
-        cumulative_idc: 'CUMSUM(idc)',
-        total_uses_incl_idc: 'total_uses_ex_idc + cumulative_idc',
-        equity: 'total_uses_incl_idc - senior_debt',
-        equity_drawdown: 'equity - SHIFT(equity, 1)'
-    }
+    outputFormulas: {}
 }
 
 /**

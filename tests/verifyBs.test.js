@@ -1,6 +1,6 @@
 
 import { describe, it, expect, beforeAll } from 'vitest'
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync } from 'fs'
 import { join } from 'path'
 import { runServerModel } from '../utils/serverModelEngine.js'
 
@@ -55,7 +55,7 @@ describe('Balance Sheet Verification', () => {
         const check = results['R195']
         expect(check).toBeDefined()
 
-        // allow small floating point error
+        // 0.01 threshold: allows floating-point rounding but catches real imbalances
         const maxDiff = Math.max(...check.map(v => Math.abs(v)))
         console.log('Max Balance Sheet Diff:', maxDiff)
         expect(maxDiff).toBeLessThan(0.01)
@@ -92,7 +92,7 @@ describe('Balance Sheet Verification', () => {
             debugLog.push(`\nFinancing Breakdown (R169) at ${idx}:`)
             debugLog.push(`  Debt Drawdown (R29): ${results['R29'][idx]}`)
             debugLog.push(`  Equity Injection (R35): ${results['R35'][idx]}`)
-            debugLog.push(`  Financing Fees Paid (R173): ${results['R173'][idx]}`) // Stock? No, R173 is Cum. R144/R146 are flows.
+            debugLog.push(`  Financing Fees Paid (R173): ${results['R173'][idx]}`)
             debugLog.push(`    Upfront (R144): ${results['R144'][idx]}`)
             debugLog.push(`    Commitment (R146): ${results['R146'][idx]}`)
 
@@ -116,7 +116,8 @@ describe('Balance Sheet Verification', () => {
             debugLog.push(`Construction Flag (F1): ${context['F1'] ? context['F1'][idx] : 'N/A'}`)
         }
 
-        writeFileSync('debug_output.txt', debugLog.join('\n'))
+        if (debugLog.length > 1) console.log(debugLog.join('\n'))
+        // -0.05 threshold: small negative cash from timing (GST refund lag) is acceptable
         expect(minCash).toBeGreaterThanOrEqual(-0.05)
     })
 })

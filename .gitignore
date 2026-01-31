@@ -20,3 +20,21 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Debug/temp files
+debug_*.txt
+debug_*.json
+temp-*.js
+temp-*.json
+trace-*.js
+test-*.json
+*.backup.json
+data/debug-*.json
+data/archive/
+data/*_session*.md
+data/*_snapshot*
+data/~$*
+bs-*.md
+*-DIAGNOSIS.md
+*-ROOT-CAUSE.md
+nul
