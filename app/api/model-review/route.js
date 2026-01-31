@@ -2,11 +2,10 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { NextResponse } from 'next/server'
 import { analyzeModelCompleteness, generateMarkdownReport } from '@/utils/modelReviewAnalysis'
+import { loadModelData } from '@/utils/loadModelData'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 const BLUEPRINT_FILE = path.join(DATA_DIR, 'model-blueprint.json')
-const CALCULATIONS_FILE = path.join(DATA_DIR, 'model-calculations.json')
-const INPUTS_FILE = path.join(DATA_DIR, 'model-inputs.json')
 const REPORT_FILE = path.join(DATA_DIR, 'model-review-report.md')
 
 async function readJsonFile(filePath) {
@@ -28,10 +27,9 @@ async function readJsonFile(filePath) {
  */
 export async function GET() {
     try {
-        const [blueprint, calcData, inputData] = await Promise.all([
+        const [blueprint, { inputs: inputData, calculations: calcData }] = await Promise.all([
             readJsonFile(BLUEPRINT_FILE),
-            readJsonFile(CALCULATIONS_FILE),
-            readJsonFile(INPUTS_FILE)
+            loadModelData(DATA_DIR)
         ])
 
         if (!blueprint) {

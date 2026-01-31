@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
-import { splitState, mergeState } from '@/utils/modelStateSplit'
+import { mergeState } from '@/utils/modelStateSplit'
 
 function generateMarkdown(data) {
     const lines = []
@@ -133,6 +133,7 @@ export async function POST() {
         // File paths for split files
         const inputsFile = path.join(dataDir, 'model-inputs.json')
         const calculationsFile = path.join(dataDir, 'model-calculations.json')
+        const modulesFile = path.join(dataDir, 'model-modules.json')
         const uiStateFile = path.join(dataDir, 'model-ui-state.json')
         const legacyAutosaveFile = path.join(dataDir, 'glass-inputs-autosave.json')
 
@@ -152,16 +153,23 @@ export async function POST() {
             // Load from split files and merge
             const inputs = JSON.parse(fs.readFileSync(inputsFile, 'utf8'))
             const calculations = JSON.parse(fs.readFileSync(calculationsFile, 'utf8'))
+            const modulesData = fs.existsSync(modulesFile)
+                ? JSON.parse(fs.readFileSync(modulesFile, 'utf8'))
+                : {}
             const uiState = JSON.parse(fs.readFileSync(uiStateFile, 'utf8'))
-            jsonData = mergeState(inputs, calculations, uiState)
+            jsonData = mergeState(inputs, calculations, modulesData, uiState)
 
-            // Create 3 snapshot files
+            // Create snapshot files
             const inputsSnapshot = `${timestamp}_inputs.json`
             const calculationsSnapshot = `${timestamp}_calculations.json`
+            const modulesSnapshot = `${timestamp}_modules.json`
             const uiStateSnapshot = `${timestamp}_ui-state.json`
 
             fs.copyFileSync(inputsFile, path.join(dataDir, inputsSnapshot))
             fs.copyFileSync(calculationsFile, path.join(dataDir, calculationsSnapshot))
+            if (fs.existsSync(modulesFile)) {
+                fs.copyFileSync(modulesFile, path.join(dataDir, modulesSnapshot))
+            }
             fs.copyFileSync(uiStateFile, path.join(dataDir, uiStateSnapshot))
 
             // Also create merged snapshot for markdown generation
@@ -178,11 +186,12 @@ export async function POST() {
                 files: {
                     inputs: inputsSnapshot,
                     calculations: calculationsSnapshot,
+                    modules: modulesSnapshot,
                     uiState: uiStateSnapshot,
                     merged: snapshotFilename,
                     markdown: mdFilename
                 },
-                message: `Snapshot saved: ${inputsSnapshot}, ${calculationsSnapshot}, ${uiStateSnapshot}, ${mdFilename}`
+                message: `Snapshot saved: ${inputsSnapshot}, ${calculationsSnapshot}, ${modulesSnapshot}, ${uiStateSnapshot}, ${mdFilename}`
             })
         } else if (fs.existsSync(legacyAutosaveFile)) {
             // Fallback to legacy autosave

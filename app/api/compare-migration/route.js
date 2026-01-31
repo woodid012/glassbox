@@ -7,14 +7,14 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { runServerModel } from '@/utils/serverModelEngine'
 import { evaluateSafeExpression } from '@/utils/formulaEvaluator'
+import { loadModelData } from '@/utils/loadModelData'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
         const dataDir = path.join(process.cwd(), 'data')
-        const inputs = JSON.parse(await fs.readFile(path.join(dataDir, 'model-inputs.json'), 'utf-8'))
-        const currentCalcs = JSON.parse(await fs.readFile(path.join(dataDir, 'model-calculations.json'), 'utf-8'))
+        const { inputs, calculations: currentCalcs } = await loadModelData(dataDir)
         const backupCalcs = JSON.parse(await fs.readFile(path.join(dataDir, 'model-calculations.backup.json'), 'utf-8'))
 
         // Run new model (with debug)

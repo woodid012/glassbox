@@ -6,6 +6,7 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { generateExportBundle, generateReferenceGuide } from '@/utils/exportSchema'
 import { generatePythonPackage } from '@/utils/pythonGenerator'
+import { loadModelData } from '@/utils/loadModelData'
 
 // Mark as dynamic to prevent static generation issues
 export const dynamic = 'force-dynamic'
@@ -104,13 +105,7 @@ export async function GET() {
     try {
         // Read model data
         const dataDir = path.join(process.cwd(), 'data')
-        const [inputsData, calculationsData] = await Promise.all([
-            fs.readFile(path.join(dataDir, 'model-inputs.json'), 'utf-8'),
-            fs.readFile(path.join(dataDir, 'model-calculations.json'), 'utf-8')
-        ])
-
-        const inputs = JSON.parse(inputsData)
-        const calculations = JSON.parse(calculationsData)
+        const { inputs, calculations } = await loadModelData(dataDir)
 
         // Generate export bundle
         const bundle = generateExportBundle(inputs, calculations)

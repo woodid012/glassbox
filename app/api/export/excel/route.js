@@ -7,6 +7,7 @@ import path from 'path'
 import { generateExportBundle } from '@/utils/exportSchema'
 import { runServerModel } from '@/utils/serverModelEngine'
 import { buildRefMap, convertFormula, canConvertToExcel } from '@/utils/excelFormulaConverter'
+import { loadModelData } from '@/utils/loadModelData'
 
 export const dynamic = 'force-dynamic'
 
@@ -699,13 +700,7 @@ ${strings.map(s => `<si><t>${escapeXml(s)}</t></si>`).join('\n')}
 export async function GET() {
     try {
         const dataDir = path.join(process.cwd(), 'data')
-        const [inputsData, calculationsData] = await Promise.all([
-            fs.readFile(path.join(dataDir, 'model-inputs.json'), 'utf-8'),
-            fs.readFile(path.join(dataDir, 'model-calculations.json'), 'utf-8')
-        ])
-
-        const inputs = JSON.parse(inputsData)
-        const calculations = JSON.parse(calculationsData)
+        const { inputs, calculations } = await loadModelData(dataDir)
 
         // Run server-side model to get all computed results
         const modelResults = runServerModel(inputs, calculations)

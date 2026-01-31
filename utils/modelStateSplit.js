@@ -1,9 +1,10 @@
 /**
  * Model State Split/Merge Utilities
  *
- * Splits the unified app state into 3 files:
+ * Splits the unified app state into 4 files:
  * - model-inputs.json: Time series data, key periods, input values
- * - model-calculations.json: Pure structure (formulas, modules)
+ * - model-calculations.json: Core calculations (formulas, groups, tabs)
+ * - model-modules.json: Module definitions, module groups, module calculations, M-ref map
  * - model-ui-state.json: UI preferences (view mode, collapsed sections)
  */
 
@@ -29,9 +30,13 @@ const INPUT_KEYS = [
 const CALCULATION_KEYS = [
     'calculationsTabs',
     'calculationsGroups',
-    'calculations',
+    'calculations'
+]
+
+const MODULE_KEYS = [
     'modules',
-    'moduleTemplates',
+    'moduleGroups',
+    'moduleCalculations',
     '_mRefMap'
 ]
 
@@ -56,15 +61,16 @@ const UI_STATE_KEYS = [
 ]
 
 /**
- * Split unified state into 3 separate objects
+ * Split unified state into 4 separate objects
  * @param {Object} state - The unified app state
- * @returns {{ inputs: Object, calculations: Object, uiState: Object }}
+ * @returns {{ inputs: Object, calculations: Object, modules: Object, uiState: Object }}
  */
 export function splitState(state) {
     const inputs = {}
     const calculations = {
         _description: 'Model structure - formulas and relationships only'
     }
+    const modules = {}
     const uiState = {}
 
     // Extract input data
@@ -74,11 +80,41 @@ export function splitState(state) {
         }
     }
 
-    // Extract calculation structure
-    for (const key of CALCULATION_KEYS) {
-        if (state[key] !== undefined) {
-            calculations[key] = state[key]
-        }
+    // Identify module group IDs (groups with _isModuleGroup: true)
+    const allGroups = state.calculationsGroups || []
+    const moduleGroupIds = new Set(
+        allGroups.filter(g => g._isModuleGroup).map(g => g.id)
+    )
+
+    // Split calculationsGroups: non-module groups go to calculations, module groups go to modules
+    calculations.calculationsGroups = allGroups.filter(g => !g._isModuleGroup)
+    modules.moduleGroups = allGroups.filter(g => g._isModuleGroup)
+
+    // Split calculations: module calcs (groupId in moduleGroupIds) go to modules
+    const allCalcs = state.calculations || []
+    calculations.calculations = allCalcs.filter(c => !moduleGroupIds.has(c.groupId))
+    modules.moduleCalculations = allCalcs.filter(c => moduleGroupIds.has(c.groupId))
+
+    // Tabs stay in calculations
+    if (state.calculationsTabs !== undefined) {
+        calculations.calculationsTabs = state.calculationsTabs
+    }
+
+    // _constantsReference stays in calculations if present
+    if (state._constantsReference !== undefined) {
+        calculations._constantsReference = state._constantsReference
+    }
+
+    // Module-specific keys
+    if (state.modules !== undefined) {
+        modules.modules = state.modules
+    }
+    if (state._mRefMap !== undefined) {
+        modules._mRefMap = state._mRefMap
+    }
+    // moduleTemplates is legacy but keep it if present
+    if (state.moduleTemplates !== undefined) {
+        modules.moduleTemplates = state.moduleTemplates
     }
 
     // Extract UI state
@@ -88,19 +124,41 @@ export function splitState(state) {
         }
     }
 
-    return { inputs, calculations, uiState }
+    return { inputs, calculations, modules, uiState }
 }
 
 /**
- * Merge 3 separate state objects into unified state
+ * Merge 4 separate state objects into unified state
  * @param {Object} inputs - Input data
- * @param {Object} calculations - Calculation structure
+ * @param {Object} calculations - Core calculation structure
+ * @param {Object} modulesData - Module definitions, groups, calculations, M-ref map
  * @param {Object} uiState - UI state
  * @returns {Object} - Unified app state
  */
-export function mergeState(inputs = {}, calculations = {}, uiState = {}) {
+export function mergeState(inputs = {}, calculations = {}, modulesData = {}, uiState = {}) {
     // Remove internal description field from calculations
     const { _description, ...calcData } = calculations
+
+    // Merge module groups back into calculationsGroups
+    const coreGroups = calcData.calculationsGroups || []
+    const moduleGroups = modulesData.moduleGroups || []
+    calcData.calculationsGroups = [...coreGroups, ...moduleGroups]
+
+    // Merge module calculations back into calculations
+    const coreCalcs = calcData.calculations || []
+    const moduleCalcs = modulesData.moduleCalculations || []
+    calcData.calculations = [...coreCalcs, ...moduleCalcs]
+
+    // Spread module-level keys (modules array, _mRefMap, moduleTemplates)
+    if (modulesData.modules !== undefined) {
+        calcData.modules = modulesData.modules
+    }
+    if (modulesData._mRefMap !== undefined) {
+        calcData._mRefMap = modulesData._mRefMap
+    }
+    if (modulesData.moduleTemplates !== undefined) {
+        calcData.moduleTemplates = modulesData.moduleTemplates
+    }
 
     return {
         ...inputs,
@@ -139,9 +197,16 @@ export function getDefaultCalculations() {
         _description: 'Model structure - formulas and relationships only',
         calculationsTabs: [],
         calculationsGroups: [],
-        calculations: [],
+        calculations: []
+    }
+}
+
+export function getDefaultModules() {
+    return {
         modules: [],
-        moduleTemplates: []
+        moduleGroups: [],
+        moduleCalculations: [],
+        _mRefMap: {}
     }
 }
 
@@ -168,4 +233,4 @@ export function getDefaultUiState() {
 }
 
 // Export key lists for use in API routes
-export { INPUT_KEYS, CALCULATION_KEYS, UI_STATE_KEYS }
+export { INPUT_KEYS, CALCULATION_KEYS, MODULE_KEYS, UI_STATE_KEYS }

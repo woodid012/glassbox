@@ -1,0 +1,1720 @@
+{
+  "_description": "Module definitions, groups, calculations, and M-ref map",
+  "modules": [
+    {
+      "id": 1769253473397,
+      "templateId": "iterative_debt_sizing",
+      "name": "Operation Debt",
+      "description": "Binary search to find optimal debt with DSCR-sculpted repayments",
+      "category": "financing",
+      "inputs": {
+        "contractedCfadsRef": "R208",
+        "contractedDSCR": "C1.25",
+        "merchantCfadsRef": "R209",
+        "merchantDSCR": "C1.26",
+        "debtFlagRef": "F8",
+        "totalFundingRef": "R60",
+        "maxGearingPct": "C1.19",
+        "interestRatePct": "R172",
+        "tenorYears": "C1.27",
+        "debtPeriod": "Q",
+        "tolerance": 0.1,
+        "maxIterations": 50
+      },
+      "outputs": [
+        "sized_debt"
+      ],
+      "solvedAt": 1769461750580,
+      "partiallyConverted": true
+    },
+    {
+      "id": 1769317033954,
+      "templateId": "depreciation_amortization",
+      "name": "Depreciation & Amortization",
+      "description": "CUMSUM-based ledger pattern - no circular dependencies",
+      "category": "accounting",
+      "inputs": {
+        "additionsRef": "R203",
+        "opsFlagRef": "F2",
+        "lifeYears": "C1.24",
+        "method": "straight_line",
+        "dbMultiplier": 2
+      },
+      "outputs": [],
+      "converted": true,
+      "calcIds": [
+        9001,
+        9002,
+        9003,
+        9004,
+        9005
+      ],
+      "fullyConverted": true
+    },
+    {
+      "id": 1769320996781,
+      "templateId": "gst_receivable",
+      "name": "GST Paid/Received",
+      "description": "GST ledger with configurable receipt delay using CUMSUM pattern",
+      "category": "accounting",
+      "inputs": {
+        "gstBaseRef": "R112",
+        "activeFlagRef": "F1",
+        "gstRatePct": "C1.15",
+        "receiptDelayMonths": "C1.31",
+        "constructionFlagRef": "F1",
+        "operationsFlagRef": "F2"
+      },
+      "outputs": [],
+      "converted": true,
+      "calcIds": [
+        9006,
+        9007,
+        9008,
+        9009,
+        9010,
+        9011,
+        9012,
+        9013,
+        9014
+      ],
+      "fullyConverted": true
+    },
+    {
+      "id": 1769323861808,
+      "templateId": "construction_funding",
+      "name": "Construction Funding",
+      "description": "Construction funding waterfall with IDC equity-funded",
+      "category": "financing",
+      "inputs": {
+        "constructionCostsRef": "R60",
+        "gstPaidRef": "R61",
+        "feesRef": "R219",
+        "sizedDebtRef": "M1.1",
+        "gearingCapPct": "C1.19",
+        "interestRatePct": "R171",
+        "drawdownMethod": "equity_first",
+        "constructionFlagRef": "R9999"
+      },
+      "outputs": [],
+      "solvedAt": null,
+      "converted": true,
+      "calcIds": [
+        9015,
+        9016,
+        9017,
+        9018,
+        9019,
+        9020,
+        9021,
+        9022,
+        9023,
+        9024
+      ],
+      "fullyConverted": true
+    },
+    {
+      "id": 1769400000000,
+      "templateId": "tax_losses",
+      "name": "Tax & Tax Losses",
+      "description": "Tax calculation with loss carry-forward using CUMSUM pattern",
+      "category": "accounting",
+      "inputs": {
+        "taxableIncomeRef": "R17",
+        "opsFlagRef": "F2",
+        "taxRatePct": "C1.11"
+      },
+      "outputs": [],
+      "solvedAt": null,
+      "enabled": false,
+      "converted": true,
+      "calcIds": [
+        9025,
+        9026,
+        9027,
+        9028,
+        9029,
+        9030,
+        9031
+      ],
+      "fullyConverted": true
+    },
+    {
+      "id": 1769500000000,
+      "templateId": "reserve_account",
+      "name": "MRA (Maintenance Reserve)",
+      "description": "MRA funded at construction end, draws for maintenance, releases at maintenance end",
+      "category": "financing",
+      "inputs": {
+        "accountName": "MRA",
+        "fundingAmountRef": "C1.17",
+        "fundingFlagRef": "F1.End",
+        "drawdownRef": "S1.19",
+        "drawdownFlagRef": "F12",
+        "releaseFlagRef": "F12.End"
+      },
+      "outputs": [],
+      "converted": true,
+      "calcIds": [
+        9032,
+        9033,
+        9034,
+        9035,
+        9036
+      ],
+      "fullyConverted": true
+    },
+    {
+      "id": 1769600000000,
+      "templateId": "distributions",
+      "name": "Distributions",
+      "description": "Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment",
+      "category": "financing",
+      "inputs": {
+        "availableCashRef": "R170",
+        "npatRef": "R19",
+        "equityContributedRef": "R9017",
+        "minCashReserve": "C1.28",
+        "opsFlagRef": "F2",
+        "withholdingTaxPct": 0,
+        "lockupActive": true,
+        "lockupReleasePeriods": "C1.49",
+        "dscrTestActive": true,
+        "dscrRef": "R9071",
+        "dscrThreshold": "C1.47",
+        "adscrTestActive": true,
+        "cfadsRef": "R205",
+        "debtServiceRef": "R9068",
+        "adscrThreshold": "C1.48",
+        "dsraTestActive": false,
+        "dsraBalanceRef": "",
+        "dsraTargetRef": "",
+        "quarterEndFlagRef": "T.QE"
+      },
+      "outputs": [],
+      "enabled": true,
+      "converted": true,
+      "calcIds": [
+        9037,
+        9038,
+        9039,
+        9040,
+        9041,
+        9042,
+        9043,
+        9044,
+        9045,
+        9046,
+        9047,
+        9048,
+        9049,
+        9050,
+        9051,
+        9052,
+        9053,
+        9054,
+        9055,
+        9056,
+        9057,
+        9058,
+        9059
+      ],
+      "fullyConverted": true
+    },
+    {
+      "id": 1769700000000,
+      "templateId": "dsrf",
+      "name": "DSRF (Debt Service Reserve Facility)",
+      "description": "Standby facility guaranteeing debt service with refinancing schedule",
+      "category": "financing",
+      "inputs": {
+        "dsrfActiveRef": "C1.50",
+        "debtServiceRef": "R9068",
+        "operationsFlagRef": "F2",
+        "establishmentFeePctRef": "C1.51",
+        "commitmentFeePctOfMarginRef": "C1.52",
+        "baseMarginPctRef": "C1.53",
+        "facilityMonthsRef": "C1.54",
+        "refinancingSchedule": [
+          {
+            "active": true,
+            "monthIndex": 60,
+            "feePct": 1,
+            "marginPct": 1.7
+          },
+          {
+            "active": true,
+            "monthIndex": 120,
+            "feePct": 1,
+            "marginPct": 1.7
+          },
+          {
+            "active": true,
+            "monthIndex": 180,
+            "feePct": 1,
+            "marginPct": 1.7
+          },
+          {
+            "active": true,
+            "monthIndex": 240,
+            "feePct": 1,
+            "marginPct": 1.7
+          },
+          {
+            "active": false,
+            "monthIndex": 0,
+            "feePct": 0,
+            "marginPct": 0
+          }
+        ]
+      },
+      "outputs": [
+        "facility_limit",
+        "refi_fees",
+        "effective_margin"
+      ],
+      "enabled": true,
+      "partiallyConverted": true
+    }
+  ],
+  "moduleGroups": [
+    {
+      "id": 50,
+      "tabId": 1,
+      "name": "Depreciation & Amortization",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "depreciation_amortization"
+    },
+    {
+      "id": 51,
+      "tabId": 1,
+      "name": "GST Paid/Received",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "gst_receivable"
+    },
+    {
+      "id": 52,
+      "tabId": 2,
+      "name": "Construction Funding",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "construction_funding"
+    },
+    {
+      "id": 53,
+      "tabId": 1,
+      "name": "Tax & Tax Losses",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "tax_losses"
+    },
+    {
+      "id": 54,
+      "tabId": 2,
+      "name": "MRA (Maintenance Reserve)",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "reserve_account"
+    },
+    {
+      "id": 55,
+      "tabId": 2,
+      "name": "Distributions",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "distributions"
+    },
+    {
+      "id": 56,
+      "tabId": 2,
+      "name": "Operations Debt Schedule",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "iterative_debt_sizing"
+    },
+    {
+      "id": 57,
+      "tabId": 2,
+      "name": "DSRF Schedule",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "dsrf"
+    }
+  ],
+  "moduleCalculations": [
+    {
+      "id": 9001,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Opening Book Value",
+      "formula": "MAX(0, (CUMSUM(R9002) - R9002) - CUMSUM(R203) / C1.24 / T.MiY * (CUMSUM(F2) - F2))",
+      "type": "stock_start",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "opening"
+    },
+    {
+      "id": 9002,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Capital Addition",
+      "formula": "CUMSUM(R203) * F2.Start",
+      "type": "flow",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "addition"
+    },
+    {
+      "id": 9003,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Depreciation Expense",
+      "formula": "MIN(R9001 + R9002, CUMSUM(R203) / C1.24 / T.MiY) * F2",
+      "type": "flow",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "depreciation"
+    },
+    {
+      "id": 9004,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Accumulated Depreciation",
+      "formula": "CUMSUM(R9003)",
+      "type": "stock",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "accumulated"
+    },
+    {
+      "id": 9005,
+      "groupId": 50,
+      "name": "Depreciation & Amortization: Closing Book Value",
+      "formula": "MAX(0, CUMSUM(R9002) - CUMSUM(R203) / C1.24 / T.MiY * CUMSUM(F2))",
+      "type": "stock",
+      "_moduleId": "M2",
+      "_moduleOutputKey": "closing"
+    },
+    {
+      "id": 9006,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Base Amount",
+      "formula": "R112",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_base"
+    },
+    {
+      "id": 9007,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Amount",
+      "formula": "R112 * C1.15 / 100 * R9999",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_amount"
+    },
+    {
+      "id": 9008,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Paid (Outflow)",
+      "formula": "-R9007",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_paid"
+    },
+    {
+      "id": 9009,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Receivable - Opening",
+      "formula": "(CUMSUM(R9007) - R9007) - (CUMSUM(R9010) - R9010)",
+      "type": "stock_start",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "receivable_opening"
+    },
+    {
+      "id": 9010,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Received (Inflow)",
+      "formula": "PREVVAL(R9007)",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_received"
+    },
+    {
+      "id": 9011,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Receivable - Closing",
+      "formula": "CUMSUM(R9007) - CUMSUM(R9010)",
+      "type": "stock",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "receivable_closing"
+    },
+    {
+      "id": 9012,
+      "groupId": 51,
+      "name": "GST Paid/Received: Net GST Cash Flow",
+      "formula": "R9008 + R9010",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "net_gst_cashflow"
+    },
+    {
+      "id": 9013,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Received (Construction)",
+      "formula": "R9010 * F1",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_received_construction"
+    },
+    {
+      "id": 9014,
+      "groupId": 51,
+      "name": "GST Paid/Received: GST Received (Operations)",
+      "formula": "R9010 * F2",
+      "type": "flow",
+      "_moduleId": "M3",
+      "_moduleOutputKey": "gst_received_operations"
+    },
+    {
+      "id": 9015,
+      "groupId": 52,
+      "name": "Construction Funding: Total Funding Requirements",
+      "formula": "R9023 + CUMSUM(R9022)",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "total_uses_incl_idc"
+    },
+    {
+      "id": 9016,
+      "groupId": 52,
+      "name": "Construction Funding: Senior Debt",
+      "formula": "CUMSUM(R9020)",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "senior_debt"
+    },
+    {
+      "id": 9017,
+      "groupId": 52,
+      "name": "Construction Funding: Equity",
+      "formula": "CUMSUM(R9021) + CUMSUM(R9022)",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "equity"
+    },
+    {
+      "id": 9018,
+      "groupId": 52,
+      "name": "Construction Funding: Gearing %",
+      "formula": "C1.19 * (CUMSUM(F1) > 0)",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "gearing_pct"
+    },
+    {
+      "id": 9019,
+      "groupId": 52,
+      "name": "Construction Funding: IDC",
+      "formula": "CUMSUM(R9022)",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "cumulative_idc"
+    },
+    {
+      "id": 9020,
+      "groupId": 52,
+      "name": "Construction Funding: Debt Drawdown",
+      "formula": "MAX(0, CUMSUM(R9024) - R9099) - MAX(0, CUMSUM(R9024) - R9024 - R9099)",
+      "type": "flow",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "debt_drawdown"
+    },
+    {
+      "id": 9021,
+      "groupId": 52,
+      "name": "Construction Funding: Equity Drawdown",
+      "formula": "(R9024 - R9020) * R9999",
+      "type": "flow",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "equity_drawdown"
+    },
+    {
+      "id": 9022,
+      "groupId": 52,
+      "name": "Construction Funding: IDC (Period)",
+      "formula": "(CUMSUM(R9020) - R9020) * R171 / 100 / T.MiY * R9999",
+      "type": "flow",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "idc"
+    },
+    {
+      "id": 9023,
+      "groupId": 52,
+      "name": "Construction Funding: Total Uses (ex-IDC)",
+      "formula": "CUMSUM(V1 * F1) + R61 + R219",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "total_uses_ex_idc",
+      "description": "Cumulative construction costs + GST receivable + funded finance fees"
+    },
+    {
+      "id": 9024,
+      "groupId": 52,
+      "name": "Construction Funding: Period Cost",
+      "formula": "MAX(0, R9023 - PREVVAL(R9023)) * R9999",
+      "type": "flow",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "period_cost"
+    },
+    {
+      "id": 9025,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Taxable Income Before Losses",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "taxable_income_before_losses"
+    },
+    {
+      "id": 9026,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Losses - Opening",
+      "formula": "0",
+      "type": "stock_start",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "losses_opening"
+    },
+    {
+      "id": 9027,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Losses - Generated",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "losses_generated"
+    },
+    {
+      "id": 9028,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Losses - Utilised",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "losses_utilised"
+    },
+    {
+      "id": 9029,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Losses - Closing",
+      "formula": "0",
+      "type": "stock",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "losses_closing"
+    },
+    {
+      "id": 9030,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Net Taxable Income",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "net_taxable_income"
+    },
+    {
+      "id": 9031,
+      "groupId": 53,
+      "name": "Tax & Tax Losses: Tax Payable",
+      "formula": "0",
+      "type": "flow",
+      "_moduleId": "M5",
+      "_moduleOutputKey": "tax_payable"
+    },
+    {
+      "id": 9032,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Opening Balance",
+      "formula": "MAX(0, (CUMSUM(R9033) - R9033) - (CUMSUM(R9034) - R9034) - (CUMSUM(R9035) - R9035))",
+      "type": "stock_start",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "opening"
+    },
+    {
+      "id": 9033,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Funding",
+      "formula": "C1.17 * F1.End",
+      "type": "flow",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "funding"
+    },
+    {
+      "id": 9034,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Drawdown",
+      "formula": "MIN(ABS(S1.19) * I2 * T.MiQ * T.QE * F12, MAX(0, CUMSUM(R9033) - (CUMSUM(ABS(S1.19) * I2 * T.MiQ * T.QE * F12) - ABS(S1.19) * I2 * T.MiQ * T.QE * F12))) * F12 * T.QE",
+      "type": "flow",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "drawdown"
+    },
+    {
+      "id": 9035,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Release",
+      "formula": "MAX(0, CUMSUM(R9033) - CUMSUM(R9034)) * F12.End",
+      "type": "flow",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "release"
+    },
+    {
+      "id": 9036,
+      "groupId": 54,
+      "name": "MRA (Maintenance Reserve): Closing Balance",
+      "formula": "MAX(0, CUMSUM(R9033) - CUMSUM(R9034) - CUMSUM(R9035))",
+      "type": "stock",
+      "_moduleId": "M6",
+      "_moduleOutputKey": "closing"
+    },
+    {
+      "id": 9037,
+      "groupId": 55,
+      "name": "Distributions: Cash Available for Dist",
+      "formula": "MAX(0, CUMSUM(R170) - PREVSUM(R9049) - C1.28) * F2",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "cash_available"
+    },
+    {
+      "id": 9038,
+      "groupId": 55,
+      "name": "Distributions: RE - Opening",
+      "formula": "PREVSUM(R9043)",
+      "type": "stock_start",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_opening"
+    },
+    {
+      "id": 9039,
+      "groupId": 55,
+      "name": "Distributions: RE - NPAT",
+      "formula": "R19",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_npat"
+    },
+    {
+      "id": 9040,
+      "groupId": 55,
+      "name": "Distributions: RE Test",
+      "formula": "(R9038 + R9039 > 0)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_test"
+    },
+    {
+      "id": 9041,
+      "groupId": 55,
+      "name": "Distributions: NPAT Test",
+      "formula": "(R9039 > 0)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "npat_test"
+    },
+    {
+      "id": 9042,
+      "groupId": 55,
+      "name": "Distributions: Dividend Paid",
+      "formula": "MIN(R9046, MAX(0, R9039)) * F2 * R9040 * R9041 * (1 - R9057)",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "dividend_paid"
+    },
+    {
+      "id": 9043,
+      "groupId": 55,
+      "name": "Distributions: RE - Movement",
+      "formula": "R9039 - R9042",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_movement"
+    },
+    {
+      "id": 9044,
+      "groupId": 55,
+      "name": "Distributions: RE - Closing",
+      "formula": "PREVSUM(R9043) + R9043",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "re_closing"
+    },
+    {
+      "id": 9045,
+      "groupId": 55,
+      "name": "Distributions: SC - Opening",
+      "formula": "CUMSUM(R9021) + CUMSUM(R9022)",
+      "type": "stock_start",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "sc_opening"
+    },
+    {
+      "id": 9046,
+      "groupId": 55,
+      "name": "Distributions: Post-SC Cash Available",
+      "formula": "MAX(0, R9037 - R9047)",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "sc_cash_available"
+    },
+    {
+      "id": 9047,
+      "groupId": 55,
+      "name": "Distributions: SC - Repayment",
+      "formula": "MIN(R9037, MAX(0, R9045 - PREVSUM(R9047))) * F2 * (1 - R9057)",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "sc_repayment"
+    },
+    {
+      "id": 9048,
+      "groupId": 55,
+      "name": "Distributions: SC - Closing",
+      "formula": "MAX(0, R9045 - CUMSUM(R9047))",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "sc_closing"
+    },
+    {
+      "id": 9049,
+      "groupId": 55,
+      "name": "Distributions: Total Distributions",
+      "formula": "R9042 + R9047",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "total_distributions"
+    },
+    {
+      "id": 9050,
+      "groupId": 55,
+      "name": "Distributions: Withholding Tax",
+      "formula": "R9049 * 0 / 100",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "withholding_tax"
+    },
+    {
+      "id": 9051,
+      "groupId": 55,
+      "name": "Distributions: Net to Equity",
+      "formula": "R9049 - R9050",
+      "type": "flow",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "net_to_equity"
+    },
+    {
+      "id": 9052,
+      "groupId": 55,
+      "name": "Distributions: DSCR Test",
+      "formula": "MAX((R9071 >= C1.47), (ABS(R9068) < 0.001)) * F2",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "dscr_test"
+    },
+    {
+      "id": 9053,
+      "groupId": 55,
+      "name": "Distributions: ADSCR Test",
+      "formula": "F2",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "adscr_test"
+    },
+    {
+      "id": 9054,
+      "groupId": 55,
+      "name": "Distributions: DSRA Test",
+      "formula": "F2",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "dsra_test"
+    },
+    {
+      "id": 9055,
+      "groupId": 55,
+      "name": "Distributions: All Tests Pass",
+      "formula": "(PREVVAL(R9055) * (1 - T.QE) + R9052 * R9053 * R9054 * T.QE) * F2 + PREVVAL(R9055) * (1 - F2) * (CUMSUM(F2) > 0)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "all_tests_pass"
+    },
+    {
+      "id": 9056,
+      "groupId": 55,
+      "name": "Distributions: Consecutive Pass Qtrs",
+      "formula": "PREVVAL(R9056) * (R9055 * T.QE + (1 - T.QE)) + R9055 * T.QE",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "consec_pass_qtrs"
+    },
+    {
+      "id": 9057,
+      "groupId": 55,
+      "name": "Distributions: Lock-up Active",
+      "formula": "MAX((R9056 < C1.49) * F2, F1)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "lockup_active"
+    },
+    {
+      "id": 9058,
+      "groupId": 55,
+      "name": "Distributions: Cumulative Distributions",
+      "formula": "CUMSUM(R9049)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "cumulative_distributions"
+    },
+    {
+      "id": 9059,
+      "groupId": 55,
+      "name": "Distributions: Cumulative SC Repayment",
+      "formula": "CUMSUM(R9047)",
+      "type": "stock",
+      "_moduleId": "M7",
+      "_moduleOutputKey": "cumulative_sc_repayment"
+    },
+    {
+      "id": 9060,
+      "groupId": 56,
+      "name": "DS Capacity (Monthly)",
+      "formula": "(R208 / C1.25 + R209 / C1.26) * F8",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "ds_capacity_monthly"
+    },
+    {
+      "id": 9061,
+      "groupId": 56,
+      "name": "Monthly Interest",
+      "formula": "R9063 * R172 / 100 / T.MiY * F8",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "monthly_interest"
+    },
+    {
+      "id": 9062,
+      "groupId": 56,
+      "name": "Accrued Interest (Intra-Qtr)",
+      "formula": "(PREVVAL(R9062) * (1 - PREVVAL(T.QE)) + R9061) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "accrued_interest"
+    },
+    {
+      "id": 9063,
+      "groupId": 56,
+      "name": "Opening Balance",
+      "formula": "PREVVAL(R9070) + M1.1 * F8.Start",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "opening_balance"
+    },
+    {
+      "id": 9064,
+      "groupId": 56,
+      "name": "Accrued Capacity (Intra-Qtr)",
+      "formula": "(PREVVAL(R9064) * (1 - PREVVAL(T.QE)) + R9060) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "accrued_capacity"
+    },
+    {
+      "id": 9065,
+      "groupId": 56,
+      "name": "Remaining Payment Periods",
+      "formula": "IF(F8.Start, C1.27 * T.QiY, MAX(1, PREVVAL(R9065) - PREVVAL(R9073))) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "remaining_periods"
+    },
+    {
+      "id": 9066,
+      "groupId": 56,
+      "name": "Interest Payment",
+      "formula": "R9062 * R9073 * F8",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "interest_payment"
+    },
+    {
+      "id": 9067,
+      "groupId": 56,
+      "name": "Principal Payment",
+      "formula": "MIN(MAX(0, R9064 - R9066), R9063) * R9073 * F8",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "principal_payment",
+      "description": "Fully DSCR-sculpted: capacity minus interest, capped at outstanding balance"
+    },
+    {
+      "id": 9068,
+      "groupId": 56,
+      "name": "Debt Service",
+      "formula": "R9066 + R9067",
+      "type": "flow",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "debt_service"
+    },
+    {
+      "id": 9069,
+      "groupId": 56,
+      "name": "Accrued CFADS (Intra-Qtr)",
+      "formula": "(PREVVAL(R9069) * (1 - PREVVAL(T.QE)) + R208 + R209) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "accrued_cfads"
+    },
+    {
+      "id": 9070,
+      "groupId": 56,
+      "name": "Closing Balance",
+      "formula": "MAX(0, R9063 - R9067)",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "closing_balance"
+    },
+    {
+      "id": 9071,
+      "groupId": 56,
+      "name": "Period DSCR",
+      "formula": "R9069 / MAX(R9068, 0.0001) * R9073 * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "period_dscr"
+    },
+    {
+      "id": 9072,
+      "groupId": 56,
+      "name": "Cumulative Principal",
+      "formula": "CUMSUM(R9067)",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "cumulative_principal"
+    },
+    {
+      "id": 9073,
+      "groupId": 56,
+      "name": "Payment Period Flag",
+      "formula": "(T.QE + F8.End - T.QE * F8.End) * F8",
+      "type": "stock",
+      "_moduleId": "M1",
+      "_moduleOutputKey": "payment_period_flag"
+    },
+    {
+      "id": 9080,
+      "groupId": 57,
+      "name": "DSRF Establishment Fee",
+      "formula": "M8.1 * C1.51 / 100 * F1.Start",
+      "type": "flow",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "establishment_fee"
+    },
+    {
+      "id": 9081,
+      "groupId": 57,
+      "name": "DSRF Commitment Fee",
+      "formula": "M8.1 * M8.3 / 100 * C1.52 / 100 / T.QiY * T.QE * F2",
+      "type": "flow",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "commitment_fee"
+    },
+    {
+      "id": 9082,
+      "groupId": 57,
+      "name": "Total DSRF Fees",
+      "formula": "R9080 + R9081 + M8.2",
+      "type": "flow",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "total_dsrf_fees"
+    },
+    {
+      "id": 9083,
+      "groupId": 57,
+      "name": "Total DSRF Fees (Cumulative)",
+      "formula": "CUMSUM(R9082)",
+      "type": "stock",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "total_dsrf_fees_cumulative"
+    },
+    {
+      "id": 9084,
+      "groupId": 57,
+      "name": "DS + DSRF Fees",
+      "formula": "ABS(R9068) + R9082",
+      "type": "flow",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "ds_plus_dsrf"
+    },
+    {
+      "id": 9085,
+      "groupId": 57,
+      "name": "Adjusted DSCR",
+      "formula": "(R208 + R209) / MAX(R9084, 0.0001) * F8",
+      "type": "stock",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "adjusted_dscr"
+    },
+    {
+      "id": 9099,
+      "groupId": 52,
+      "name": "Construction Funding: Equity Target (ex-IDC)",
+      "formula": "MAXVAL(R9023) - M1.1",
+      "type": "stock",
+      "_moduleId": "M4",
+      "_moduleOutputKey": "equity_target",
+      "description": "Equity target: total construction uses minus sized debt, so cons debt = ops debt"
+    }
+  ],
+  "_mRefMap": {
+    "M2.1": "R9001",
+    "M2.2": "R9002",
+    "M2.3": "R9003",
+    "M2.4": "R9004",
+    "M2.5": "R9005",
+    "M3.1": "R9006",
+    "M3.2": "R9007",
+    "M3.3": "R9008",
+    "M3.4": "R9009",
+    "M3.5": "R9010",
+    "M3.6": "R9011",
+    "M3.7": "R9012",
+    "M3.8": "R9013",
+    "M3.9": "R9014",
+    "M4.1": "R9015",
+    "M4.2": "R9016",
+    "M4.3": "R9017",
+    "M4.4": "R9018",
+    "M4.5": "R9019",
+    "M4.6": "R9020",
+    "M4.7": "R9021",
+    "M4.8": "R9022",
+    "M4.9": "R9023",
+    "M4.10": "R9024",
+    "M5.1": "R9025",
+    "M5.2": "R9026",
+    "M5.3": "R9027",
+    "M5.4": "R9028",
+    "M5.5": "R9029",
+    "M5.6": "R9030",
+    "M5.7": "R9031",
+    "M6.1": "R9032",
+    "M6.2": "R9033",
+    "M6.3": "R9034",
+    "M6.4": "R9035",
+    "M6.5": "R9036",
+    "M7.1": "R9037",
+    "M7.2": "R9038",
+    "M7.3": "R9039",
+    "M7.4": "R9040",
+    "M7.5": "R9041",
+    "M7.6": "R9042",
+    "M7.7": "R9043",
+    "M7.8": "R9044",
+    "M7.9": "R9045",
+    "M7.10": "R9046",
+    "M7.11": "R9047",
+    "M7.12": "R9048",
+    "M7.13": "R9049",
+    "M7.14": "R9050",
+    "M7.15": "R9051",
+    "M7.16": "R9052",
+    "M7.17": "R9053",
+    "M7.18": "R9054",
+    "M7.19": "R9055",
+    "M7.20": "R9056",
+    "M7.21": "R9057",
+    "M7.22": "R9058",
+    "M7.23": "R9059",
+    "M1.2": "R9063",
+    "M1.3": "R9066",
+    "M1.4": "R9067",
+    "M1.5": "R9068",
+    "M1.6": "R9070",
+    "M1.7": "R9071",
+    "M1.8": "R9072",
+    "M8.6": "R9082",
+    "M8.7": "R9083",
+    "M8.8": "R9084",
+    "M8.9": "R9085"
+  },
+  "moduleTemplates": [
+    {
+      "id": "construction_funding",
+      "name": "Construction Funding",
+      "description": "Construction funding waterfall with IDC equity-funded",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "constructionCostsRef",
+          "label": "Construction Costs (cumulative)",
+          "type": "reference",
+          "default": "R60"
+        },
+        {
+          "key": "gstPaidRef",
+          "label": "GST Paid (cumulative)",
+          "type": "reference",
+          "default": "R61"
+        },
+        {
+          "key": "feesRef",
+          "label": "Fees/Other Uses (cumulative)",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "sizedDebtRef",
+          "label": "Sized Debt (from Debt Module)",
+          "type": "reference",
+          "default": "M1.1"
+        },
+        {
+          "key": "gearingCapPct",
+          "label": "Gearing Cap (%)",
+          "type": "number",
+          "default": 65
+        },
+        {
+          "key": "interestRatePct",
+          "label": "IDC Interest Rate (%)",
+          "type": "number",
+          "default": 5
+        },
+        {
+          "key": "drawdownMethod",
+          "label": "Drawdown Method",
+          "type": "select",
+          "options": [
+            {
+              "value": "prorata",
+              "label": "Pro-rata"
+            },
+            {
+              "value": "equity_first",
+              "label": "Equity First"
+            }
+          ],
+          "default": "prorata"
+        },
+        {
+          "key": "constructionFlagRef",
+          "label": "Construction Flag",
+          "type": "reference",
+          "default": "F1"
+        }
+      ],
+      "outputs": [
+        "total_uses_incl_idc",
+        "senior_debt",
+        "equity",
+        "gearing_pct",
+        "cumulative_idc",
+        "debt_drawdown",
+        "equity_drawdown",
+        "idc",
+        "total_uses_ex_idc"
+      ]
+    },
+    {
+      "id": "reserve_account",
+      "name": "Reserve Account",
+      "description": "Reserve account (MRA/DSRA) with funding and drawdown using CUMSUM pattern",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "fundingAmountRef",
+          "label": "Funding Amount",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "fundingFlagRef",
+          "label": "Funding Flag (e.g., F1.End)",
+          "type": "reference",
+          "default": "F1.End"
+        },
+        {
+          "key": "drawdownRef",
+          "label": "Drawdown Amount (optional)",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "drawdownFlagRef",
+          "label": "Drawdown Flag (e.g., F2)",
+          "type": "reference",
+          "default": "F2"
+        },
+        {
+          "key": "releaseFlagRef",
+          "label": "Release Flag (e.g., F2.End)",
+          "type": "reference",
+          "default": "F2.End"
+        }
+      ],
+      "outputs": [
+        "opening",
+        "funding",
+        "drawdown",
+        "release",
+        "closing"
+      ]
+    },
+    {
+      "id": "gst_receivable",
+      "name": "GST Paid/Received",
+      "description": "GST ledger with configurable receipt delay using CUMSUM pattern",
+      "category": "accounting",
+      "inputs": [
+        {
+          "key": "gstBaseRef",
+          "label": "GST Base Amount (e.g., R112)",
+          "type": "reference",
+          "default": "R112"
+        },
+        {
+          "key": "activeFlagRef",
+          "label": "Active Period Flag",
+          "type": "reference",
+          "default": "F1"
+        },
+        {
+          "key": "gstRatePct",
+          "label": "GST Rate (%)",
+          "type": "number",
+          "default": 10
+        },
+        {
+          "key": "receiptDelayMonths",
+          "label": "Receipt Delay (months)",
+          "type": "number",
+          "default": 1
+        }
+      ],
+      "outputs": [
+        "gst_base",
+        "gst_amount",
+        "gst_paid",
+        "receivable_opening",
+        "gst_received",
+        "receivable_closing",
+        "net_gst_cashflow"
+      ]
+    },
+    {
+      "id": "tax_losses",
+      "name": "Tax & Tax Losses",
+      "description": "Tax calculation with loss carry-forward using CUMSUM pattern",
+      "category": "accounting",
+      "inputs": [
+        {
+          "key": "taxableIncomeRef",
+          "label": "Taxable Income Before Losses",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "opsFlagRef",
+          "label": "Operations Flag",
+          "type": "reference",
+          "default": "F2"
+        },
+        {
+          "key": "taxRatePct",
+          "label": "Tax Rate (%)",
+          "type": "number",
+          "default": 30
+        }
+      ],
+      "outputs": [
+        "taxable_income_before_losses",
+        "losses_opening",
+        "losses_generated",
+        "losses_utilised",
+        "losses_closing",
+        "net_taxable_income",
+        "tax_payable"
+      ]
+    },
+    {
+      "id": "depreciation_amortization",
+      "name": "Depreciation & Amortization",
+      "description": "CUMSUM-based ledger pattern - no circular dependencies",
+      "category": "accounting",
+      "inputs": [
+        {
+          "key": "additionsRef",
+          "label": "Capital Additions Reference",
+          "type": "reference",
+          "default": "V1"
+        },
+        {
+          "key": "opsFlagRef",
+          "label": "Operations Flag",
+          "type": "reference",
+          "default": "F2"
+        },
+        {
+          "key": "lifeYears",
+          "label": "Useful Life (years)",
+          "type": "number",
+          "default": 15
+        },
+        {
+          "key": "method",
+          "label": "Depreciation Method",
+          "type": "select",
+          "options": [
+            {
+              "value": "straight_line",
+              "label": "Straight Line"
+            },
+            {
+              "value": "declining_balance",
+              "label": "Declining Balance"
+            }
+          ],
+          "default": "straight_line"
+        },
+        {
+          "key": "dbMultiplier",
+          "label": "DB Multiplier",
+          "type": "select",
+          "options": [
+            {
+              "value": 2,
+              "label": "Double (2x)"
+            },
+            {
+              "value": 1.5,
+              "label": "150% (1.5x)"
+            },
+            {
+              "value": 1,
+              "label": "100% (1x)"
+            }
+          ],
+          "default": 2
+        }
+      ],
+      "outputs": [
+        "opening",
+        "addition",
+        "depreciation",
+        "accumulated",
+        "closing"
+      ]
+    },
+    {
+      "id": "iterative_debt_sizing",
+      "name": "Iterative Debt Sizing (DSCR Sculpted)",
+      "description": "Binary search to find optimal debt with DSCR-sculpted repayments. Supports separate contracted/merchant DSCRs.",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "contractedCfadsRef",
+          "label": "Contracted CFADS",
+          "type": "reference",
+          "default": "R115"
+        },
+        {
+          "key": "contractedDSCR",
+          "label": "Contracted DSCR",
+          "type": "number_or_ref",
+          "default": "C1.25"
+        },
+        {
+          "key": "merchantCfadsRef",
+          "label": "Merchant CFADS",
+          "type": "reference",
+          "default": "R116"
+        },
+        {
+          "key": "merchantDSCR",
+          "label": "Merchant DSCR",
+          "type": "number_or_ref",
+          "default": "C1.26"
+        },
+        {
+          "key": "debtFlagRef",
+          "label": "Debt Service Flag",
+          "type": "reference",
+          "default": "F8"
+        },
+        {
+          "key": "totalFundingRef",
+          "label": "Total Capex (ex-IDC)",
+          "type": "reference",
+          "default": "R60"
+        },
+        {
+          "key": "maxGearingPct",
+          "label": "Max Gearing (%)",
+          "type": "number",
+          "default": 65
+        },
+        {
+          "key": "interestRatePct",
+          "label": "Interest Rate (%)",
+          "type": "number",
+          "default": 5
+        },
+        {
+          "key": "tenorYears",
+          "label": "Debt Tenor (years)",
+          "type": "number",
+          "default": 18
+        },
+        {
+          "key": "debtPeriod",
+          "label": "Debt Service Period",
+          "type": "select",
+          "options": [
+            {
+              "value": "M",
+              "label": "Monthly"
+            },
+            {
+              "value": "Q",
+              "label": "Quarterly"
+            },
+            {
+              "value": "Y",
+              "label": "Yearly"
+            }
+          ],
+          "default": "Q"
+        },
+        {
+          "key": "tolerance",
+          "label": "Tolerance ($M)",
+          "type": "number",
+          "default": 0.1
+        },
+        {
+          "key": "maxIterations",
+          "label": "Max Iterations",
+          "type": "number",
+          "default": 50
+        }
+      ],
+      "outputs": [
+        "sized_debt",
+        "opening_balance",
+        "interest_payment",
+        "principal_payment",
+        "debt_service",
+        "closing_balance",
+        "period_dscr",
+        "cumulative_principal"
+      ]
+    },
+    {
+      "id": "distributions",
+      "name": "Distributions",
+      "description": "Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "availableCashRef",
+          "label": "Available Cashflow (pre-dist)",
+          "type": "reference",
+          "default": "R170"
+        },
+        {
+          "key": "npatRef",
+          "label": "NPAT",
+          "type": "reference",
+          "default": "R19"
+        },
+        {
+          "key": "equityContributedRef",
+          "label": "Equity Contributed",
+          "type": "reference",
+          "default": "M4.3"
+        },
+        {
+          "key": "minCashReserve",
+          "label": "Minimum Cash Reserve",
+          "type": "number_or_ref",
+          "default": 0
+        },
+        {
+          "key": "opsFlagRef",
+          "label": "Operations Flag",
+          "type": "reference",
+          "default": "F2"
+        },
+        {
+          "key": "withholdingTaxPct",
+          "label": "Withholding Tax %",
+          "type": "number_or_ref",
+          "default": 0
+        },
+        {
+          "key": "lockupActive",
+          "label": "Lock-up Active",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "lockupReleasePeriods",
+          "label": "Release After (Qtrs)",
+          "type": "number_or_ref",
+          "default": 2
+        },
+        {
+          "key": "dscrTestActive",
+          "label": "DSCR Test Active",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "dscrRef",
+          "label": "DSCR (periodic)",
+          "type": "reference",
+          "default": "M1.7"
+        },
+        {
+          "key": "dscrThreshold",
+          "label": "DSCR Threshold",
+          "type": "number_or_ref",
+          "default": 1.15
+        },
+        {
+          "key": "adscrTestActive",
+          "label": "Historical ADSCR Test Active",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "cfadsRef",
+          "label": "Total CFADS",
+          "type": "reference",
+          "default": "R205"
+        },
+        {
+          "key": "debtServiceRef",
+          "label": "Total Debt Service",
+          "type": "reference",
+          "default": "M1.5"
+        },
+        {
+          "key": "adscrThreshold",
+          "label": "ADSCR Threshold",
+          "type": "number_or_ref",
+          "default": 1.15
+        },
+        {
+          "key": "dsraTestActive",
+          "label": "DSRA Fully Funded Test",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "dsraBalanceRef",
+          "label": "DSRA Balance",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "dsraTargetRef",
+          "label": "DSRA Target",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "quarterEndFlagRef",
+          "label": "Quarter End Flag",
+          "type": "reference",
+          "default": "T.QE"
+        }
+      ],
+      "outputs": [
+        "cash_available",
+        "re_opening",
+        "re_npat",
+        "re_test",
+        "npat_test",
+        "dividend_paid",
+        "re_movement",
+        "re_closing",
+        "sc_opening",
+        "sc_cash_available",
+        "sc_repayment",
+        "sc_closing",
+        "total_distributions",
+        "withholding_tax",
+        "net_to_equity",
+        "dscr_test",
+        "adscr_test",
+        "dsra_test",
+        "all_tests_pass",
+        "consec_pass_qtrs",
+        "lockup_active"
+      ]
+    },
+    {
+      "id": "dsrf",
+      "name": "DSRF (Debt Service Reserve Facility)",
+      "description": "Standby facility guaranteeing debt service with refinancing schedule",
+      "category": "financing",
+      "inputs": [
+        {
+          "key": "dsrfActiveRef",
+          "label": "DSRF Active",
+          "type": "reference",
+          "default": "C1.50"
+        },
+        {
+          "key": "debtServiceRef",
+          "label": "Total Debt Service",
+          "type": "reference",
+          "default": "R178"
+        },
+        {
+          "key": "operationsFlagRef",
+          "label": "Operations Flag",
+          "type": "reference",
+          "default": "F2"
+        },
+        {
+          "key": "establishmentFeePctRef",
+          "label": "Establishment Fee (%)",
+          "type": "number_or_ref",
+          "default": "C1.51"
+        },
+        {
+          "key": "commitmentFeePctOfMarginRef",
+          "label": "Commitment Fee (% of Margin)",
+          "type": "number_or_ref",
+          "default": "C1.52"
+        },
+        {
+          "key": "baseMarginPctRef",
+          "label": "Base Margin (%)",
+          "type": "number_or_ref",
+          "default": "C1.53"
+        },
+        {
+          "key": "facilityMonthsRef",
+          "label": "Facility Months of DS",
+          "type": "number_or_ref",
+          "default": "C1.54"
+        },
+        {
+          "key": "refinancingSchedule",
+          "label": "Refinancing Schedule",
+          "type": "array",
+          "default": []
+        }
+      ],
+      "outputs": [
+        "facility_limit",
+        "establishment_fee",
+        "commitment_fee",
+        "refi_fees",
+        "effective_margin",
+        "total_dsrf_fees",
+        "total_dsrf_fees_cumulative",
+        "ds_plus_dsrf",
+        "adjusted_dscr"
+      ]
+    }
+  ]
+}

@@ -1,12 +1,13 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import { NextResponse } from 'next/server'
-import { splitState, mergeState, getDefaultInputs, getDefaultCalculations, getDefaultUiState } from '@/utils/modelStateSplit'
+import { splitState, mergeState, getDefaultInputs, getDefaultCalculations, getDefaultModules, getDefaultUiState } from '@/utils/modelStateSplit'
 
-// File paths for the 4 split files (inputs, calculations, ui-state, results)
+// File paths for the 4 split files (inputs, calculations, modules, ui-state) + results cache
 const DATA_DIR = path.join(process.cwd(), 'data')
 const INPUTS_FILE = path.join(DATA_DIR, 'model-inputs.json')
 const CALCULATIONS_FILE = path.join(DATA_DIR, 'model-calculations.json')
+const MODULES_FILE = path.join(DATA_DIR, 'model-modules.json')
 const UI_STATE_FILE = path.join(DATA_DIR, 'model-ui-state.json')
 const RESULTS_FILE = path.join(DATA_DIR, 'model-results.json')
 
@@ -48,16 +49,23 @@ export async function GET() {
         await ensureDataDir()
 
         // Try to load from split files first (including cached results)
-        const [inputs, calculations, uiState, cachedResults] = await Promise.all([
+        const [inputs, calculations, modulesData, uiState, cachedResults] = await Promise.all([
             readJsonFile(INPUTS_FILE),
             readJsonFile(CALCULATIONS_FILE),
+            readJsonFile(MODULES_FILE),
             readJsonFile(UI_STATE_FILE),
             readJsonFile(RESULTS_FILE)
         ])
 
-        // If all 3 core files exist, merge and return
+        // If core files exist, merge and return
         if (inputs !== null && calculations !== null && uiState !== null) {
-            const merged = mergeState(inputs, calculations, uiState)
+            // Backward compat: if modules file missing but calcs has modules array, use old format
+            let effectiveModules = modulesData
+            if (modulesData === null && calculations.modules) {
+                // Old format: modules, _mRefMap, and module groups/calcs are all in calculations
+                effectiveModules = {}
+            }
+            const merged = mergeState(inputs, calculations, effectiveModules || {}, uiState)
             // Attach cached results if they exist (for instant startup)
             if (cachedResults !== null) {
                 merged.cachedResults = cachedResults
@@ -79,19 +87,20 @@ export async function GET() {
     }
 }
 
-// POST - Save state to 3 files
+// POST - Save state to 4 files
 export async function POST(request) {
     try {
         await ensureDataDir()
         const data = await request.json()
 
-        // Split the state
-        const { inputs, calculations, uiState } = splitState(data)
+        // Split the state into 4 parts
+        const { inputs, calculations, modules, uiState } = splitState(data)
 
-        // Write all 3 files in parallel
+        // Write all 4 files in parallel
         await Promise.all([
             writeJsonFile(INPUTS_FILE, inputs),
             writeJsonFile(CALCULATIONS_FILE, calculations),
+            writeJsonFile(MODULES_FILE, modules),
             writeJsonFile(UI_STATE_FILE, uiState)
         ])
 
@@ -133,6 +142,7 @@ export async function DELETE() {
         await Promise.all([
             deleteFile(INPUTS_FILE),
             deleteFile(CALCULATIONS_FILE),
+            deleteFile(MODULES_FILE),
             deleteFile(UI_STATE_FILE),
             deleteFile(RESULTS_FILE)
         ])

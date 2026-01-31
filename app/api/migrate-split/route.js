@@ -7,10 +7,11 @@ const DATA_DIR = path.join(process.cwd(), 'data')
 const LEGACY_FILE = path.join(DATA_DIR, 'glass-inputs-autosave.json')
 const INPUTS_FILE = path.join(DATA_DIR, 'model-inputs.json')
 const CALCULATIONS_FILE = path.join(DATA_DIR, 'model-calculations.json')
+const MODULES_FILE = path.join(DATA_DIR, 'model-modules.json')
 const UI_STATE_FILE = path.join(DATA_DIR, 'model-ui-state.json')
 
 /**
- * POST - Migrate from legacy glass-inputs-autosave.json to 3 split files
+ * POST - Migrate from legacy glass-inputs-autosave.json to 4 split files
  * This is a one-time migration endpoint
  */
 export async function POST() {
@@ -43,20 +44,22 @@ export async function POST() {
         const legacyData = await fs.readFile(LEGACY_FILE, 'utf-8')
         const state = JSON.parse(legacyData)
 
-        // Split the state
-        const { inputs, calculations, uiState } = splitState(state)
+        // Split the state into 4 parts
+        const { inputs, calculations, modules, uiState } = splitState(state)
 
-        // Write all 3 files
+        // Write all 4 files
         await Promise.all([
             fs.writeFile(INPUTS_FILE, JSON.stringify(inputs, null, 2), 'utf-8'),
             fs.writeFile(CALCULATIONS_FILE, JSON.stringify(calculations, null, 2), 'utf-8'),
+            fs.writeFile(MODULES_FILE, JSON.stringify(modules, null, 2), 'utf-8'),
             fs.writeFile(UI_STATE_FILE, JSON.stringify(uiState, null, 2), 'utf-8')
         ])
 
         // Get file sizes for reporting
-        const [inputsStats, calculationsStats, uiStateStats] = await Promise.all([
+        const [inputsStats, calculationsStats, modulesStats, uiStateStats] = await Promise.all([
             fs.stat(INPUTS_FILE),
             fs.stat(CALCULATIONS_FILE),
+            fs.stat(MODULES_FILE),
             fs.stat(UI_STATE_FILE)
         ])
 
@@ -66,10 +69,12 @@ export async function POST() {
             files: {
                 'model-inputs.json': `${(inputsStats.size / 1024).toFixed(1)} KB`,
                 'model-calculations.json': `${(calculationsStats.size / 1024).toFixed(1)} KB`,
+                'model-modules.json': `${(modulesStats.size / 1024).toFixed(1)} KB`,
                 'model-ui-state.json': `${(uiStateStats.size / 1024).toFixed(1)} KB`
             },
             inputKeys: Object.keys(inputs),
             calculationKeys: Object.keys(calculations),
+            moduleKeys: Object.keys(modules),
             uiStateKeys: Object.keys(uiState)
         })
     } catch (error) {
@@ -86,10 +91,11 @@ export async function POST() {
  */
 export async function GET() {
     try {
-        const [legacyExists, inputsExists, calculationsExists, uiStateExists] = await Promise.all([
+        const [legacyExists, inputsExists, calculationsExists, modulesExists, uiStateExists] = await Promise.all([
             fs.access(LEGACY_FILE).then(() => true).catch(() => false),
             fs.access(INPUTS_FILE).then(() => true).catch(() => false),
             fs.access(CALCULATIONS_FILE).then(() => true).catch(() => false),
+            fs.access(MODULES_FILE).then(() => true).catch(() => false),
             fs.access(UI_STATE_FILE).then(() => true).catch(() => false)
         ])
 
@@ -100,6 +106,7 @@ export async function GET() {
             splitFilesExist: {
                 inputs: inputsExists,
                 calculations: calculationsExists,
+                modules: modulesExists,
                 uiState: uiStateExists
             },
             migrationStatus: splitComplete ? 'completed' : (legacyExists ? 'pending' : 'no-data')
