@@ -5,6 +5,7 @@
 
 import { processArrayFunctions, evaluateSafeExpression, extractShiftTargets, evaluateClusterPeriodByPeriod } from './formulaEvaluator'
 import { calculateModuleOutputs, MODULE_TEMPLATES } from './modules'
+import { getGroupRef } from './groupRefResolver'
 
 /**
  * Build timeline from model config
@@ -46,8 +47,6 @@ function buildReferenceMap(inputs, timeline) {
     const activeGroups = inputGlassGroups.filter(group =>
         inputGlass.some(input => input.groupId === group.id)
     )
-    const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
-
     // Pre-compute timeline lookup for O(1) access
     const timelineLookup = new Map()
     for (let i = 0; i < periods; i++) {
@@ -56,23 +55,8 @@ function buildReferenceMap(inputs, timeline) {
 
     activeGroups.forEach(group => {
         const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-
-        let normalizedMode
-        if (group.groupType === 'timing') normalizedMode = 'timing'
-        else if (group.groupType === 'constant') normalizedMode = 'constant'
-        else {
-            const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-            if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-            else normalizedMode = groupMode
-        }
-
-        modeIndices[normalizedMode]++
-        const modePrefix = normalizedMode === 'timing' ? 'T' :
-                          normalizedMode === 'series' ? 'S' :
-                          normalizedMode === 'constant' ? 'C' :
-                          normalizedMode === 'lookup' ? 'L' : 'V'
-        const groupIndex = modeIndices[normalizedMode]
-        const groupRef = `${modePrefix}${groupIndex}`
+        const groupRef = getGroupRef(group, groupInputs)
+        if (!groupRef) return
 
         // Build arrays for each input
         const inputArrays = {}
@@ -186,13 +170,12 @@ function buildReferenceMap(inputs, timeline) {
     refs['T.MiQ'] = new Array(periods).fill(3)
 
     // --- 5. Lookup References ---
-    let lookupIndex = 0
     inputGlassGroups
         .filter(g => g.entryMode === 'lookup' || g.entryMode === 'lookup2')
         .forEach(group => {
-            lookupIndex++
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-            const lookupRef = `L${lookupIndex}`
+            const lookupRef = getGroupRef(group, groupInputs)
+            if (!lookupRef) return
             const selectedIndices = group.selectedIndices || {}
             const subgroups = group.subgroups || []
             const rootInputs = groupInputs.filter(inp => !inp.subgroupId)

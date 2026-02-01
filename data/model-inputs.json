@@ -289,6 +289,7 @@
   "inputGlassGroups": [
     {
       "id": 100,
+      "refIndex": 1,
       "name": "Constants",
       "periods": 396,
       "linkedKeyPeriodId": null,
@@ -340,6 +341,7 @@
     },
     {
       "id": 1,
+      "refIndex": 1,
       "name": "CAPEX",
       "periods": 18,
       "linkedKeyPeriodId": "1",
@@ -357,6 +359,7 @@
     },
     {
       "id": 2,
+      "refIndex": 1,
       "name": "OPEX",
       "periods": 300,
       "linkedKeyPeriodId": "2",
@@ -374,6 +377,7 @@
     },
     {
       "id": 3,
+      "refIndex": 1,
       "name": "Market Prices",
       "periods": 396,
       "linkedKeyPeriodId": "custom",
@@ -391,7 +395,7 @@
       "subgroups": [
         {
           "id": 1,
-          "name": "Arb ($/MW)"
+          "name": "Arbitrage ($/MW)"
         },
         {
           "id": 2,
@@ -410,6 +414,7 @@
     },
     {
       "id": 6,
+      "refIndex": 2,
       "name": "Interest Rates",
       "periods": 396,
       "linkedKeyPeriodId": "custom",
@@ -430,6 +435,7 @@
     },
     {
       "id": 7,
+      "refIndex": 3,
       "name": "Performance Factors",
       "periods": 300,
       "linkedKeyPeriodId": "custom",
@@ -451,6 +457,7 @@
     },
     {
       "id": 8,
+      "refIndex": 2,
       "name": "Maintenance",
       "periods": 36,
       "linkedKeyPeriodId": "12",
@@ -468,6 +475,7 @@
     },
     {
       "id": 101,
+      "refIndex": 3,
       "name": "Agency Fee",
       "startYear": 2027,
       "startMonth": 4,
@@ -1942,7 +1950,7 @@
       "id": 105,
       "groupId": 3,
       "subgroupId": 1,
-      "name": "2 HR",
+      "name": "2 HR BESS ($/MW)",
       "entryMode": "values",
       "values": {
         "0": 146272,
@@ -2327,7 +2335,7 @@
       "id": 106,
       "groupId": 3,
       "subgroupId": 1,
-      "name": "3 HR",
+      "name": "3 HR BESS ($/MW)",
       "entryMode": "values",
       "values": {
         "0": 179307,
@@ -2712,7 +2720,7 @@
       "id": 107,
       "groupId": 3,
       "subgroupId": 2,
-      "name": "2 HR",
+      "name": "2 HR BESS ($/MW)",
       "entryMode": "values",
       "values": {
         "0": 16262,
@@ -3097,7 +3105,7 @@
       "id": 108,
       "groupId": 3,
       "subgroupId": 2,
-      "name": "3 HR",
+      "name": "3 HR BESS ($/MW)",
       "entryMode": "values",
       "values": {
         "0": 16192,

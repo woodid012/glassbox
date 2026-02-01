@@ -14,7 +14,7 @@ const NAV_CONFIG = [
     { id: 'outputs', label: 'Outputs', href: '/dashboard/outputs' },
     { id: 'validation', label: 'Validation', href: '/dashboard/validation' },
     { id: 'array-view', label: 'Array View', href: '/dashboard/array-view' },
-    { id: 'model-review', label: 'Model Review', href: '/dashboard/model-review' },
+    { id: 'debug', label: 'Debug', href: '/dashboard/debug' },
 ]
 
 export default function DashboardNavigation() {

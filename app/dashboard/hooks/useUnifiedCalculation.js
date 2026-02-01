@@ -385,12 +385,12 @@ function evaluateSingleCalc(formula, context, timeline) {
         const formulaWithoutLag = formula.replace(/(?:SHIFT\s*\([^)]+\)|PREVSUM\s*\([^)]+\)|PREVVAL\s*\([^)]+\))/gi, '')
         const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g
         const refsInFormula = [...new Set([...formulaWithoutLag.matchAll(refPattern)].map(m => m[1]))]
-        const missingRefs = refsInFormula.filter(ref => !context[ref])
-
-        if (missingRefs.length > 0) {
-            return {
-                values: new Array(timeline.periods).fill(0),
-                error: `Unknown reference(s): ${missingRefs.join(', ')}`
+        // For missing refs, substitute zero arrays instead of aborting evaluation.
+        // This matches server behavior (serverModelEngine.js line 597) where
+        // unresolved references are replaced with 0 so partial formulas still evaluate.
+        for (const ref of refsInFormula) {
+            if (!context[ref]) {
+                context[ref] = new Array(timeline.periods).fill(0)
             }
         }
 
@@ -413,6 +413,9 @@ function evaluateSingleCalc(formula, context, timeline) {
             for (const [placeholder, arr] of arrayFnEntries) {
                 expr = expr.replace(placeholder, arr[i] < 0 ? `(${arr[i]})` : arr[i].toString())
             }
+
+            // Replace any remaining unresolved references with 0 (matches server behavior)
+            expr = expr.replace(/\b(?:[VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g, '0')
 
             resultArray[i] = evaluateSafeExpression(expr)
         }

@@ -1,35 +1,5 @@
 {
   "_description": "Model structure - formulas and relationships only",
-  "calculationsTabs": [
-    {
-      "id": 1,
-      "name": "IFS"
-    },
-    {
-      "id": 2,
-      "name": "Funding"
-    },
-    {
-      "id": 3,
-      "name": "Ops"
-    },
-    {
-      "id": 4,
-      "name": "Valuation"
-    },
-    {
-      "id": 5,
-      "name": "B/S"
-    },
-    {
-      "id": 6,
-      "name": "Cashflow"
-    },
-    {
-      "id": 7,
-      "name": "Debug"
-    }
-  ],
   "calculationsGroups": [
     {
       "id": 4,
@@ -183,12 +153,17 @@
     {
       "id": 63,
       "tabId": 1,
-      "name": "IDC + Commitment Fees Amortisation"
+      "name": "Long Term - IDC + Fees Amortisation"
     },
     {
       "id": 64,
       "tabId": 1,
-      "name": "Upfront Fees Amortisation"
+      "name": "Long Term - Upfront Fees Amortisation"
+    },
+    {
+      "id": 65,
+      "tabId": 1,
+      "name": "Short Term - Maintenance D&A"
     },
     {
       "id": 60,
@@ -342,8 +317,8 @@
       "tabId": 1,
       "groupId": 4,
       "name": "P&L Depreciation",
-      "formula": "-R9003 - R9113 - R9123",
-      "description": "D&A + IDC/CommFees amort + Refi fees amort"
+      "formula": "-R9003 - R9113 - R9123 - R9133",
+      "description": "D&A + IDC/CommFees amort + Refi fees amort + Maintenance capex D&A"
     },
     {
       "id": 15,
@@ -508,7 +483,14 @@
       "groupId": 31,
       "name": "MRA Drawdown (Maintenance)",
       "formula": "R9034",
-      "description": "Cash inflow from MRA to pay maintenance (offsets OPEX in Operating CF)"
+      "description": "Cash inflow from MRA to fund maintenance capex (offsets R250 in Investing CF)"
+    },
+    {
+      "id": 250,
+      "groupId": 31,
+      "name": "Maintenance Capex",
+      "formula": "-S2 * I2 * F12",
+      "description": "Gross maintenance capex outflow (CPI-indexed, quarterly during F12)"
     },
     {
       "id": 202,
@@ -523,7 +505,7 @@
       "tabId": 3,
       "groupId": 31,
       "name": "Investing CF",
-      "formula": "R23 + R24 + R25 + R26 + R27 + R149 + R202",
+      "formula": "R23 + R24 + R25 + R26 + R27 + R149 + R202 + R250",
       "description": "Investing CF subtotal"
     },
     {
@@ -717,15 +699,6 @@
       "name": "DSRF Facility Limit",
       "formula": "M8.1",
       "description": "DSRF facility limit (notional, from DSRF module)",
-      "type": "flow"
-    },
-    {
-      "id": 148,
-      "tabId": 3,
-      "groupId": 36,
-      "name": "Construction Cash Reserving",
-      "formula": "0",
-      "description": "Placeholder",
       "type": "flow"
     },
     {
@@ -1388,11 +1361,19 @@
       "type": "stock"
     },
     {
+      "id": 232,
+      "groupId": 39,
+      "name": "Short Term Maintenance (NBV)",
+      "formula": "R9135",
+      "description": "Maintenance capex net book value (5yr SL depreciation)",
+      "type": "stock"
+    },
+    {
       "id": 187,
       "groupId": 39,
       "name": "Total Assets",
-      "formula": "R182 + R196 + R183 + R184 + R185 + R186 + R230 + R231",
-      "description": "Cash + WIP + PP&E + IDC/CommFees + Upfront Fees + Receivables + GST + MRA",
+      "formula": "R182 + R196 + R183 + R184 + R185 + R186 + R230 + R231 + R232",
+      "description": "Cash + WIP + PP&E + IDC/CommFees + Upfront Fees + Receivables + GST + MRA + Maint Capex",
       "type": "stock"
     },
     {
@@ -2037,6 +2018,92 @@
       "formula": "MAX(0, CUMSUM(R9121) - R9120 / C1.60 / T.MiY * CUMSUM(F2))",
       "description": "Net book value after amortisation",
       "type": "stock"
+    },
+    {
+      "id": 9129,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Ops Flag (post F12 onset)",
+      "formula": "F2 * (CUMSUM(F12) > 0)",
+      "description": "1 during operations from F12 onset onwards, 0 before. Used to gate depreciation timing.",
+      "type": "flow"
+    },
+    {
+      "id": 9130,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Total Capitalised",
+      "formula": "CUMSUM(S2 * I2 * F12)",
+      "description": "Cumulative CPI-indexed maintenance capex during F12",
+      "type": "stock"
+    },
+    {
+      "id": 9131,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Addition",
+      "formula": "S2 * I2 * F12",
+      "description": "Periodic maintenance capex addition (quarterly, CPI-indexed)",
+      "type": "flow"
+    },
+    {
+      "id": 9132,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Opening",
+      "formula": "MAX(0, (CUMSUM(R9131) - R9131) - (CUMSUM(R9131) - R9131) / C1.61 / T.MiY * (CUMSUM(R9129) - R9129))",
+      "description": "Prior period closing NBV (CUMSUM pattern, no circular deps)",
+      "type": "stock_start"
+    },
+    {
+      "id": 9135,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Closing NBV",
+      "formula": "MAX(0, CUMSUM(R9131) - CUMSUM(R9131) / C1.61 / T.MiY * CUMSUM(R9129))",
+      "description": "Net book value after depreciation (depreciation starts at F12 onset)",
+      "type": "stock"
+    },
+    {
+      "id": 9133,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Depreciation Expense",
+      "formula": "R9132 + R9131 - R9135",
+      "description": "Depreciation = Opening + Addition - Closing (derived from stock identity, guarantees BS balance)",
+      "type": "flow"
+    },
+    {
+      "id": 9134,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Accumulated",
+      "formula": "CUMSUM(R9133)",
+      "description": "Cumulative depreciation expense",
+      "type": "stock"
+    }
+  ],
+  "calculationsTabs": [
+    {
+      "id": 1,
+      "name": "IFS"
+    },
+    {
+      "id": 2,
+      "name": "Funding"
+    },
+    {
+      "id": 3,
+      "name": "Ops"
+    },
+    {
+      "id": 4,
+      "name": "Valuation"
+    },
+    {
+      "id": 5,
+      "name": "B/S"
+    },
+    {
+      "id": 6,
+      "name": "Cashflow"
+    },
+    {
+      "id": 7,
+      "name": "Debug"
     }
   ]
 }

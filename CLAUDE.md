@@ -135,6 +135,45 @@ Calculations derive their tab from their group's `tabId`. This means:
 - Change only the group's `tabId`
 - All calculations in that group move automatically
 
+### Input Group Reference Map (Stable via `refIndex`)
+
+Each `inputGlassGroup` has a stable `refIndex` field that defines its formula reference. Do NOT rely on array order or counter logic — `refIndex` is the source of truth.
+
+| Group ID | Name | Mode | Prefix | refIndex | Ref |
+|----------|------|------|--------|----------|-----|
+| 100 | Constants | constant | C | 1 | C1 |
+| 1 | CAPEX | values | V | 1 | V1 |
+| 2 | OPEX | series | S | 1 | S1 |
+| 3 | Market Prices | lookup | L | 1 | L1 |
+| 6 | Interest Rates | lookup | L | 2 | L2 |
+| 7 | Performance Factors | lookup | L | 3 | L3 |
+| 8 | Maintenance | series | S | 2 | S2 |
+| 101 | Agency Fee | series | S | 3 | S3 |
+
+Shared resolver: `utils/groupRefResolver.js` — `getGroupRef(group, groupInputs)` returns the stable ref string (e.g. `"S2"`). All 6 files that resolve group refs use this function.
+
+**When adding a new input group**, assign a unique `refIndex` for its mode (next available number) in `model-inputs.json`.
+
+### Lookup Groups (L1–L3) — Price Curves & Scenarios
+
+Lookup groups hold multiple scenario curves per subgroup. The UI selects one curve per subgroup; formulas reference the selected curve.
+
+**L1 — Market Prices** (group id: 3)
+- Subgroup 1: **Arbitrage ($/MW)** — annual arbitrage revenue per MW for different BESS durations
+  - `L1.1` = selected curve (currently 2 HR BESS via `selectedIndices`)
+  - Options: id 105 "2 HR BESS ($/MW)", id 106 "3 HR BESS ($/MW)"
+- Subgroup 2: **FCAS ($/MW)** — annual FCAS revenue per MW
+  - `L1.2` = selected curve (currently 2 HR BESS via `selectedIndices`)
+  - Options: id 107 "2 HR BESS ($/MW)", id 108 "3 HR BESS ($/MW)"
+
+**L2 — Interest Rates** (group id: 6)
+- Quarterly base rate curves for debt pricing
+
+**L3 — Performance Factors** (group id: 7)
+- Annual degradation/availability factors
+
+**Formula usage:** `L1.1` gives the selected Arbitrage price curve, `L1.2` gives the selected FCAS price curve. These feed into R4 (Arb Revenue) and R5 (FCAS Revenue) via capacity and time constants.
+
 ## Creating Time Series Inputs (The Linking Pattern)
 
 When you need a new recurring input (e.g., maintenance capex, debt service, revenue stream), think abstractly about linking three components:

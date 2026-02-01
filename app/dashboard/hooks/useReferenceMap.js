@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { getGroupRef } from '@/utils/groupRefResolver'
 
 /**
  * Hook to build the reference map for formula evaluation
@@ -28,30 +29,10 @@ export function useReferenceMap({
         const activeGroups = inputGlassGroups.filter(group =>
             inputGlass.some(input => input.groupId === group.id)
         )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
-
         activeGroups.forEach(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-
-            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
-            let normalizedMode
-            if (group.groupType === 'timing') {
-                normalizedMode = 'timing'
-            } else if (group.groupType === 'constant') {
-                normalizedMode = 'constant'
-            } else {
-                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-                else normalizedMode = groupMode
-            }
-
-            modeIndices[normalizedMode]++
-            const modePrefix = normalizedMode === 'timing' ? 'T' :
-                              normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' :
-                              normalizedMode === 'lookup' ? 'L' : 'V'
-            const groupIndex = modeIndices[normalizedMode]
-            const groupRef = `${modePrefix}${groupIndex}`
+            const groupRef = getGroupRef(group, groupInputs)
+            if (!groupRef) return
 
             const groupArrays = groupInputs.map(input =>
                 inputGlassArrays[`inputtype3_${input.id}`] || new Array(timeline.periods).fill(0)
@@ -182,14 +163,13 @@ export function useReferenceMap({
     // 5. Lookup References (L1, L1.1, L1.1.1, etc.) - only invalidates when lookups change
     const lookupRefs = useMemo(() => {
         const refs = {}
-        let lookupIndex = 0
 
         inputGlassGroups
             .filter(group => group.entryMode === 'lookup' || group.entryMode === 'lookup2')
             .forEach(group => {
-                lookupIndex++
                 const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-                const lookupRef = `L${lookupIndex}`
+                const lookupRef = getGroupRef(group, groupInputs)
+                if (!lookupRef) return
                 const selectedIndices = group.selectedIndices || {}
 
                 // Group inputs by subgroup

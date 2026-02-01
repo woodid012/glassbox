@@ -47,6 +47,7 @@ export function getDefaultState() {
         inputGlassGroups: [
             {
                 id: 'timing',
+                refIndex: 1,
                 name: 'Timing',
                 startYear: defaultStartYear,
                 startMonth: defaultStartMonth,

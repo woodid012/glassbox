@@ -21,6 +21,7 @@ import {
     DollarSign
 } from 'lucide-react'
 import SummaryCard from '../components/SummaryCard'
+import { formatValue } from '@/utils/valueAggregation'
 
 // Severity icons and colors
 const severityConfig = {
@@ -133,10 +134,290 @@ function IntegrityCheck({ label, description, value, tolerance = 0.01, unit = '$
     )
 }
 
+// BS group IDs → section config
+const BS_GROUPS = [
+    { groupId: 39, section: 'Assets', color: 'blue' },
+    { groupId: 40, section: 'Liabilities', color: 'red' },
+    { groupId: 41, section: 'Equity', color: 'green' },
+    { groupId: 42, section: 'Check', color: 'slate' },
+]
+
+function buildBsLines(calculations) {
+    const lines = []
+    for (const grp of BS_GROUPS) {
+        const calcs = (calculations || []).filter(c => c.groupId === grp.groupId)
+        for (const c of calcs) {
+            const ref = `R${c.id}`
+            const nameLower = c.name.toLowerCase()
+            const isTotal = nameLower.includes('total')
+            const isCheck = grp.section === 'Check' && nameLower.includes('check')
+            lines.push({
+                label: c.name,
+                ref,
+                bold: isTotal || grp.section === 'Check',
+                check: isCheck,
+                section: grp.section,
+                color: grp.color,
+            })
+        }
+    }
+    return lines
+}
+
+// P&L group ID
+const PL_GROUP_ID = 61
+
+function buildPlLines(calculations) {
+    const calcs = (calculations || []).filter(c => c.groupId === PL_GROUP_ID)
+    return calcs.map(c => ({
+        label: c.name,
+        ref: `R${c.id}`,
+        bold: ['ebitda', 'ebit', 'ebt', 'npat'].some(k => c.name.toLowerCase() === k),
+        check: false,
+    }))
+}
+
+// CF Waterfall group ID
+const CF_GROUP_ID = 60
+
+const CF_BOLD_KEYWORDS = ['total revenue', 'ebitda', 'operating cash', 'total capital', 'total funding', 'cash flow after', 'total debt service', 'net cash flow', 'cash balance']
+
+function buildCfLines(calculations) {
+    const calcs = (calculations || []).filter(c => c.groupId === CF_GROUP_ID)
+    return calcs.map(c => ({
+        label: c.name,
+        ref: `R${c.id}`,
+        bold: CF_BOLD_KEYWORDS.some(k => c.name.toLowerCase().includes(k)),
+        check: false,
+    }))
+}
+
+// Section header colors
+const sectionColors = {
+    Assets: { bg: 'bg-blue-50/30', text: 'text-blue-700', totalBg: 'bg-blue-50/50', totalText: 'text-blue-900' },
+    Liabilities: { bg: 'bg-red-50/30', text: 'text-red-700', totalBg: 'bg-red-50/50', totalText: 'text-red-900' },
+    Equity: { bg: 'bg-green-50/30', text: 'text-green-700', totalBg: 'bg-green-50/50', totalText: 'text-green-900' },
+    Check: { bg: 'bg-slate-50', text: 'text-slate-600', totalBg: 'bg-slate-50', totalText: 'text-slate-900' },
+}
+
+function BsDetailTable({ bsDetailLines, calculationResults, worstIdx, lastIdx }) {
+    if (!bsDetailLines.length) return null
+
+    const getVal = (ref, idx) => (calculationResults?.[ref] || [])[idx] || 0
+
+    // Group lines by section for headers
+    let lastSection = null
+
+    return (
+        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Scale className="w-4 h-4 text-slate-600" />
+                    <h3 className="text-sm font-semibold text-slate-900">Balance Sheet Detail</h3>
+                </div>
+                <div className="text-xs text-slate-500">
+                    Worst: Period {worstIdx + 1} | End: Period {lastIdx + 1}
+                </div>
+            </div>
+            <table className="w-full text-sm">
+                <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/50">
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Line Item</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-16">Ref</th>
+                        <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">Worst Period</th>
+                        <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">Final Period</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {bsDetailLines.map((line, i) => {
+                        const rows = []
+                        // Insert section header when section changes
+                        if (line.section && line.section !== lastSection) {
+                            lastSection = line.section
+                            const colors = sectionColors[line.section] || sectionColors.Check
+                            rows.push(
+                                <tr key={`hdr-${line.section}`} className={`border-b border-slate-100 ${colors.bg}`}>
+                                    <td colSpan={4} className={`px-4 py-1.5 text-xs font-bold ${colors.text} uppercase tracking-wider`}>{line.section}</td>
+                                </tr>
+                            )
+                        }
+
+                        const worst = getVal(line.ref, worstIdx)
+                        const last = getVal(line.ref, lastIdx)
+                        const isCheck = line.check
+                        const colors = sectionColors[line.section] || sectionColors.Check
+
+                        if (line.bold && !isCheck) {
+                            rows.push(
+                                <tr key={line.ref} className={`border-b border-slate-200 ${colors.totalBg} font-semibold`}>
+                                    <td className={`px-4 py-1.5 ${colors.totalText}`}>{line.label}</td>
+                                    <td className="px-4 py-1.5 text-xs font-mono text-slate-400">{line.ref}</td>
+                                    <td className={`px-4 py-1.5 text-right font-mono tabular-nums ${colors.totalText}`}>{worst.toFixed(2)}</td>
+                                    <td className={`px-4 py-1.5 text-right font-mono tabular-nums ${colors.totalText}`}>{last.toFixed(2)}</td>
+                                </tr>
+                            )
+                        } else if (isCheck) {
+                            const fail = Math.abs(worst) > 0.01 || Math.abs(last) > 0.01
+                            rows.push(
+                                <tr key={line.ref} className={`font-bold ${fail ? 'bg-red-50' : 'bg-green-50'}`}>
+                                    <td className="px-4 py-2 text-slate-900">{line.label}</td>
+                                    <td className="px-4 py-2 text-xs font-mono text-slate-400">{line.ref}</td>
+                                    <td className={`px-4 py-2 text-right font-mono tabular-nums ${Math.abs(worst) > 0.01 ? 'text-red-700' : 'text-green-700'}`}>{worst.toFixed(4)}</td>
+                                    <td className={`px-4 py-2 text-right font-mono tabular-nums ${Math.abs(last) > 0.01 ? 'text-red-700' : 'text-green-700'}`}>{last.toFixed(4)}</td>
+                                </tr>
+                            )
+                        } else {
+                            rows.push(
+                                <tr key={line.ref} className="border-b border-slate-50 hover:bg-slate-50/50">
+                                    <td className="px-4 py-1.5 text-slate-700">{line.label}</td>
+                                    <td className="px-4 py-1.5 text-xs font-mono text-slate-400">{line.ref}</td>
+                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{worst.toFixed(2)}</td>
+                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{last.toFixed(2)}</td>
+                                </tr>
+                            )
+                        }
+                        return rows
+                    })}
+                </tbody>
+            </table>
+        </div>
+    )
+}
+
+const PERIODS_PER_PAGE = 20
+
+function PeriodBrowser({ calculationResults, timeline, calculations }) {
+    const [startIdx, setStartIdx] = useState(0)
+    const [showSection, setShowSection] = useState('all') // 'all', 'bs', 'pl', 'cf'
+
+    const bsLines = useMemo(() => buildBsLines(calculations), [calculations])
+    const plLines = useMemo(() => buildPlLines(calculations), [calculations])
+    const cfLines = useMemo(() => buildCfLines(calculations), [calculations])
+
+    if (!timeline || !calculationResults) return null
+
+    const maxPeriods = timeline.periods || 0
+    const endIdx = Math.min(startIdx + PERIODS_PER_PAGE, maxPeriods)
+    const periodIndices = []
+    for (let i = startIdx; i < endIdx; i++) periodIndices.push(i)
+
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+    function periodLabel(i) {
+        const y = timeline.year?.[i]
+        const m = timeline.month?.[i]
+        if (y && m) return `${monthNames[m - 1]} ${String(y).slice(2)}`
+        return `P${i + 1}`
+    }
+
+    const acctFmt = { accounting: true, emptyValue: '' }
+
+    function renderLines(lines, sectionLabel) {
+        return (
+            <>
+                <tr className="bg-slate-100">
+                    <td className="px-2 py-1 text-[10px] font-bold text-slate-600 uppercase tracking-wider sticky left-0 bg-slate-100 z-10" colSpan={1}>{sectionLabel}</td>
+                    <td className="px-1 py-1 text-[10px] font-mono text-slate-400 sticky left-[180px] bg-slate-100 z-10"></td>
+                    {periodIndices.map(i => <td key={i} className="px-1 py-1"></td>)}
+                </tr>
+                {lines.map(line => {
+                    const arr = calculationResults[line.ref] || []
+                    const isCheck = line.check
+                    const isBold = line.bold
+                    return (
+                        <tr key={line.ref} className={`border-b border-slate-50 hover:bg-yellow-50/30 ${isBold ? 'bg-slate-50/70' : ''}`}>
+                            <td className={`px-2 py-0.5 text-[11px] whitespace-nowrap sticky left-0 bg-white z-10 ${isBold ? 'font-semibold text-slate-900' : 'text-slate-600'}`} style={{ minWidth: 180 }}>
+                                {line.label}
+                            </td>
+                            <td className="px-1 py-0.5 text-[10px] font-mono text-slate-400 sticky left-[180px] bg-white z-10" style={{ minWidth: 40 }}>
+                                {line.ref}
+                            </td>
+                            {periodIndices.map(i => {
+                                const v = arr[i] || 0
+                                const isNonZero = Math.abs(v) > 0.005
+                                const isFail = isCheck && Math.abs(v) > 0.01
+                                return (
+                                    <td key={i} className={`px-1 py-0.5 text-right font-mono text-[10px] tabular-nums whitespace-nowrap ${
+                                        isFail ? 'bg-red-100 text-red-700 font-bold' :
+                                        isCheck && isNonZero ? 'bg-red-50 text-red-600' :
+                                        isCheck ? 'text-green-600' :
+                                        v < -0.005 ? 'text-red-600' :
+                                        isNonZero ? 'text-slate-600' : ''
+                                    }`} style={{ minWidth: 72 }}>
+                                        {isCheck ? (isNonZero ? v.toFixed(2) : '.') : formatValue(v, acctFmt)}
+                                    </td>
+                                )
+                            })}
+                        </tr>
+                    )
+                })}
+            </>
+        )
+    }
+
+    return (
+        <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-slate-600" />
+                    <h2 className="text-lg font-semibold text-slate-900">Period Browser</h2>
+                    <span className="text-xs text-slate-400">Periods {startIdx + 1}–{endIdx} of {maxPeriods}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <select
+                        value={showSection}
+                        onChange={e => setShowSection(e.target.value)}
+                        className="text-xs border border-slate-200 rounded px-2 py-1 bg-white"
+                    >
+                        <option value="all">All (BS + P&L + CF)</option>
+                        <option value="bs">Balance Sheet</option>
+                        <option value="pl">P&L</option>
+                        <option value="cf">Cash Flow</option>
+                    </select>
+                    <button
+                        onClick={() => setStartIdx(Math.max(0, startIdx - PERIODS_PER_PAGE))}
+                        disabled={startIdx === 0}
+                        className="px-2 py-1 text-xs border border-slate-200 rounded bg-white hover:bg-slate-50 disabled:opacity-30"
+                    >
+                        &larr; Prev
+                    </button>
+                    <button
+                        onClick={() => setStartIdx(Math.min(maxPeriods - 1, startIdx + PERIODS_PER_PAGE))}
+                        disabled={endIdx >= maxPeriods}
+                        className="px-2 py-1 text-xs border border-slate-200 rounded bg-white hover:bg-slate-50 disabled:opacity-30"
+                    >
+                        Next &rarr;
+                    </button>
+                </div>
+            </div>
+            <div className="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+                <table className="text-sm border-collapse">
+                    <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50">
+                            <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider sticky left-0 bg-slate-50 z-10" style={{ minWidth: 180 }}>Line Item</th>
+                            <th className="px-1 py-1.5 text-left text-[10px] font-semibold text-slate-400 sticky left-[180px] bg-slate-50 z-10" style={{ minWidth: 40 }}>Ref</th>
+                            {periodIndices.map(i => (
+                                <th key={i} className="px-1 py-1.5 text-right text-[10px] font-semibold text-slate-500 whitespace-nowrap" style={{ minWidth: 72 }}>
+                                    {periodLabel(i)}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {(showSection === 'all' || showSection === 'bs') && renderLines(bsLines, 'Balance Sheet')}
+                        {(showSection === 'all' || showSection === 'pl') && renderLines(plLines, 'P&L')}
+                        {(showSection === 'all' || showSection === 'cf') && renderLines(cfLines, 'CF Waterfall')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    )
+}
+
 export default function ValidationPage() {
     const { appState, derived, setters } = useDashboard()
     const { calculations } = appState
-    const { referenceMap, moduleOutputs, calculationResults } = derived
+    const { referenceMap, moduleOutputs, calculationResults, timeline } = derived
     const { setSelectedCalculationId } = setters
     const router = useRouter()
 
@@ -191,36 +472,7 @@ export default function ValidationPage() {
         const bsTotalAssets = totalAssetsArr[bsMaxDeviationIdx] || 0
         const bsTotalLE = totalLEArr[bsMaxDeviationIdx] || 0
 
-        // Detailed B/S line items
-        const getVal = (ref, idx) => (calculationResults?.[ref] || [])[idx] || 0
         const lastIdx = bsCheckArr.length - 1
-
-        const bsDetail = {
-            worstIdx: bsMaxDeviationIdx,
-            lastIdx,
-            assets: [
-                { label: 'Cash & Cash Equivalents', ref: 'R182', worst: getVal('R182', bsMaxDeviationIdx), last: getVal('R182', lastIdx) },
-                { label: 'Construction WIP', ref: 'R196', worst: getVal('R196', bsMaxDeviationIdx), last: getVal('R196', lastIdx) },
-                { label: 'PP&E (Net Book Value)', ref: 'R183', worst: getVal('R183', bsMaxDeviationIdx), last: getVal('R183', lastIdx) },
-                { label: 'Trade Receivables', ref: 'R184', worst: getVal('R184', bsMaxDeviationIdx), last: getVal('R184', lastIdx) },
-                { label: 'GST Receivable', ref: 'R185', worst: getVal('R185', bsMaxDeviationIdx), last: getVal('R185', lastIdx) },
-                { label: 'MRA Balance', ref: 'R186', worst: getVal('R186', bsMaxDeviationIdx), last: getVal('R186', lastIdx) },
-            ],
-            totalAssets: { worst: bsTotalAssets, last: getVal('R187', lastIdx) },
-            liabilities: [
-                { label: 'Construction Debt', ref: 'R198', worst: getVal('R198', bsMaxDeviationIdx), last: getVal('R198', lastIdx) },
-                { label: 'Operations Debt', ref: 'R188', worst: getVal('R188', bsMaxDeviationIdx), last: getVal('R188', lastIdx) },
-                { label: 'Trade Payables', ref: 'R189', worst: getVal('R189', bsMaxDeviationIdx), last: getVal('R189', lastIdx) },
-            ],
-            totalLiabilities: { worst: getVal('R190', bsMaxDeviationIdx), last: getVal('R190', lastIdx) },
-            equity: [
-                { label: 'Share Capital', ref: 'R191', worst: getVal('R191', bsMaxDeviationIdx), last: getVal('R191', lastIdx) },
-                { label: 'Retained Earnings', ref: 'R192', worst: getVal('R192', bsMaxDeviationIdx), last: getVal('R192', lastIdx) },
-            ],
-            totalEquity: { worst: getVal('R193', bsMaxDeviationIdx), last: getVal('R193', lastIdx) },
-            totalLE: { worst: bsTotalLE, last: getVal('R194', lastIdx) },
-            check: { worst: bsMaxDeviation, last: getVal('R195', lastIdx) },
-        }
 
         return {
             totalUses,
@@ -233,9 +485,12 @@ export default function ValidationPage() {
             bsTotalAssets,
             bsTotalLE,
             bsTotalPeriods: bsCheckArr.length,
-            bsDetail
+            lastIdx,
         }
     }, [calculationResults])
+
+    // Build BS detail lines dynamically from calculations
+    const bsDetailLines = useMemo(() => buildBsLines(calculations), [calculations])
 
     // Run validation
     const issues = useMemo(() => {
@@ -329,105 +584,17 @@ export default function ValidationPage() {
                     />
                 </div>
 
-                {/* Detailed B/S Breakdown */}
-                <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                    <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Scale className="w-4 h-4 text-slate-600" />
-                            <h3 className="text-sm font-semibold text-slate-900">Balance Sheet Detail</h3>
-                        </div>
-                        <div className="text-xs text-slate-500">
-                            Worst: Period {integrityChecks.bsDetail.worstIdx + 1} | End: Period {integrityChecks.bsDetail.lastIdx + 1}
-                        </div>
-                    </div>
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-slate-100 bg-slate-50/50">
-                                <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Line Item</th>
-                                <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-16">Ref</th>
-                                <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">Worst Period</th>
-                                <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">Final Period</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {/* Assets */}
-                            <tr className="border-b border-slate-100 bg-blue-50/30">
-                                <td colSpan={4} className="px-4 py-1.5 text-xs font-bold text-blue-700 uppercase tracking-wider">Assets</td>
-                            </tr>
-                            {integrityChecks.bsDetail.assets.map((item, i) => (
-                                <tr key={`a-${i}`} className="border-b border-slate-50 hover:bg-slate-50/50">
-                                    <td className="px-4 py-1.5 text-slate-700">{item.label}</td>
-                                    <td className="px-4 py-1.5 text-xs font-mono text-slate-400">{item.ref}</td>
-                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{item.worst.toFixed(2)}</td>
-                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{item.last.toFixed(2)}</td>
-                                </tr>
-                            ))}
-                            <tr className="border-b border-slate-200 bg-blue-50/50 font-semibold">
-                                <td className="px-4 py-1.5 text-blue-900">Total Assets</td>
-                                <td className="px-4 py-1.5 text-xs font-mono text-slate-400">R187</td>
-                                <td className="px-4 py-1.5 text-right font-mono tabular-nums text-blue-900">{integrityChecks.bsDetail.totalAssets.worst.toFixed(2)}</td>
-                                <td className="px-4 py-1.5 text-right font-mono tabular-nums text-blue-900">{integrityChecks.bsDetail.totalAssets.last.toFixed(2)}</td>
-                            </tr>
-
-                            {/* Liabilities */}
-                            <tr className="border-b border-slate-100 bg-red-50/30">
-                                <td colSpan={4} className="px-4 py-1.5 text-xs font-bold text-red-700 uppercase tracking-wider">Liabilities</td>
-                            </tr>
-                            {integrityChecks.bsDetail.liabilities.map((item, i) => (
-                                <tr key={`l-${i}`} className="border-b border-slate-50 hover:bg-slate-50/50">
-                                    <td className="px-4 py-1.5 text-slate-700">{item.label}</td>
-                                    <td className="px-4 py-1.5 text-xs font-mono text-slate-400">{item.ref}</td>
-                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{item.worst.toFixed(2)}</td>
-                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{item.last.toFixed(2)}</td>
-                                </tr>
-                            ))}
-                            <tr className="border-b border-slate-200 bg-red-50/50 font-semibold">
-                                <td className="px-4 py-1.5 text-red-900">Total Liabilities</td>
-                                <td className="px-4 py-1.5 text-xs font-mono text-slate-400">R190</td>
-                                <td className="px-4 py-1.5 text-right font-mono tabular-nums text-red-900">{integrityChecks.bsDetail.totalLiabilities.worst.toFixed(2)}</td>
-                                <td className="px-4 py-1.5 text-right font-mono tabular-nums text-red-900">{integrityChecks.bsDetail.totalLiabilities.last.toFixed(2)}</td>
-                            </tr>
-
-                            {/* Equity */}
-                            <tr className="border-b border-slate-100 bg-green-50/30">
-                                <td colSpan={4} className="px-4 py-1.5 text-xs font-bold text-green-700 uppercase tracking-wider">Equity</td>
-                            </tr>
-                            {integrityChecks.bsDetail.equity.map((item, i) => (
-                                <tr key={`e-${i}`} className="border-b border-slate-50 hover:bg-slate-50/50">
-                                    <td className="px-4 py-1.5 text-slate-700">{item.label}</td>
-                                    <td className="px-4 py-1.5 text-xs font-mono text-slate-400">{item.ref}</td>
-                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{item.worst.toFixed(2)}</td>
-                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{item.last.toFixed(2)}</td>
-                                </tr>
-                            ))}
-                            <tr className="border-b border-slate-200 bg-green-50/50 font-semibold">
-                                <td className="px-4 py-1.5 text-green-900">Total Equity</td>
-                                <td className="px-4 py-1.5 text-xs font-mono text-slate-400">R193</td>
-                                <td className="px-4 py-1.5 text-right font-mono tabular-nums text-green-900">{integrityChecks.bsDetail.totalEquity.worst.toFixed(2)}</td>
-                                <td className="px-4 py-1.5 text-right font-mono tabular-nums text-green-900">{integrityChecks.bsDetail.totalEquity.last.toFixed(2)}</td>
-                            </tr>
-
-                            {/* Totals */}
-                            <tr className="border-b border-slate-200 bg-slate-50 font-semibold">
-                                <td className="px-4 py-1.5 text-slate-900">Total L + E</td>
-                                <td className="px-4 py-1.5 text-xs font-mono text-slate-400">R194</td>
-                                <td className="px-4 py-1.5 text-right font-mono tabular-nums text-slate-900">{integrityChecks.bsDetail.totalLE.worst.toFixed(2)}</td>
-                                <td className="px-4 py-1.5 text-right font-mono tabular-nums text-slate-900">{integrityChecks.bsDetail.totalLE.last.toFixed(2)}</td>
-                            </tr>
-                            <tr className={`font-bold ${Math.abs(integrityChecks.bsDetail.check.worst) > 0.01 || Math.abs(integrityChecks.bsDetail.check.last) > 0.01 ? 'bg-red-50' : 'bg-green-50'}`}>
-                                <td className="px-4 py-2 text-slate-900">Balance Check (A - L&E)</td>
-                                <td className="px-4 py-2 text-xs font-mono text-slate-400">R195</td>
-                                <td className={`px-4 py-2 text-right font-mono tabular-nums ${Math.abs(integrityChecks.bsDetail.check.worst) > 0.01 ? 'text-red-700' : 'text-green-700'}`}>
-                                    {integrityChecks.bsDetail.check.worst.toFixed(4)}
-                                </td>
-                                <td className={`px-4 py-2 text-right font-mono tabular-nums ${Math.abs(integrityChecks.bsDetail.check.last) > 0.01 ? 'text-red-700' : 'text-green-700'}`}>
-                                    {integrityChecks.bsDetail.check.last.toFixed(4)}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                {/* Detailed B/S Breakdown — dynamic from model */}
+                <BsDetailTable
+                    bsDetailLines={bsDetailLines}
+                    calculationResults={calculationResults}
+                    worstIdx={integrityChecks.bsMaxDeviationIdx}
+                    lastIdx={integrityChecks.lastIdx}
+                />
             </div>
+
+            {/* Period Browser: BS + CF for first N periods */}
+            <PeriodBrowser calculationResults={calculationResults} timeline={timeline} calculations={calculations} />
 
             {/* Filters */}
             <div className="flex items-center gap-3 mb-3">

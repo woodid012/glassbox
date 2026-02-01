@@ -9,6 +9,7 @@ import { useInputArrays } from '@/hooks/useInputArrays'
 import { MODULE_TEMPLATES } from '@/utils/modules'
 import { useReferenceMap } from './useReferenceMap'
 import { useUnifiedCalculation } from './useUnifiedCalculation'
+import { getGroupRef } from '@/utils/groupRefResolver'
 
 export function useDashboardState(viewMode) {
     // Single state object - all state in one place for easy save/load
@@ -341,28 +342,15 @@ export function useDashboardState(viewMode) {
         const activeGroups = inputGlassGroups.filter(group =>
             inputGlass.some(input => input.groupId === group.id)
         )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
-
         activeGroups.forEach(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
+            const groupRef = getGroupRef(group, groupInputs)
+            if (!groupRef) return
 
-            let normalizedMode
-            if (group.groupType === 'timing') {
-                normalizedMode = 'timing'
-            } else if (group.groupType === 'constant') {
-                normalizedMode = 'constant'
-            } else {
-                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-                else normalizedMode = groupMode
-            }
-
-            modeIndices[normalizedMode]++
-            const modePrefix = normalizedMode === 'timing' ? 'T' :
-                              normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' :
-                              normalizedMode === 'lookup' ? 'L' : 'V'
-            const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
+            const normalizedMode = groupRef[0] === 'T' ? 'timing' :
+                                   groupRef[0] === 'C' ? 'constant' :
+                                   groupRef[0] === 'L' ? 'lookup' :
+                                   groupRef[0] === 'S' ? 'series' : 'values'
 
             let groupIsFlow = false
             let groupHasFlowConverter = false
@@ -431,13 +419,12 @@ export function useDashboardState(viewMode) {
         })
 
         // Lookups are stock
-        let lookupIndex = 0
         inputGlassGroups
             .filter(group => group.entryMode === 'lookup' || group.entryMode === 'lookup2')
             .forEach(group => {
-                lookupIndex++
                 const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-                const lookupRef = `L${lookupIndex}`
+                const lookupRef = getGroupRef(group, groupInputs)
+                if (!lookupRef) return
 
                 const subgroups = group.subgroups || []
                 const rootInputs = groupInputs.filter(inp => !inp.subgroupId)
@@ -494,28 +481,10 @@ export function useDashboardState(viewMode) {
         const activeGroups = inputGlassGroups.filter(group =>
             inputGlass.some(input => input.groupId === group.id)
         )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
-
         activeGroups.forEach(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-
-            let normalizedMode
-            if (group.groupType === 'timing') {
-                normalizedMode = 'timing'
-            } else if (group.groupType === 'constant') {
-                normalizedMode = 'constant'
-            } else {
-                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-                else normalizedMode = groupMode
-            }
-
-            modeIndices[normalizedMode]++
-            const modePrefix = normalizedMode === 'timing' ? 'T' :
-                              normalizedMode === 'series' ? 'S' :
-                              normalizedMode === 'constant' ? 'C' :
-                              normalizedMode === 'lookup' ? 'L' : 'V'
-            const groupRef = `${modePrefix}${modeIndices[normalizedMode]}`
+            const groupRef = getGroupRef(group, groupInputs)
+            if (!groupRef) return
 
             names[groupRef] = group.name
 

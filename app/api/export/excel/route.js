@@ -8,6 +8,7 @@ import { generateExportBundle } from '@/utils/exportSchema'
 import { runServerModel } from '@/utils/serverModelEngine'
 import { buildRefMap, convertFormula, canConvertToExcel } from '@/utils/excelFormulaConverter'
 import { loadModelData } from '@/utils/loadModelData'
+import { getGroupRef } from '@/utils/groupRefResolver'
 
 export const dynamic = 'force-dynamic'
 
@@ -417,29 +418,14 @@ function buildBundleToServerAliases(inputs) {
     const inputGlassGroups = inputs.inputGlassGroups || []
     const inputGlass = inputs.inputGlass || []
 
-    const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
     const activeGroups = inputGlassGroups.filter(group =>
         inputGlass.some(input => input.groupId === group.id)
     )
 
     for (const group of activeGroups) {
         const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-
-        let normalizedMode
-        if (group.groupType === 'timing') normalizedMode = 'timing'
-        else if (group.groupType === 'constant') normalizedMode = 'constant'
-        else {
-            const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-            if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-            else normalizedMode = groupMode
-        }
-
-        modeIndices[normalizedMode]++
-        const modePrefix = normalizedMode === 'timing' ? 'T' :
-                          normalizedMode === 'series' ? 'S' :
-                          normalizedMode === 'constant' ? 'C' :
-                          normalizedMode === 'lookup' ? 'L' : 'V'
-        const serverRef = `${modePrefix}${modeIndices[normalizedMode]}`
+        const serverRef = getGroupRef(group, groupInputs)
+        if (!serverRef) continue
 
         // Bundle ref
         const entryMode = group.entryMode || group.groupType || 'series'
@@ -477,30 +463,15 @@ function addPositionBasedAliases(refMap, bundle, referenceMap, inputs) {
     const inputGlassGroups = inputs.inputGlassGroups || []
     const inputGlass = inputs.inputGlass || []
 
-    // Replay position-based ref assignment (same logic as serverModelEngine.buildReferenceMap)
-    const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
+    // Resolve stable refs and map to export bundle refs where they differ
     const activeGroups = inputGlassGroups.filter(group =>
         inputGlass.some(input => input.groupId === group.id)
     )
 
     for (const group of activeGroups) {
         const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-
-        let normalizedMode
-        if (group.groupType === 'timing') normalizedMode = 'timing'
-        else if (group.groupType === 'constant') normalizedMode = 'constant'
-        else {
-            const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-            if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-            else normalizedMode = groupMode
-        }
-
-        modeIndices[normalizedMode]++
-        const modePrefix = normalizedMode === 'timing' ? 'T' :
-                          normalizedMode === 'series' ? 'S' :
-                          normalizedMode === 'constant' ? 'C' :
-                          normalizedMode === 'lookup' ? 'L' : 'V'
-        const positionRef = `${modePrefix}${modeIndices[normalizedMode]}` // e.g., S3
+        const positionRef = getGroupRef(group, groupInputs)
+        if (!positionRef) continue
 
         // Determine the export bundle ref for this group
         const entryMode = group.entryMode || group.groupType || 'series'
@@ -520,7 +491,6 @@ function addPositionBasedAliases(refMap, bundle, referenceMap, inputs) {
         }
 
         // Add aliases for per-input refs
-        // Position-based: S3.{inputNum}, Export-based: G101.{inputNum}
         for (const input of groupInputs) {
             const inputNum = group.id === 100 ? input.id - 99 : input.id
             const posInputRef = `${positionRef}.${inputNum}`

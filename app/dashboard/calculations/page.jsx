@@ -7,6 +7,7 @@ import { getCachedRegex } from '@/utils/formulaEvaluator'
 import { groupInputsBySubgroup } from '@/components/inputs/utils/inputHelpers'
 import { DeferredInput } from '@/components/DeferredInput'
 import { getModeColorClasses, getCalcTypeColorClasses, getModePrefix, getTabItems, getViewModeLabel } from '@/utils/styleHelpers'
+import { getGroupRef, getGroupPrefix } from '@/utils/groupRefResolver'
 import CalcRow from './CalcRow'
 import CalculationsTimeSeriesPreview from './CalculationsTimeSeriesPreview'
 import CalculationPreview from './CalculationPreview'
@@ -280,23 +281,16 @@ export default function CalculationsPage() {
         const activeGroups = inputGlassGroups.filter(group =>
             inputGlass.some(input => input.groupId === group.id)
         )
-        const modeIndices = { values: 0, series: 0, constant: 0, timing: 0, lookup: 0 }
-
         return activeGroups.map(group => {
             const groupInputs = inputGlass.filter(input => input.groupId === group.id)
+            const groupRef = getGroupRef(group, groupInputs)
+            if (!groupRef) return null
 
-            // Determine group mode/type - check groupType first, then fall back to entryMode, then input mode
-            let normalizedMode
-            if (group.groupType === 'timing') {
-                normalizedMode = 'timing'
-            } else {
-                const groupMode = group.entryMode || groupInputs[0]?.mode || 'values'
-                if (groupMode === 'lookup' || groupMode === 'lookup2') normalizedMode = 'lookup'
-                else normalizedMode = groupMode
-            }
-
-            modeIndices[normalizedMode]++
-            const groupRef = `${getModePrefix(normalizedMode)}${modeIndices[normalizedMode]}`
+            const prefix = getGroupPrefix(group, groupInputs)
+            const normalizedMode = prefix === 'T' ? 'timing' :
+                                   prefix === 'C' ? 'constant' :
+                                   prefix === 'L' ? 'lookup' :
+                                   prefix === 'S' ? 'series' : 'values'
 
             return {
                 group,
@@ -304,7 +298,7 @@ export default function CalculationsPage() {
                 normalizedMode,
                 groupInputs
             }
-        })
+        }).filter(Boolean)
     }, [inputGlassGroups, inputGlass])
 
     // Build calculation index map for R references (memoized)
