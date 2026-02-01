@@ -134,7 +134,7 @@ function IntegrityCheck({ label, description, value, tolerance = 0.01, unit = '$
     )
 }
 
-// BS group IDs → section config
+// BS group IDs for Period Browser
 const BS_GROUPS = [
     { groupId: 39, section: 'Assets', color: 'blue' },
     { groupId: 40, section: 'Liabilities', color: 'red' },
@@ -149,15 +149,12 @@ function buildBsLines(calculations) {
         for (const c of calcs) {
             const ref = `R${c.id}`
             const nameLower = c.name.toLowerCase()
-            const isTotal = nameLower.includes('total')
-            const isCheck = grp.section === 'Check' && nameLower.includes('check')
             lines.push({
                 label: c.name,
                 ref,
-                bold: isTotal || grp.section === 'Check',
-                check: isCheck,
+                bold: nameLower.includes('total') || grp.section === 'Check',
+                check: grp.section === 'Check' && nameLower.includes('check'),
                 section: grp.section,
-                color: grp.color,
             })
         }
     }
@@ -198,90 +195,6 @@ const sectionColors = {
     Liabilities: { bg: 'bg-red-50/30', text: 'text-red-700', totalBg: 'bg-red-50/50', totalText: 'text-red-900' },
     Equity: { bg: 'bg-green-50/30', text: 'text-green-700', totalBg: 'bg-green-50/50', totalText: 'text-green-900' },
     Check: { bg: 'bg-slate-50', text: 'text-slate-600', totalBg: 'bg-slate-50', totalText: 'text-slate-900' },
-}
-
-function BsDetailTable({ bsDetailLines, calculationResults, worstIdx, lastIdx }) {
-    if (!bsDetailLines.length) return null
-
-    const getVal = (ref, idx) => (calculationResults?.[ref] || [])[idx] || 0
-
-    // Group lines by section for headers
-    let lastSection = null
-
-    return (
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Scale className="w-4 h-4 text-slate-600" />
-                    <h3 className="text-sm font-semibold text-slate-900">Balance Sheet Detail</h3>
-                </div>
-                <div className="text-xs text-slate-500">
-                    Worst: Period {worstIdx + 1} | End: Period {lastIdx + 1}
-                </div>
-            </div>
-            <table className="w-full text-sm">
-                <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/50">
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Line Item</th>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-16">Ref</th>
-                        <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">Worst Period</th>
-                        <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">Final Period</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {bsDetailLines.map((line, i) => {
-                        const rows = []
-                        // Insert section header when section changes
-                        if (line.section && line.section !== lastSection) {
-                            lastSection = line.section
-                            const colors = sectionColors[line.section] || sectionColors.Check
-                            rows.push(
-                                <tr key={`hdr-${line.section}`} className={`border-b border-slate-100 ${colors.bg}`}>
-                                    <td colSpan={4} className={`px-4 py-1.5 text-xs font-bold ${colors.text} uppercase tracking-wider`}>{line.section}</td>
-                                </tr>
-                            )
-                        }
-
-                        const worst = getVal(line.ref, worstIdx)
-                        const last = getVal(line.ref, lastIdx)
-                        const isCheck = line.check
-                        const colors = sectionColors[line.section] || sectionColors.Check
-
-                        if (line.bold && !isCheck) {
-                            rows.push(
-                                <tr key={line.ref} className={`border-b border-slate-200 ${colors.totalBg} font-semibold`}>
-                                    <td className={`px-4 py-1.5 ${colors.totalText}`}>{line.label}</td>
-                                    <td className="px-4 py-1.5 text-xs font-mono text-slate-400">{line.ref}</td>
-                                    <td className={`px-4 py-1.5 text-right font-mono tabular-nums ${colors.totalText}`}>{worst.toFixed(2)}</td>
-                                    <td className={`px-4 py-1.5 text-right font-mono tabular-nums ${colors.totalText}`}>{last.toFixed(2)}</td>
-                                </tr>
-                            )
-                        } else if (isCheck) {
-                            const fail = Math.abs(worst) > 0.01 || Math.abs(last) > 0.01
-                            rows.push(
-                                <tr key={line.ref} className={`font-bold ${fail ? 'bg-red-50' : 'bg-green-50'}`}>
-                                    <td className="px-4 py-2 text-slate-900">{line.label}</td>
-                                    <td className="px-4 py-2 text-xs font-mono text-slate-400">{line.ref}</td>
-                                    <td className={`px-4 py-2 text-right font-mono tabular-nums ${Math.abs(worst) > 0.01 ? 'text-red-700' : 'text-green-700'}`}>{worst.toFixed(4)}</td>
-                                    <td className={`px-4 py-2 text-right font-mono tabular-nums ${Math.abs(last) > 0.01 ? 'text-red-700' : 'text-green-700'}`}>{last.toFixed(4)}</td>
-                                </tr>
-                            )
-                        } else {
-                            rows.push(
-                                <tr key={line.ref} className="border-b border-slate-50 hover:bg-slate-50/50">
-                                    <td className="px-4 py-1.5 text-slate-700">{line.label}</td>
-                                    <td className="px-4 py-1.5 text-xs font-mono text-slate-400">{line.ref}</td>
-                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{worst.toFixed(2)}</td>
-                                    <td className="px-4 py-1.5 text-right font-mono tabular-nums">{last.toFixed(2)}</td>
-                                </tr>
-                            )
-                        }
-                        return rows
-                    })}
-                </tbody>
-            </table>
-        </div>
-    )
 }
 
 const PERIODS_PER_PAGE = 20
@@ -489,9 +402,6 @@ export default function ValidationPage() {
         }
     }, [calculationResults])
 
-    // Build BS detail lines dynamically from calculations
-    const bsDetailLines = useMemo(() => buildBsLines(calculations), [calculations])
-
     // Run validation
     const issues = useMemo(() => {
         return validateAllCalculations(calculations, referenceMap, moduleOutputs)
@@ -584,13 +494,6 @@ export default function ValidationPage() {
                     />
                 </div>
 
-                {/* Detailed B/S Breakdown — dynamic from model */}
-                <BsDetailTable
-                    bsDetailLines={bsDetailLines}
-                    calculationResults={calculationResults}
-                    worstIdx={integrityChecks.bsMaxDeviationIdx}
-                    lastIdx={integrityChecks.lastIdx}
-                />
             </div>
 
             {/* Period Browser: BS + CF for first N periods */}

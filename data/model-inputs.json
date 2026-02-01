@@ -198,9 +198,9 @@
       "name": "Debt Facilities",
       "startYear": 2027,
       "startMonth": 4,
-      "endYear": 2048,
+      "endYear": 2046,
       "endMonth": 9,
-      "periods": 258,
+      "periods": 234,
       "isGroup": true,
       "childIds": [
         11,
@@ -233,7 +233,7 @@
     {
       "id": 8,
       "name": "Ops Debt",
-      "periods": 240,
+      "periods": 216,
       "linkedToPeriodId": null,
       "linkOffset": {
         "value": 0,
@@ -243,7 +243,7 @@
       "linkToAll": false,
       "startYear": 2028,
       "startMonth": 10,
-      "endYear": 2048,
+      "endYear": 2046,
       "endMonth": 9,
       "startLinkedToPeriodId": 1,
       "startLinkToEnd": true,
@@ -4012,6 +4012,45 @@
       "valueFrequency": "Y",
       "spreadMethod": "lookup",
       "unit": "%"
+    },
+    {
+      "id": 158,
+      "groupId": 100,
+      "subgroupId": 3,
+      "name": "IDC+Comm Fees Amort Life (Yrs)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 15,
+      "valueFrequency": "Y",
+      "spreadMethod": null,
+      "unit": "years"
+    },
+    {
+      "id": 159,
+      "groupId": 100,
+      "subgroupId": 3,
+      "name": "Upfront Fees Amort Life (Yrs)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 15,
+      "valueFrequency": "Y",
+      "spreadMethod": null,
+      "unit": "years"
+    },
+    {
+      "id": 160,
+      "groupId": 100,
+      "subgroupId": 3,
+      "name": "Maintenance Depr Life (Yrs)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 5,
+      "valueFrequency": "Y",
+      "spreadMethod": null,
+      "unit": "years"
     },
     {
       "id": 156,
