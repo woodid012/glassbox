@@ -3584,19 +3584,6 @@
       "spreadMethod": "lookup"
     },
     {
-      "id": 117,
-      "groupId": 100,
-      "subgroupId": 6,
-      "name": "Min Cash Balance",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 5,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
-      "unit": "$ M"
-    },
-    {
       "id": 118,
       "groupId": 100,
       "subgroupId": 5,
@@ -3607,19 +3594,6 @@
       "value": 65,
       "valueFrequency": "Y",
       "spreadMethod": null
-    },
-    {
-      "id": 119,
-      "groupId": 100,
-      "subgroupId": 5,
-      "name": "Construction Interest Rate (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 5.4,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "description": "Base 3.6% + Margin 1.8%"
     },
     {
       "id": 120,
