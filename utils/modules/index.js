@@ -5,7 +5,7 @@ import { TEMPLATE as reserveAccountTemplate, calculate as calculateReserveAccoun
 import { TEMPLATE as mraReserveTemplate, calculate as calculateMraReserve } from './mraReserve'
 import { TEMPLATE as gstReceivableTemplate, calculate as calculateGstReceivable } from './gstReceivable'
 import { TEMPLATE as taxLossesTemplate, calculate as calculateTaxLosses } from './taxLosses'
-import { TEMPLATE as depreciationAmortizationTemplate, calculate as calculateDepreciationAmortization } from './depreciationAmortization'
+import { TEMPLATE as straightLineAmortisationTemplate, calculate as calculateStraightLineAmortisation } from './straightLineAmortisation'
 import { TEMPLATE as iterativeDebtSizingTemplate, calculate as calculateIterativeDebtSizing } from './iterativeDebtSizing'
 import { TEMPLATE as distributionsTemplate, calculate as calculateDistributions } from './distributions'
 import { TEMPLATE as dsrfTemplate, calculate as calculateDsrf } from './dsrf'
@@ -17,7 +17,7 @@ export const MODULE_TEMPLATES = {
     mra_reserve: mraReserveTemplate,
     gst_receivable: gstReceivableTemplate,
     tax_losses: taxLossesTemplate,
-    depreciation_amortization: depreciationAmortizationTemplate,
+    straight_line_amortisation: straightLineAmortisationTemplate,
     distributions: distributionsTemplate,
     dsrf: dsrfTemplate,
     iterative_debt_sizing: iterativeDebtSizingTemplate
@@ -47,8 +47,8 @@ export function calculateModuleOutputs(moduleInstance, arrayLength, context) {
             return calculateGstReceivable(inputs, arrayLength, context)
         case 'tax_losses':
             return calculateTaxLosses(inputs, arrayLength, context)
-        case 'depreciation_amortization':
-            return calculateDepreciationAmortization(inputs, arrayLength, context)
+        case 'straight_line_amortisation':
+            return calculateStraightLineAmortisation(inputs, arrayLength, context)
         case 'iterative_debt_sizing':
             return calculateIterativeDebtSizing(inputs, arrayLength, context)
         case 'distributions':

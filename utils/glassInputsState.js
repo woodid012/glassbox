@@ -170,25 +170,22 @@ export function getDefaultState() {
                 outputs: ['taxable_income_before_losses', 'losses_opening', 'losses_generated', 'losses_utilised', 'losses_closing', 'net_taxable_income', 'tax_payable']
             },
             {
-                id: 'depreciation_amortization',
-                name: 'Depreciation & Amortization',
-                description: 'CUMSUM-based ledger pattern - no circular dependencies',
+                id: 'straight_line_amortisation',
+                name: 'Straight-Line Amortisation',
+                description: 'CUMSUM-based ledger pattern for depreciation/amortisation — supports one-time and periodic additions',
                 category: 'accounting',
                 inputs: [
-                    { key: 'additionsRef', label: 'Capital Additions Reference', type: 'reference', default: 'V1' },
-                    { key: 'opsFlagRef', label: 'Operations Flag', type: 'reference', default: 'F2' },
-                    { key: 'lifeYears', label: 'Useful Life (years)', type: 'number', default: 15 },
-                    { key: 'method', label: 'Depreciation Method', type: 'select', options: [
-                        { value: 'straight_line', label: 'Straight Line' },
-                        { value: 'declining_balance', label: 'Declining Balance' }
-                    ], default: 'straight_line' },
-                    { key: 'dbMultiplier', label: 'DB Multiplier', type: 'select', options: [
-                        { value: 2.0, label: 'Double (2x)' },
-                        { value: 1.5, label: '150% (1.5x)' },
-                        { value: 1.0, label: '100% (1x)' }
-                    ], default: 2.0 }
+                    { key: 'capitalisedRef', label: 'Capitalised Cost Reference', type: 'reference', default: '' },
+                    { key: 'onsetFlag', label: 'Onset Flag (e.g. F2)', type: 'reference', default: 'F2' },
+                    { key: 'lifeRef', label: 'Useful Life (years)', type: 'number_or_ref', default: 15 },
+                    { key: 'additionMode', label: 'Addition Mode', type: 'select', options: [
+                        { value: 'one_time', label: 'One-time at onset' },
+                        { value: 'periodic', label: 'Periodic additions' }
+                    ], default: 'one_time' },
+                    { key: 'periodicAdditionRef', label: 'Periodic Addition Reference', type: 'reference', default: '' },
+                    { key: 'activeFlag', label: 'Active Flag (periodic mode)', type: 'reference', default: '' }
                 ],
-                outputs: ['opening', 'addition', 'depreciation', 'accumulated', 'closing']
+                outputs: ['total_capitalised', 'addition', 'opening', 'expense', 'accumulated', 'closing']
             },
             {
                 id: 'iterative_debt_sizing',

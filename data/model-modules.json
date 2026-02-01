@@ -5,7 +5,7 @@
       "tabId": 1,
       "name": "Long Term - PP&E D&A",
       "_isModuleGroup": true,
-      "_moduleTemplateId": "depreciation_amortization"
+      "_moduleTemplateId": "straight_line_amortisation"
     },
     {
       "id": 51,
@@ -55,6 +55,27 @@
       "name": "DSRF Schedule",
       "_isModuleGroup": true,
       "_moduleTemplateId": "dsrf"
+    },
+    {
+      "id": 63,
+      "tabId": 1,
+      "name": "Long Term - IDC + Fees Amortisation",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "straight_line_amortisation"
+    },
+    {
+      "id": 64,
+      "tabId": 1,
+      "name": "Long Term - Upfront Fees Amortisation",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "straight_line_amortisation"
+    },
+    {
+      "id": 65,
+      "tabId": 1,
+      "name": "Short Term - Maintenance D&A",
+      "_isModuleGroup": true,
+      "_moduleTemplateId": "straight_line_amortisation"
     }
   ],
   "moduleCalculations": [
@@ -83,7 +104,7 @@
       "formula": "MIN(R9001 + R9002, CUMSUM(R203) / C1.24 / T.MiY) * F2",
       "type": "flow",
       "_moduleId": "M2",
-      "_moduleOutputKey": "depreciation"
+      "_moduleOutputKey": "expense"
     },
     {
       "id": 9004,
@@ -780,6 +801,196 @@
       "_moduleId": "M4",
       "_moduleOutputKey": "equity_target",
       "description": "Equity target: total construction uses minus sized debt, so cons debt = ops debt"
+    },
+    {
+      "id": 9110,
+      "groupId": 63,
+      "name": "IDC+Comm Amort: Total Capitalised",
+      "formula": "CUMSUM(R9022) + CUMSUM(R146 * R9999) + CUMSUM(S3 * I2 * R9999) + CUMSUM(R9082 * R9999)",
+      "description": "Cumulative IDC + commitment fees + agency fees + DSRF fees during construction (constant after COD)",
+      "type": "stock",
+      "_moduleId": "M9",
+      "_moduleOutputKey": "total_capitalised"
+    },
+    {
+      "id": 9111,
+      "groupId": 63,
+      "name": "IDC+Comm Amort: Addition",
+      "formula": "R9110 * F2.Start",
+      "description": "One-time transfer at COD of total capitalised IDC + commitment fees",
+      "type": "flow",
+      "_moduleId": "M9",
+      "_moduleOutputKey": "addition"
+    },
+    {
+      "id": 9112,
+      "groupId": 63,
+      "name": "IDC+Comm Amort: Opening",
+      "formula": "MAX(0, (CUMSUM(R9111) - R9111) - R9110 / C1.59 / T.MiY * (CUMSUM(F2) - F2))",
+      "description": "Prior period closing (CUMSUM pattern, no SHIFT)",
+      "type": "stock_start",
+      "_moduleId": "M9",
+      "_moduleOutputKey": "opening"
+    },
+    {
+      "id": 9113,
+      "groupId": 63,
+      "name": "IDC+Comm Amort: Amort Expense",
+      "formula": "MIN(R9112 + R9111, R9110 / C1.59 / T.MiY) * F2",
+      "description": "Monthly straight-line amortisation over C1.59 years",
+      "type": "flow",
+      "_moduleId": "M9",
+      "_moduleOutputKey": "expense"
+    },
+    {
+      "id": 9114,
+      "groupId": 63,
+      "name": "IDC+Comm Amort: Accumulated",
+      "formula": "CUMSUM(R9113)",
+      "description": "Cumulative amortisation expense",
+      "type": "stock",
+      "_moduleId": "M9",
+      "_moduleOutputKey": "accumulated"
+    },
+    {
+      "id": 9115,
+      "groupId": 63,
+      "name": "IDC+Comm Amort: Closing NBV",
+      "formula": "MAX(0, CUMSUM(R9111) - R9110 / C1.59 / T.MiY * CUMSUM(F2))",
+      "description": "Net book value after amortisation",
+      "type": "stock",
+      "_moduleId": "M9",
+      "_moduleOutputKey": "closing"
+    },
+    {
+      "id": 9120,
+      "groupId": 64,
+      "name": "Upfront Fees Amort: Total Capitalised",
+      "formula": "CUMSUM(R144 * F1)",
+      "description": "Cumulative upfront fees during construction (constant after COD)",
+      "type": "stock",
+      "_moduleId": "M10",
+      "_moduleOutputKey": "total_capitalised"
+    },
+    {
+      "id": 9121,
+      "groupId": 64,
+      "name": "Upfront Fees Amort: Addition",
+      "formula": "R9120 * F2.Start",
+      "description": "One-time transfer at COD of total capitalised upfront fees",
+      "type": "flow",
+      "_moduleId": "M10",
+      "_moduleOutputKey": "addition"
+    },
+    {
+      "id": 9122,
+      "groupId": 64,
+      "name": "Upfront Fees Amort: Opening",
+      "formula": "MAX(0, (CUMSUM(R9121) - R9121) - R9120 / C1.60 / T.MiY * (CUMSUM(F2) - F2))",
+      "description": "Prior period closing (CUMSUM pattern, no SHIFT)",
+      "type": "stock_start",
+      "_moduleId": "M10",
+      "_moduleOutputKey": "opening"
+    },
+    {
+      "id": 9123,
+      "groupId": 64,
+      "name": "Upfront Fees Amort: Amort Expense",
+      "formula": "MIN(R9122 + R9121, R9120 / C1.60 / T.MiY) * F2",
+      "description": "Monthly straight-line amortisation over C1.60 years",
+      "type": "flow",
+      "_moduleId": "M10",
+      "_moduleOutputKey": "expense"
+    },
+    {
+      "id": 9124,
+      "groupId": 64,
+      "name": "Upfront Fees Amort: Accumulated",
+      "formula": "CUMSUM(R9123)",
+      "description": "Cumulative amortisation expense",
+      "type": "stock",
+      "_moduleId": "M10",
+      "_moduleOutputKey": "accumulated"
+    },
+    {
+      "id": 9125,
+      "groupId": 64,
+      "name": "Upfront Fees Amort: Closing NBV",
+      "formula": "MAX(0, CUMSUM(R9121) - R9120 / C1.60 / T.MiY * CUMSUM(F2))",
+      "description": "Net book value after amortisation",
+      "type": "stock",
+      "_moduleId": "M10",
+      "_moduleOutputKey": "closing"
+    },
+    {
+      "id": 9129,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Ops Flag (post F12 onset)",
+      "formula": "F2 * (CUMSUM(F12) > 0)",
+      "description": "1 during operations from F12 onset onwards, 0 before. Used to gate depreciation timing.",
+      "type": "flow",
+      "_moduleId": "M11",
+      "_moduleOutputKey": "active_flag"
+    },
+    {
+      "id": 9130,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Total Capitalised",
+      "formula": "CUMSUM(S2 * I2 * F12)",
+      "description": "Cumulative CPI-indexed maintenance capex during F12",
+      "type": "stock",
+      "_moduleId": "M11",
+      "_moduleOutputKey": "total_capitalised"
+    },
+    {
+      "id": 9131,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Addition",
+      "formula": "S2 * I2 * F12",
+      "description": "Periodic maintenance capex addition (quarterly, CPI-indexed)",
+      "type": "flow",
+      "_moduleId": "M11",
+      "_moduleOutputKey": "addition"
+    },
+    {
+      "id": 9132,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Opening",
+      "formula": "MAX(0, (CUMSUM(R9131) - R9131) - (CUMSUM(R9131) - R9131) / C1.61 / T.MiY * (CUMSUM(R9129) - R9129))",
+      "description": "Prior period closing NBV (CUMSUM pattern, no circular deps)",
+      "type": "stock_start",
+      "_moduleId": "M11",
+      "_moduleOutputKey": "opening"
+    },
+    {
+      "id": 9133,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Depreciation Expense",
+      "formula": "R9132 + R9131 - R9135",
+      "description": "Depreciation = Opening + Addition - Closing (derived from stock identity, guarantees BS balance)",
+      "type": "flow",
+      "_moduleId": "M11",
+      "_moduleOutputKey": "expense"
+    },
+    {
+      "id": 9134,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Accumulated",
+      "formula": "CUMSUM(R9133)",
+      "description": "Cumulative depreciation expense",
+      "type": "stock",
+      "_moduleId": "M11",
+      "_moduleOutputKey": "accumulated"
+    },
+    {
+      "id": 9135,
+      "groupId": 65,
+      "name": "Short Term Maintenance: Closing NBV",
+      "formula": "MAX(0, CUMSUM(R9131) - CUMSUM(R9131) / C1.61 / T.MiY * CUMSUM(R9129))",
+      "description": "Net book value after depreciation (depreciation starts at F12 onset)",
+      "type": "stock",
+      "_moduleId": "M11",
+      "_moduleOutputKey": "closing"
     }
   ],
   "modules": [
@@ -811,16 +1022,15 @@
     },
     {
       "id": 1769317033954,
-      "templateId": "depreciation_amortization",
-      "name": "Depreciation & Amortization",
-      "description": "CUMSUM-based ledger pattern - no circular dependencies",
+      "templateId": "straight_line_amortisation",
+      "name": "PP&E Depreciation",
+      "description": "Straight-line depreciation of PP&E using CUMSUM pattern",
       "category": "accounting",
       "inputs": {
-        "additionsRef": "R203",
-        "opsFlagRef": "F2",
-        "lifeYears": "C1.24",
-        "method": "straight_line",
-        "dbMultiplier": 2
+        "capitalisedRef": "R203",
+        "onsetFlag": "F2",
+        "lifeRef": "C1.24",
+        "additionMode": "one_time"
       },
       "outputs": [],
       "calcIds": [
@@ -1055,6 +1265,56 @@
       ],
       "enabled": true,
       "partiallyConverted": true
+    },
+    {
+      "id": 1769800000000,
+      "templateId": "straight_line_amortisation",
+      "name": "IDC + Fees Amortisation",
+      "description": "Straight-line amortisation of capitalised IDC + commitment + agency + DSRF fees",
+      "category": "accounting",
+      "inputs": {
+        "capitalisedRef": "R9110",
+        "onsetFlag": "F2",
+        "lifeRef": "C1.59",
+        "additionMode": "one_time"
+      },
+      "outputs": [],
+      "calcIds": [9110, 9111, 9112, 9113, 9114, 9115],
+      "fullyConverted": true
+    },
+    {
+      "id": 1769800000001,
+      "templateId": "straight_line_amortisation",
+      "name": "Upfront Fees Amortisation",
+      "description": "Straight-line amortisation of capitalised upfront financing fees",
+      "category": "accounting",
+      "inputs": {
+        "capitalisedRef": "R9120",
+        "onsetFlag": "F2",
+        "lifeRef": "C1.60",
+        "additionMode": "one_time"
+      },
+      "outputs": [],
+      "calcIds": [9120, 9121, 9122, 9123, 9124, 9125],
+      "fullyConverted": true
+    },
+    {
+      "id": 1769800000002,
+      "templateId": "straight_line_amortisation",
+      "name": "Maintenance D&A",
+      "description": "Straight-line depreciation of periodic maintenance capex",
+      "category": "accounting",
+      "inputs": {
+        "capitalisedRef": "R9130",
+        "onsetFlag": "F2",
+        "lifeRef": "C1.61",
+        "additionMode": "periodic",
+        "periodicAdditionRef": "S2 * I2 * F12",
+        "activeFlag": "F12"
+      },
+      "outputs": [],
+      "calcIds": [9129, 9130, 9131, 9132, 9133, 9134, 9135],
+      "fullyConverted": true
     }
   ],
   "_mRefMap": {
@@ -1127,7 +1387,26 @@
     "M8.6": "R9082",
     "M8.7": "R9083",
     "M8.8": "R9084",
-    "M8.9": "R9085"
+    "M8.9": "R9085",
+    "M9.1": "R9110",
+    "M9.2": "R9111",
+    "M9.3": "R9112",
+    "M9.4": "R9113",
+    "M9.5": "R9114",
+    "M9.6": "R9115",
+    "M10.1": "R9120",
+    "M10.2": "R9121",
+    "M10.3": "R9122",
+    "M10.4": "R9123",
+    "M10.5": "R9124",
+    "M10.6": "R9125",
+    "M11.1": "R9129",
+    "M11.2": "R9130",
+    "M11.3": "R9131",
+    "M11.4": "R9132",
+    "M11.5": "R9133",
+    "M11.6": "R9134",
+    "M11.7": "R9135"
   },
   "moduleTemplates": [
     {
@@ -1329,70 +1608,63 @@
       ]
     },
     {
-      "id": "depreciation_amortization",
-      "name": "Depreciation & Amortization",
-      "description": "CUMSUM-based ledger pattern - no circular dependencies",
+      "id": "straight_line_amortisation",
+      "name": "Straight-Line Amortisation",
+      "description": "CUMSUM-based ledger pattern for depreciation/amortisation — supports one-time and periodic additions",
       "category": "accounting",
       "inputs": [
         {
-          "key": "additionsRef",
-          "label": "Capital Additions Reference",
+          "key": "capitalisedRef",
+          "label": "Capitalised Cost Reference",
           "type": "reference",
-          "default": "V1"
+          "default": ""
         },
         {
-          "key": "opsFlagRef",
-          "label": "Operations Flag",
+          "key": "onsetFlag",
+          "label": "Onset Flag (e.g. F2)",
           "type": "reference",
           "default": "F2"
         },
         {
-          "key": "lifeYears",
+          "key": "lifeRef",
           "label": "Useful Life (years)",
-          "type": "number",
+          "type": "number_or_ref",
           "default": 15
         },
         {
-          "key": "method",
-          "label": "Depreciation Method",
+          "key": "additionMode",
+          "label": "Addition Mode",
           "type": "select",
           "options": [
             {
-              "value": "straight_line",
-              "label": "Straight Line"
+              "value": "one_time",
+              "label": "One-time at onset"
             },
             {
-              "value": "declining_balance",
-              "label": "Declining Balance"
+              "value": "periodic",
+              "label": "Periodic additions"
             }
           ],
-          "default": "straight_line"
+          "default": "one_time"
         },
         {
-          "key": "dbMultiplier",
-          "label": "DB Multiplier",
-          "type": "select",
-          "options": [
-            {
-              "value": 2,
-              "label": "Double (2x)"
-            },
-            {
-              "value": 1.5,
-              "label": "150% (1.5x)"
-            },
-            {
-              "value": 1,
-              "label": "100% (1x)"
-            }
-          ],
-          "default": 2
+          "key": "periodicAdditionRef",
+          "label": "Periodic Addition Reference",
+          "type": "reference",
+          "default": ""
+        },
+        {
+          "key": "activeFlag",
+          "label": "Active Flag (periodic mode)",
+          "type": "reference",
+          "default": ""
         }
       ],
       "outputs": [
-        "opening",
+        "total_capitalised",
         "addition",
-        "depreciation",
+        "opening",
+        "expense",
         "accumulated",
         "closing"
       ]

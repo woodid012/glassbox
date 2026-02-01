@@ -236,7 +236,7 @@
   ],
   "expectedModules": [
     { "templateId": "iterative_debt_sizing", "label": "Iterative Debt Sizing (DSCR Sculpted)", "required": true },
-    { "templateId": "depreciation_amortization", "label": "Depreciation & Amortization", "required": true },
+    { "templateId": "straight_line_amortisation", "label": "Straight-Line Amortisation", "required": true },
     { "templateId": "gst_receivable", "label": "GST Paid/Received", "required": true },
     { "templateId": "construction_funding", "label": "Construction Funding", "required": true },
     { "templateId": "tax_losses", "label": "Tax & Tax Losses", "required": true },

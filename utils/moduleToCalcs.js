@@ -115,7 +115,7 @@ export function generateModuleCalcs(module, moduleIndex, startId, groupId, tabId
  */
 function getModuleTabId(templateId) {
     switch (templateId) {
-        case 'depreciation_amortization': return 1  // IFS tab (D&A)
+        case 'straight_line_amortisation': return 1  // IFS tab (D&A)
         case 'gst_receivable': return 1             // IFS tab (Working Capital)
         case 'tax_losses': return 1                 // IFS tab (Tax)
         case 'construction_funding': return 2       // Funding tab
