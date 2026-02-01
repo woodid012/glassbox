@@ -13,7 +13,7 @@ export default function KeyPeriodsPage() {
         handlers
     } = useDashboard()
 
-    const { config, keyPeriods, collapsedKeyPeriodGroups } = appState
+    const { config, keyPeriods, collapsedKeyPeriodGroups, inputGlass } = appState
     const { setConfig } = setters
     const {
         addKeyPeriod,
@@ -45,6 +45,7 @@ export default function KeyPeriodsPage() {
                     <KeyPeriods
                         config={config}
                         keyPeriods={keyPeriods}
+                        inputGlass={inputGlass}
                         editMode={inputsEditMode}
                         collapsedKeyPeriodGroups={collapsedKeyPeriodGroups || new Set()}
                         onAddPeriod={addKeyPeriod}

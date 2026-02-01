@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react'
-import { Plus, Trash2, Link2, GripVertical, ChevronRight, ChevronDown, FolderPlus, FolderMinus, LogIn, LogOut } from 'lucide-react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { Plus, Trash2, Link2, GripVertical, ChevronRight, ChevronDown, FolderPlus, FolderMinus, LogIn, LogOut, Unlink } from 'lucide-react'
 import { theme, cn } from './theme'
 import { YearMonthInput } from './InputField'
 
@@ -18,9 +18,91 @@ function OffsetInput({ value, onCommit }) {
     )
 }
 
+// Badge showing periods derived from a constant reference
+function PeriodsFromRefCell({ period, resolvePeriodsFromRef, editMode, onClearRef }) {
+    const resolved = resolvePeriodsFromRef(period.periodsFromRef)
+    const periods = resolved ? resolved.periods : period.periods || 0
+    const tooltipText = resolved
+        ? `${resolved.name} = ${resolved.value} years = ${resolved.periods} months`
+        : `Constant ${period.periodsFromRef} not found`
+
+    return (
+        <div className="flex items-center justify-center gap-1">
+            <span className="text-[11px] text-slate-700 font-medium">{periods}</span>
+            <span
+                className={cn(
+                    "text-[9px] px-1.5 py-0.5 rounded cursor-default font-semibold",
+                    resolved ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-600"
+                )}
+                title={tooltipText}
+            >
+                {period.periodsFromRef}
+            </span>
+            {editMode && (
+                <button
+                    onClick={onClearRef}
+                    className="p-0.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"
+                    title="Unlink from constant"
+                >
+                    <Unlink className="w-3 h-3" />
+                </button>
+            )}
+        </div>
+    )
+}
+
+// Dropdown button to link periods to a constant
+function PeriodsRefLinkButton({ periodId, availableConstants, isOpen, onToggle, onSelect }) {
+    const dropdownRef = useRef(null)
+
+    useEffect(() => {
+        if (!isOpen) return
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                onToggle()
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [isOpen, onToggle])
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={onToggle}
+                className="p-0.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded flex-shrink-0"
+                title="Link periods to constant"
+            >
+                <Link2 className="w-3.5 h-3.5" />
+            </button>
+            {isOpen && (
+                <div className="absolute z-50 top-full left-0 mt-1 bg-white border border-slate-200 rounded shadow-lg py-1 min-w-[180px]">
+                    <div className="px-2 py-1 text-[9px] text-slate-400 uppercase font-semibold border-b border-slate-100">
+                        Link to constant (years)
+                    </div>
+                    {availableConstants.map(c => (
+                        <button
+                            key={c.id}
+                            onClick={() => onSelect(c.ref)}
+                            className="w-full text-left px-2 py-1 text-[11px] text-slate-700 hover:bg-blue-50 flex items-center justify-between"
+                        >
+                            <span>{c.ref} - {c.name}</span>
+                            <span className="text-[10px] text-slate-400">{c.value}y = {c.periods}m</span>
+                        </button>
+                    ))}
+                    {availableConstants.length === 0 && (
+                        <div className="px-2 py-1 text-[10px] text-slate-400">No constants available</div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
 export default function KeyPeriods({
     config,
     keyPeriods,
+    inputGlass,
     editMode = true,
     collapsedKeyPeriodGroups = new Set(),
     onAddPeriod,
@@ -34,14 +116,38 @@ export default function KeyPeriods({
     onRemoveFromGroup,
     onToggleKeyPeriodGroup,
     calculateLinkedStartPeriod,
-    calculateLinkedEndPeriod,
     calculateLinkedAllPeriods,
     hasCircularDependency
 }) {
     const [draggedIndex, setDraggedIndex] = useState(null)
     const [dragOverIndex, setDragOverIndex] = useState(null)
     const [expandedStartLinks, setExpandedStartLinks] = useState(new Set())
-    const [expandedEndLinks, setExpandedEndLinks] = useState(new Set())
+    const [periodsRefDropdown, setPeriodsRefDropdown] = useState(null) // period id with open dropdown
+
+    // Resolve a periodsFromRef like "C1.27" to { value, periods, name }
+    const resolvePeriodsFromRef = (ref) => {
+        if (!ref || !inputGlass) return null
+        const match = ref.match(/^C1\.(\d+)$/)
+        if (!match) return null
+        const inputId = parseInt(match[1]) + 99
+        const constant = inputGlass.find(inp => inp.id === inputId && inp.groupId === 100)
+        if (!constant || typeof constant.value !== 'number') return null
+        return { value: constant.value, periods: Math.round(constant.value * 12), name: constant.name }
+    }
+
+    // Get available constants for linking (numeric, year-like values from group 100)
+    const availableConstants = useMemo(() => {
+        if (!inputGlass) return []
+        return inputGlass
+            .filter(inp => inp.groupId === 100 && typeof inp.value === 'number' && inp.value > 0 && inp.value <= 100)
+            .map(inp => ({
+                id: inp.id,
+                ref: `C1.${inp.id - 99}`,
+                name: inp.name,
+                value: inp.value,
+                periods: Math.round(inp.value * 12)
+            }))
+    }, [inputGlass])
 
     // Organize periods for display: respect original order, inject children after their parent group
     const { displayPeriods, groupsMap } = useMemo(() => {
@@ -176,43 +282,6 @@ export default function KeyPeriods({
         }
     }
 
-    // Handle end date link change (combined value format: "periodId:anchor")
-    const handleEndLinkChange = (periodId, combinedValue) => {
-        if (combinedValue === '') {
-            // Unlink end
-            onUpdatePeriod(periodId, {
-                endLinkedToPeriodId: null,
-                endLinkToEnd: true,
-                endLinkOffset: null
-            })
-        } else {
-            const [linkedId, anchor] = combinedValue.split(':')
-            const normalizedLinkedId = normalizePeriodId(linkedId)
-            const linkToEnd = anchor === 'end'
-
-            // Check for circular dependency
-            if (hasCircularDependency && hasCircularDependency(periodId, normalizedLinkedId, keyPeriods)) {
-                alert('Circular dependency detected!')
-                return
-            }
-
-            const period = keyPeriods.find(p => p.id === periodId)
-            // Default offset: linking to start = 0, linking to end = +1
-            const defaultOffset = linkToEnd ? 1 : 0
-            onUpdatePeriod(periodId, {
-                endLinkedToPeriodId: normalizedLinkedId,
-                endLinkToEnd: linkToEnd,
-                endLinkOffset: period?.endLinkOffset || { value: defaultOffset, unit: 'months' }
-            })
-
-            // Auto-expand the offset details
-            setExpandedEndLinks(prev => new Set(prev).add(periodId))
-
-            // Recalculate end date
-            recalculateEndDate(periodId, normalizedLinkedId, linkToEnd, period?.endLinkOffset || { value: defaultOffset, unit: 'months' })
-        }
-    }
-
     // Recalculate start date based on link
     const recalculateStartDate = (periodId, linkedToPeriodId, linkToEnd, offset) => {
         const period = keyPeriods.find(p => p.id === periodId)
@@ -252,37 +321,6 @@ export default function KeyPeriods({
             // Recalculate periods
             setTimeout(() => recalculatePeriods(periodId), 0)
         }
-    }
-
-    // Recalculate end date based on link
-    const recalculateEndDate = (periodId, linkedToPeriodId, linkToEnd, offset) => {
-        const period = keyPeriods.find(p => p.id === periodId)
-        if (!period) return
-
-        let refYear, refMonth
-        if (linkedToPeriodId === 'default') {
-            refYear = linkToEnd ? config.endYear : config.startYear
-            refMonth = linkToEnd ? config.endMonth : config.startMonth
-        } else {
-            const linkedPeriod = keyPeriods.find(p => p.id === normalizePeriodId(linkedToPeriodId))
-            if (!linkedPeriod) return
-            refYear = linkToEnd ? linkedPeriod.endYear : linkedPeriod.startYear
-            refMonth = linkToEnd ? linkedPeriod.endMonth : linkedPeriod.startMonth
-        }
-
-        // Apply offset
-        let offsetMonths = offset?.value || 0
-        if (offset?.unit === 'years') offsetMonths *= 12
-
-        const newEnd = addMonths(refYear, refMonth, offsetMonths)
-
-        onUpdatePeriod(periodId, {
-            endYear: newEnd.year,
-            endMonth: newEnd.month
-        })
-
-        // Recalculate periods
-        setTimeout(() => recalculatePeriods(periodId), 0)
     }
 
     // Recalculate periods count based on start and end
@@ -370,25 +408,6 @@ export default function KeyPeriods({
         recalculateStartDate(periodId, period.startLinkedToPeriodId, linkToEnd, period.startLinkOffset)
     }
 
-    // Handle end link offset changes
-    const handleEndOffsetChange = (periodId, field, value) => {
-        const period = keyPeriods.find(p => p.id === periodId)
-        if (!period || !period.endLinkedToPeriodId) return
-
-        const newOffset = { ...period.endLinkOffset, [field]: field === 'value' ? parseInt(value) || 0 : value }
-        onUpdatePeriod(periodId, { endLinkOffset: newOffset })
-        recalculateEndDate(periodId, period.endLinkedToPeriodId, period.endLinkToEnd, newOffset)
-    }
-
-    // Handle end link to start/end toggle
-    const handleEndLinkToEndChange = (periodId, linkToEnd) => {
-        const period = keyPeriods.find(p => p.id === periodId)
-        if (!period || !period.endLinkedToPeriodId) return
-
-        onUpdatePeriod(periodId, { endLinkToEnd: linkToEnd })
-        recalculateEndDate(periodId, period.endLinkedToPeriodId, linkToEnd, period.endLinkOffset)
-    }
-
     const getLinkedPeriodName = (linkedToPeriodId) => {
         if (linkedToPeriodId === 'default') return 'Model'
         const normalizedId = normalizePeriodId(linkedToPeriodId)
@@ -451,53 +470,42 @@ export default function KeyPeriods({
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 <table className="text-sm w-full" style={{ tableLayout: 'fixed' }}>
                     <colgroup>
-                        <col style={{ width: '24px' }} />
-                        <col style={{ width: '140px' }} />
-                        <col style={{ width: '50px' }} />
-                        <col style={{ width: '45px' }} />
-                        <col style={{ width: '95px' }} />
-                        <col style={{ width: '110px' }} />
-                        <col style={{ width: '50px' }} />
-                        <col style={{ width: '95px' }} />
-                        <col style={{ width: '110px' }} />
-                        <col style={{ width: '50px' }} />
-                        <col style={{ width: '60px' }} />
-                        <col style={{ width: '24px' }} />
+                        <col style={{ width: '3%' }} />
+                        <col style={{ width: '19%' }} />
+                        <col style={{ width: '10%' }} />
+                        <col style={{ width: '7%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '18%' }} />
+                        <col style={{ width: '8%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '8%' }} />
+                        <col style={{ width: '3%' }} />
                     </colgroup>
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <th className="px-1 py-1"></th>
-                            <th className="px-1.5 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase">
+                            <th className="px-1 py-1.5"></th>
+                            <th className="px-1.5 py-1.5 text-left text-[11px] font-medium text-slate-600 uppercase">
                                 Name
                             </th>
-                            <th className="px-1.5 py-1 text-center text-[10px] font-semibold text-slate-500 uppercase">
+                            <th className="px-1.5 py-1.5 text-center text-[11px] font-medium text-slate-600 uppercase">
                                 Periods
                             </th>
-                            <th className="px-1.5 py-1 text-center text-[10px] font-semibold text-slate-500 uppercase">
+                            <th className="px-1.5 py-1.5 text-center text-[11px] font-medium text-slate-600 uppercase">
                                 Years
                             </th>
-                            <th className="px-1.5 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase">
+                            <th className="px-1.5 py-1.5 text-left text-[11px] font-medium text-slate-600 uppercase">
                                 Start
                             </th>
-                                <th className="px-1.5 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase">
-                                    Link To
-                                </th>
-                                <th className="px-1.5 py-1 text-center text-[10px] font-semibold text-slate-500 uppercase">
-                                    Offset
-                                </th>
-                            <th className="px-1.5 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase">
+                            <th className="px-1.5 py-1.5 text-left text-[11px] font-medium text-slate-600 uppercase" colSpan="2">
+                                Start Link
+                            </th>
+                            <th className="px-1.5 py-1.5 text-left text-[11px] font-medium text-slate-600 uppercase">
                                 End
                             </th>
-                                <th className="px-1.5 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase">
-                                    Link To
-                                </th>
-                                <th className="px-1.5 py-1 text-center text-[10px] font-semibold text-slate-500 uppercase">
-                                    Offset
-                                </th>
-                            <th className="px-1 py-1 text-center text-[10px] font-semibold text-slate-500 uppercase">
+                            <th className="px-1 py-1.5 text-center text-[11px] font-medium text-slate-600 uppercase">
                                 Group
                             </th>
-                            <th className="px-1 py-1"></th>
+                            <th className="px-1 py-1.5"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -543,12 +551,6 @@ export default function KeyPeriods({
                                     compact
                                 />
                             </td>
-                                <td className="px-1.5 py-1">
-                                    <span className="text-[10px] text-slate-400">—</span>
-                                </td>
-                                <td className="px-1.5 py-1 text-center">
-                                    <span className="text-[10px] text-slate-400">—</span>
-                                </td>
                             <td className="px-1 py-1"></td>
                             <td className="px-1 py-1"></td>
                         </tr>
@@ -633,19 +635,44 @@ export default function KeyPeriods({
                                         <td className="px-1.5 py-1 text-center">
                                             {isGroup ? (
                                                 <span className="text-[11px] text-slate-600">{period.periods || 0}</span>
-                                            ) : (
-                                                <input
-                                                    type="number"
-                                                    value={period.periods || 1}
-                                                    onChange={(e) => handlePeriodsChange(period.id, e.target.value)}
-                                                    min="1"
-                                                    disabled={hasEndLink}
-                                                    className={cn(
-                                                        "bg-white border border-slate-200 rounded px-1 py-0 text-[11px] text-slate-900 w-full text-center",
-                                                        "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-                                                        hasEndLink && "bg-slate-100 text-slate-500"
-                                                    )}
+                                            ) : period.periodsFromRef ? (
+                                                <PeriodsFromRefCell
+                                                    period={period}
+                                                    resolvePeriodsFromRef={resolvePeriodsFromRef}
+                                                    editMode={editMode}
+                                                    onClearRef={() => onUpdatePeriod(period.id, { periodsFromRef: undefined })}
                                                 />
+                                            ) : (
+                                                <div className="flex items-center gap-0.5">
+                                                    <input
+                                                        type="number"
+                                                        value={period.periods || 1}
+                                                        onChange={(e) => handlePeriodsChange(period.id, e.target.value)}
+                                                        min="1"
+                                                        disabled={hasEndLink}
+                                                        className={cn(
+                                                            "bg-white border border-slate-200 rounded px-1 py-0 text-[11px] text-slate-900 w-full text-center",
+                                                            "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                                                            hasEndLink && "bg-slate-100 text-slate-500"
+                                                        )}
+                                                    />
+                                                    {editMode && !hasEndLink && (
+                                                        <PeriodsRefLinkButton
+                                                            periodId={period.id}
+                                                            availableConstants={availableConstants}
+                                                            isOpen={periodsRefDropdown === period.id}
+                                                            onToggle={() => setPeriodsRefDropdown(prev => prev === period.id ? null : period.id)}
+                                                            onSelect={(ref) => {
+                                                                onUpdatePeriod(period.id, {
+                                                                    periodsFromRef: ref,
+                                                                    endLinkedToPeriodId: null,
+                                                                    endLinkOffset: null
+                                                                })
+                                                                setPeriodsRefDropdown(null)
+                                                            }}
+                                                        />
+                                                    )}
+                                                </div>
                                             )}
                                         </td>
                                         <td className="px-1.5 py-1 text-center">
@@ -695,9 +722,6 @@ export default function KeyPeriods({
                                                                 </React.Fragment>
                                                             ))}
                                                         </select>
-                                                        {hasStartLink && (
-                                                            <Link2 className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-                                                        )}
                                                     </div>
                                                 )}
                                             </td>
@@ -729,52 +753,12 @@ export default function KeyPeriods({
                                                         year={period.endYear}
                                                         month={period.endMonth}
                                                         onChange={({ year, month }) => handleEndDateChange(period.id, year, month)}
-                                                        disabled={hasEndLink}
+                                                        disabled={hasEndLink || !!period.periodsFromRef}
                                                         compact
                                                     />
                                                 </div>
                                             )}
                                         </td>
-                                            <td className="px-1.5 py-1">
-                                                {isGroup ? (
-                                                    <span className="text-[10px] text-slate-400">—</span>
-                                                ) : (
-                                                    <div className="flex items-center gap-1">
-                                                        <select
-                                                            value={period.endLinkedToPeriodId
-                                                                ? `${period.endLinkedToPeriodId}:${period.endLinkToEnd ? 'end' : 'start'}`
-                                                                : ''}
-                                                            onChange={(e) => handleEndLinkChange(period.id, e.target.value)}
-                                                            className="bg-white border border-slate-200 rounded px-1 py-0 text-[11px] text-slate-900"
-                                                        >
-                                                            <option value="">—</option>
-                                                            <option value="default:start">Model - Start</option>
-                                                            <option value="default:end">Model - End</option>
-                                                            {keyPeriods.filter(p => p.id !== period.id).map(p => (
-                                                                <React.Fragment key={p.id}>
-                                                                    <option value={`${p.id}:start`}>{p.name} - Start</option>
-                                                                    <option value={`${p.id}:end`}>{p.name} - End</option>
-                                                                </React.Fragment>
-                                                            ))}
-                                                        </select>
-                                                        {hasEndLink && (
-                                                            <Link2 className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-1.5 py-1 text-center">
-                                                {isGroup ? (
-                                                    <span className="text-[10px] text-slate-400">—</span>
-                                                ) : hasEndLink ? (
-                                                    <OffsetInput
-                                                        value={period.endLinkOffset?.value || 0}
-                                                        onCommit={(val) => handleEndOffsetChange(period.id, 'value', val)}
-                                                    />
-                                                ) : (
-                                                    <span className="text-[10px] text-slate-400">—</span>
-                                                )}
-                                            </td>
                                         {/* Group actions column */}
                                         <td className="px-1 py-1">
                                             <div className="flex items-center justify-center gap-0.5">

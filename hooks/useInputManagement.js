@@ -50,7 +50,8 @@ export function useInputManagement({
         config, keyPeriods, setKeyPeriods,
         collapsedKeyPeriodGroups, setCollapsedKeyPeriodGroups,
         inputType1Groups, setInputType1Groups,
-        inputGlassGroups, setInputGlassGroups
+        inputGlassGroups, setInputGlassGroups,
+        inputGlass
     })
 
     const inputType1Ops = useInputType1Management({

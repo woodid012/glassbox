@@ -5,6 +5,7 @@
 import { useCallback, useEffect } from 'react'
 import {
     calculatePeriods,
+    calculateEndPeriod,
     recalculateLinkedPeriods
 } from '@/utils/dateCalculations'
 
@@ -17,7 +18,8 @@ export function useKeyPeriodManagement({
     inputType1Groups,
     setInputType1Groups,
     inputGlassGroups,
-    setInputGlassGroups
+    setInputGlassGroups,
+    inputGlass
 }) {
     const addKeyPeriod = useCallback(() => {
         const newId = keyPeriods.length > 0
@@ -293,6 +295,46 @@ export function useKeyPeriodManagement({
             return newSet
         })
     }, [setCollapsedKeyPeriodGroups])
+
+    // Reactive sync: when a constant changes, update key periods with periodsFromRef
+    useEffect(() => {
+        if (!inputGlass) return
+
+        const periodsWithRef = keyPeriods.filter(p => p.periodsFromRef)
+        if (periodsWithRef.length === 0) return
+
+        let needsUpdate = false
+        let updatedPeriods = [...keyPeriods]
+
+        for (const period of periodsWithRef) {
+            const ref = period.periodsFromRef
+            const match = ref.match(/^C1\.(\d+)$/)
+            if (!match) continue
+
+            const inputId = parseInt(match[1]) + 99
+            const constant = inputGlass.find(inp => inp.id === inputId && inp.groupId === 100)
+            if (!constant || typeof constant.value !== 'number') continue
+
+            const newPeriods = Math.round(constant.value * 12)
+            if (newPeriods === period.periods) continue
+
+            needsUpdate = true
+            const endDate = calculateEndPeriod(period.startYear, period.startMonth, newPeriods)
+            updatedPeriods = updatedPeriods.map(p =>
+                p.id === period.id
+                    ? { ...p, periods: newPeriods, endYear: endDate.year, endMonth: endDate.month }
+                    : p
+            )
+        }
+
+        if (needsUpdate) {
+            // Cascade to periods that link to affected periods
+            for (const period of periodsWithRef) {
+                updatedPeriods = recalculateLinkedPeriods(period.id, updatedPeriods, config)
+            }
+            setKeyPeriods(updatedPeriods)
+        }
+    }, [inputGlass, keyPeriods, config, setKeyPeriods])
 
     // Recalculate periods linked to "default" (Model) when config changes
     useEffect(() => {
