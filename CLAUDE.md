@@ -700,6 +700,8 @@ Key formatting functions:
 
 - **Bank guarantee facilities:** Not yet modelled. Infrastructure projects typically require performance bonds, environmental bonds, and other bank guarantees with annual fees (typically 1-2% of face value). These are separate from the DSRF and should be added as a new module or input group with their own fee structure and BS treatment.
 
+- **Python export: ON HOLD** — `utils/pythonGenerator.js` is frozen. Do not modify or extend.
+
 - **Module definitions as data file:** Move module template definitions (name, description, input schema, output-to-calc mappings) from JS files (`utils/modules/*.js`) into a JSON data file (`data/model-modules.json`), consistent with `model-inputs.json` and `model-calculations.json`. Only solver functions (M1 binary search, M8 forward-looking sums) remain as JS. The Modules page becomes a template launcher that reads from this data file, creates calc groups, and links inputs — no JS module execution for fully converted modules.
 
 ## Debugging BS Imbalances (Proven Process)
@@ -749,6 +751,16 @@ Common causes:
 ### Key Principle
 
 The BS imbalance always equals exactly one (or a sum of) mismatched stock-flow pairs. Narrow it down component by component rather than guessing. The mismatch amount and its pattern (quarterly, monthly, one-time) are strong clues.
+
+## Client/Server Engine Duplication
+
+**Why two engines exist:**
+- `utils/serverModelEngine.js` (~885 lines) — standalone Node.js engine used by API routes (Excel export, compare-excel, calc-results) and all tests (verifyBs, diagnose-*, list-validation). Builds reference map + timeline from raw JSON, evaluates everything, returns metadata for exports.
+- `app/dashboard/hooks/useUnifiedCalculation.js` (~727 lines) — React hook used by the dashboard UI. Receives pre-built reference map/timeline from other hooks, uses `useMemo` for caching, provides `previewFormula` callback.
+
+**~620 lines duplicated:** dependency graph building, topological sort, SHIFT cycle detection, formula evaluation. Both must be kept in sync when fixing bugs.
+
+**Future refactoring path:** Extract shared core into `utils/calculationCore.js`. Both engines wrap the core with their specific concerns (server: input building; client: React hooks/memoization).
 
 ## Notes
 

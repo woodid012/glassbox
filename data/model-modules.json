@@ -52,7 +52,7 @@
     {
       "id": 57,
       "tabId": 2,
-      "name": "DSRF Schedule",
+      "name": "DSRF & Refi Fees",
       "_isModuleGroup": true,
       "_moduleTemplateId": "dsrf"
     },
@@ -1214,8 +1214,8 @@
     {
       "id": 1769700000000,
       "templateId": "dsrf",
-      "name": "DSRF (Debt Service Reserve Facility)",
-      "description": "Standby facility guaranteeing debt service with refinancing schedule",
+      "name": "DSRF & Refi Fees",
+      "description": "Debt service reserve facility with refinancing fees and margin step-ups",
       "category": "financing",
       "inputs": {
         "dsrfActiveRef": "C1.50",
@@ -1920,8 +1920,8 @@
     },
     {
       "id": "dsrf",
-      "name": "DSRF (Debt Service Reserve Facility)",
-      "description": "Standby facility guaranteeing debt service with refinancing schedule",
+      "name": "DSRF & Refi Fees",
+      "description": "Debt service reserve facility with refinancing fees and margin step-ups",
       "category": "financing",
       "inputs": [
         {

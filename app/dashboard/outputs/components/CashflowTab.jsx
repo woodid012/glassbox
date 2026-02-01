@@ -16,19 +16,30 @@ import {
 } from 'recharts'
 import { calculatePeriodValues, calculateTotal, formatValue } from '@/utils/valueAggregation'
 
-// Cash flow line items with their R-refs and styling
-const CF_LINE_ITEMS = [
-    { id: 'operatingCF', name: 'Operating Cash Flow', ref: 'R22', type: 'flow', bold: true },
-    { id: 'investingCF', name: 'Investing Cash Flow', ref: 'R28', type: 'flow', bold: true },
-    { id: 'financingCF', name: 'Financing Cash Flow', ref: 'R39', type: 'flow', bold: true },
-    { id: 'netCF', name: 'Net Cash Flow', ref: 'R40', type: 'flow', bold: true, highlight: true },
-    { id: 'closingCash', name: 'Closing Cash Balance', ref: 'R42', type: 'stock', bold: true, highlight: true },
-]
+const BOLD_KEYWORDS = ['total', 'ebitda', 'operating cash', 'net cash', 'cash balance', 'cash flow after', 'total funding', 'total debt', 'total construction']
+const HIGHLIGHT_KEYWORDS = ['net cash flow', 'cash balance']
 
-export default function CashflowTab({ viewHeaders, calculationResults, calculationTypes, viewMode }) {
+export default function CashflowTab({ viewHeaders, calculationResults, calculationTypes, viewMode, calculations }) {
+    // Build line items dynamically from group 60
+    const lineItems = useMemo(() => {
+        return (calculations || [])
+            .filter(c => c.groupId === 60)
+            .map(c => {
+                const nameLower = c.name.toLowerCase()
+                return {
+                    id: c.id,
+                    name: c.name,
+                    ref: `R${c.id}`,
+                    type: c.type || 'flow',
+                    bold: BOLD_KEYWORDS.some(k => nameLower.includes(k)),
+                    highlight: HIGHLIGHT_KEYWORDS.some(k => nameLower.includes(k)),
+                }
+            })
+    }, [calculations])
+
     // Calculate all CF values
     const tableData = useMemo(() => {
-        return CF_LINE_ITEMS.map(item => {
+        return lineItems.map(item => {
             const arr = calculationResults[item.ref] || []
             const calcType = calculationTypes?.[item.ref] || item.type
             const periodValues = calculatePeriodValues(arr, viewHeaders, viewMode, calcType)
@@ -40,7 +51,7 @@ export default function CashflowTab({ viewHeaders, calculationResults, calculati
                 total,
             }
         })
-    }, [viewHeaders, calculationResults, calculationTypes, viewMode])
+    }, [lineItems, viewHeaders, calculationResults, calculationTypes, viewMode])
 
     // Chart data for CF components and cash balance
     const chartData = useMemo(() => {

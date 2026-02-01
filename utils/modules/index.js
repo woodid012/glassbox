@@ -2,7 +2,7 @@
 
 import { TEMPLATE as constructionFundingTemplate, calculate as calculateConstructionFunding } from './constructionFunding'
 import { TEMPLATE as reserveAccountTemplate, calculate as calculateReserveAccount } from './reserveAccount'
-import { TEMPLATE as mraReserveTemplate, calculate as calculateMraReserve } from './mraReserve'
+
 import { TEMPLATE as gstReceivableTemplate, calculate as calculateGstReceivable } from './gstReceivable'
 import { TEMPLATE as taxLossesTemplate, calculate as calculateTaxLosses } from './taxLosses'
 import { TEMPLATE as straightLineAmortisationTemplate, calculate as calculateStraightLineAmortisation } from './straightLineAmortisation'
@@ -14,7 +14,7 @@ import { TEMPLATE as dsrfTemplate, calculate as calculateDsrf } from './dsrf'
 export const MODULE_TEMPLATES = {
     construction_funding: constructionFundingTemplate,
     reserve_account: reserveAccountTemplate,
-    mra_reserve: mraReserveTemplate,
+
     gst_receivable: gstReceivableTemplate,
     tax_losses: taxLossesTemplate,
     straight_line_amortisation: straightLineAmortisationTemplate,
@@ -41,8 +41,7 @@ export function calculateModuleOutputs(moduleInstance, arrayLength, context) {
             return calculateConstructionFunding(inputs, arrayLength, context)
         case 'reserve_account':
             return calculateReserveAccount(inputs, arrayLength, context)
-        case 'mra_reserve':
-            return calculateMraReserve(inputs, arrayLength, context)
+
         case 'gst_receivable':
             return calculateGstReceivable(inputs, arrayLength, context)
         case 'tax_losses':

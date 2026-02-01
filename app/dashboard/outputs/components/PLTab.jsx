@@ -13,21 +13,30 @@ import {
 } from 'recharts'
 import { calculatePeriodValues, calculateTotal, formatValue } from '@/utils/valueAggregation'
 
-// P&L line items with their R-refs and styling
-const PL_LINE_ITEMS = [
-    { id: 'tollingRevenue', name: 'Tolling Revenue', ref: 'R4', type: 'flow', indent: 1 },
-    { id: 'merchantRevenue', name: 'Merchant Revenue', ref: 'R7', type: 'flow', indent: 1 },
-    { id: 'totalRevenue', name: 'Total Revenue', ref: 'R8', type: 'flow', bold: true },
-    { id: 'opex', name: 'Operating Expenses', ref: 'R9', type: 'flow' },
-    { id: 'ebitda', name: 'EBITDA', ref: 'R13', type: 'flow', bold: true, highlight: true },
-    { id: 'depreciation', name: 'Depreciation', ref: 'R14', type: 'flow' },
-    { id: 'netIncome', name: 'Net Income', ref: 'R19', type: 'flow', bold: true, highlight: true },
-]
+const BOLD_KEYWORDS = ['ebitda', 'ebt', 'npat', 'net income', 'total revenue', 'ebit']
+const HIGHLIGHT_KEYWORDS = ['ebitda', 'npat', 'net income']
 
-export default function PLTab({ viewHeaders, calculationResults, calculationTypes, viewMode }) {
+export default function PLTab({ viewHeaders, calculationResults, calculationTypes, viewMode, calculations }) {
+    // Build line items dynamically from group 61
+    const lineItems = useMemo(() => {
+        return (calculations || [])
+            .filter(c => c.groupId === 61)
+            .map(c => {
+                const nameLower = c.name.toLowerCase()
+                return {
+                    id: c.id,
+                    name: c.name,
+                    ref: `R${c.id}`,
+                    type: c.type || 'flow',
+                    bold: BOLD_KEYWORDS.some(k => nameLower.includes(k)),
+                    highlight: HIGHLIGHT_KEYWORDS.some(k => nameLower.includes(k)),
+                }
+            })
+    }, [calculations])
+
     // Calculate all P&L values
     const tableData = useMemo(() => {
-        return PL_LINE_ITEMS.map(item => {
+        return lineItems.map(item => {
             const arr = calculationResults[item.ref] || []
             const calcType = calculationTypes?.[item.ref] || item.type
             const periodValues = calculatePeriodValues(arr, viewHeaders, viewMode, calcType)
@@ -39,7 +48,7 @@ export default function PLTab({ viewHeaders, calculationResults, calculationType
                 total,
             }
         })
-    }, [viewHeaders, calculationResults, calculationTypes, viewMode])
+    }, [lineItems, viewHeaders, calculationResults, calculationTypes, viewMode])
 
     // Chart data for EBITDA margin
     const chartData = useMemo(() => {
@@ -89,10 +98,7 @@ export default function PLTab({ viewHeaders, calculationResults, calculationType
                                     className={`border-b border-slate-100 ${row.highlight ? 'bg-indigo-50/30' : 'hover:bg-slate-50'}`}
                                 >
                                     <td className={`py-2 px-4 text-slate-700 w-[200px] min-w-[200px] sticky left-0 bg-white ${row.highlight ? 'bg-indigo-50/30' : ''}`}>
-                                        <span
-                                            className={`${row.bold ? 'font-semibold' : ''}`}
-                                            style={{ paddingLeft: row.indent ? `${row.indent * 16}px` : 0 }}
-                                        >
+                                        <span className={row.bold ? 'font-semibold' : ''}>
                                             {row.name}
                                         </span>
                                     </td>

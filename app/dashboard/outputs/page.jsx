@@ -5,6 +5,7 @@ import { useDashboard } from '../context/DashboardContext'
 import SummaryTab from './components/SummaryTab'
 import PLTab from './components/PLTab'
 import CashflowTab from './components/CashflowTab'
+import BSTab from './components/BSTab'
 import PageHeader from '../components/PageHeader'
 import SubTabBar from '../components/SubTabBar'
 
@@ -12,6 +13,7 @@ const SUB_TABS = [
     { id: 'summary', label: 'Summary' },
     { id: 'pl', label: 'P&L' },
     { id: 'cashflow', label: 'Cashflow' },
+    { id: 'bs', label: 'Balance Sheet' },
 ]
 
 export default function OutputsPage() {
@@ -20,6 +22,7 @@ export default function OutputsPage() {
     const {
         viewMode,
         setViewMode,
+        appState,
         derived
     } = useDashboard()
 
@@ -29,12 +32,15 @@ export default function OutputsPage() {
         calculationTypes,
     } = derived
 
+    const calculations = appState?.calculations
+
     const renderActiveTab = () => {
         const commonProps = {
             viewHeaders,
             calculationResults,
             calculationTypes,
             viewMode,
+            calculations,
         }
 
         switch (activeTab) {
@@ -44,6 +50,8 @@ export default function OutputsPage() {
                 return <PLTab {...commonProps} />
             case 'cashflow':
                 return <CashflowTab {...commonProps} />
+            case 'bs':
+                return <BSTab {...commonProps} />
             default:
                 return <SummaryTab {...commonProps} />
         }

@@ -3,8 +3,8 @@ import { resolveModuleInput } from './shared'
 
 export const TEMPLATE = {
     type: 'dsrf',
-    name: 'Debt Service Reserve Facility (DSRF)',
-    description: 'Standby facility guaranteeing debt service with refinancing schedule',
+    name: 'DSRF & Refi Fees',
+    description: 'Debt service reserve facility with refinancing fees and margin step-ups',
     inputs: [
         { key: 'dsrfActiveRef', label: 'DSRF Active (1/0)', type: 'number_or_ref', required: true, default: 1 },
         { key: 'debtServiceRef', label: 'Base Debt Service (pre-DSRF)', type: 'reference', refType: 'any', required: true },
