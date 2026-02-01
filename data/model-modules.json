@@ -657,11 +657,11 @@
       "id": 9067,
       "groupId": 56,
       "name": "Principal Payment",
-      "formula": "MIN(MAX(0, R9064 - R9066), R9063) * R9073 * F8",
+      "formula": "MIN(MAX(0, R9064 - R9066), R9063 / MAX(1, R9065)) * R9073 * F8",
       "type": "flow",
       "_moduleId": "M1",
       "_moduleOutputKey": "principal_payment",
-      "description": "Fully DSCR-sculpted: capacity minus interest, capped at outstanding balance"
+      "description": "Level principal amortization (balance / remaining periods), capped at DSCR capacity"
     },
     {
       "id": 9068,

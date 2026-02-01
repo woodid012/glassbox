@@ -113,7 +113,9 @@ export function generateCapacitySchedule(totalDebt, debtServiceCapacity, totalCf
         cumulative_principal: new Array(len).fill(0),
         fullyRepaid: false,
         dscrBreached: false,
-        hasNegativePrincipal: false
+        hasNegativePrincipal: false,
+        paysOffEarly: false,
+        payoffPeriodIdx: null
     }
 
     if (totalDebt <= 0 || start < 0 || end < start) {
@@ -165,16 +167,34 @@ export function generateCapacitySchedule(totalDebt, debtServiceCapacity, totalCf
             // Max debt service from capacity constraint (already DSCR-adjusted)
             const maxDebtService = accruedCapacity
 
-            // Fully sculpted: principal = capacity minus interest, capped at balance
+            // Max principal allowed by DSCR constraint
             const maxPrincipalFromCapacity = Math.max(0, maxDebtService - interest)
 
             let principal
             if (i === end) {
                 // Final period: pay off remaining balance
                 principal = balance
+            } else if (balance <= 0) {
+                principal = 0
             } else {
-                // DSCR-sculpted: pay what capacity allows after interest
-                principal = maxPrincipalFromCapacity
+                // Minimum principal to amortize over remaining tenor (level principal floor)
+                const minPrincipalForTenor = remainingPeriods > 0 ? balance / remainingPeriods : balance
+
+                if (maxPrincipalFromCapacity < minPrincipalForTenor) {
+                    // DSCR doesn't allow minimum amortization — debt is too large
+                    // Pay what we can (binary search will reject this as non-viable)
+                    principal = maxPrincipalFromCapacity
+                } else if (remainingPeriods > 1) {
+                    // Cap payment to ensure debt amortizes over full tenor, not early
+                    // Leave enough balance for at least min payments in remaining periods
+                    const minRequiredBalance = minPrincipalForTenor * (remainingPeriods - 1)
+                    const maxAllowedPayment = Math.max(0, balance - minRequiredBalance)
+                    // Use DSCR-allowed amount but cap to prevent early payoff
+                    principal = Math.max(minPrincipalForTenor, Math.min(maxPrincipalFromCapacity, maxAllowedPayment))
+                } else {
+                    // Last or second-to-last period — allow paying off
+                    principal = Math.min(maxPrincipalFromCapacity, balance)
+                }
             }
 
             principal = Math.min(principal, balance)
@@ -218,6 +238,27 @@ export function generateCapacitySchedule(totalDebt, debtServiceCapacity, totalCf
     outputs.fullyRepaid = balance < 0.001
     outputs.dscrBreached = dscrBreached
     outputs.hasNegativePrincipal = hasNegativePrincipal
+
+    // Detect early payoff: find the period where balance first reaches zero
+    if (outputs.fullyRepaid) {
+        // Count total payment periods and find payoff period
+        let totalPaymentPeriods = 0
+        let payoffPeriodCount = null
+        let periodCount = 0
+        for (let i = start; i <= end && i < len; i++) {
+            if (isPeriodEnd(i, debtPeriod, timeline) || i === end) {
+                periodCount++
+                totalPaymentPeriods++
+                if (payoffPeriodCount === null && outputs.closing_balance[i] < 0.001) {
+                    payoffPeriodCount = periodCount
+                    outputs.payoffPeriodIdx = i
+                }
+            }
+        }
+        // Early payoff = balance hits zero more than 2 periods before end
+        const periodsFromEnd = totalPaymentPeriods - (payoffPeriodCount || totalPaymentPeriods)
+        outputs.paysOffEarly = periodsFromEnd > 2
+    }
 
     return outputs
 }

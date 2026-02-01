@@ -146,7 +146,7 @@ export default function SummaryTab({ viewHeaders, calculationResults, calculatio
                 agencyFee: getValue(CALC_REFS.agencyFee),
                 dsrfFees: getValue(CALC_REFS.dsrfFees),
                 totalDebtService: getValue(CALC_REFS.totalDebtService),
-                dscr: getValue(CALC_REFS.dscr, 'stock'),
+                dscr: getValue(CALC_REFS.dscr, 'stock') || null,
                 debtOpening: getValue(CALC_REFS.debtOpening, 'stock'),
             }
         })

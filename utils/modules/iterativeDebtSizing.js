@@ -175,7 +175,8 @@ export function calculate(inputs, arrayLength, context) {
 
     // Binary search for optimal debt (no IDC added - IDC is equity-funded)
     let lowerBound = 0
-    let upperBound = totalFunding * (parsedMaxGearing / 100)
+    const maxDebt = totalFunding * (parsedMaxGearing / 100)
+    let upperBound = maxDebt
     let bestDebt = 0
     let bestSchedule = null
 
@@ -184,8 +185,6 @@ export function calculate(inputs, arrayLength, context) {
 
         const testDebt = (lowerBound + upperBound) / 2
 
-        // Generate capacity-sculpted schedule using pre-calculated debt service capacity
-        // Capacity = (Contracted CFADS / Contracted DSCR) + (Merchant CFADS / Merchant DSCR)
         const schedule = generateCapacitySchedule(
             testDebt,
             debtServiceCapacity,
@@ -198,17 +197,44 @@ export function calculate(inputs, arrayLength, context) {
             timeline
         )
 
-        // Check viability
+        // Viable = fully repaid, no DSCR breach, no negative principal, and not paying off early
         const isViable = schedule.fullyRepaid &&
                         !schedule.dscrBreached &&
-                        !schedule.hasNegativePrincipal
+                        !schedule.hasNegativePrincipal &&
+                        !schedule.paysOffEarly
 
         if (isViable) {
             lowerBound = testDebt
             bestDebt = testDebt
             bestSchedule = schedule
+        } else if (schedule.fullyRepaid && !schedule.dscrBreached && !schedule.hasNegativePrincipal && schedule.paysOffEarly) {
+            // Debt pays off too early but is otherwise viable — try increasing
+            lowerBound = testDebt
         } else {
             upperBound = testDebt
+        }
+    }
+
+    // Secondary optimization: if best debt still pays off early, search higher
+    if (bestSchedule && bestSchedule.paysOffEarly && bestDebt < maxDebt - parsedTolerance) {
+        let secLower = bestDebt
+        let secUpper = maxDebt
+        for (let iter = 0; iter < 15; iter++) {
+            if (secUpper - secLower <= parsedTolerance) break
+            const testDebt = (secLower + secUpper) / 2
+            const schedule = generateCapacitySchedule(
+                testDebt, debtServiceCapacity, totalCfads,
+                debtStart, debtEnd, interestRateArray, arrayLength, debtPeriod, timeline
+            )
+            if (schedule.fullyRepaid && !schedule.dscrBreached && !schedule.hasNegativePrincipal && !schedule.paysOffEarly) {
+                secLower = testDebt
+                bestDebt = testDebt
+                bestSchedule = schedule
+            } else if (schedule.fullyRepaid && !schedule.dscrBreached && schedule.paysOffEarly) {
+                secLower = testDebt
+            } else {
+                secUpper = testDebt
+            }
         }
     }
 

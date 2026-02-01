@@ -1042,8 +1042,8 @@
       "tabId": 3,
       "groupId": 24,
       "name": "DSCR",
-      "formula": "R9071",
-      "description": "Debt Service Coverage Ratio",
+      "formula": "R9071 * F8",
+      "description": "Debt Service Coverage Ratio (zero outside ops debt period)",
       "type": "stock"
     },
     {
