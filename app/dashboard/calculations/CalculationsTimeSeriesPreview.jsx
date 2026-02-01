@@ -121,7 +121,7 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                             <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-[240px] min-w-[240px] sticky left-0 z-20 bg-slate-50">
                                 {columnHeader}
                             </th>
-                            <th className="text-right py-1 px-3 text-xs font-semibold text-slate-500 uppercase w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-slate-50 border-r border-slate-300">
+                            <th className="text-right py-1 px-3 text-xs font-semibold text-slate-500 uppercase w-[96px] min-w-[96px] sticky left-[240px] z-20 bg-slate-50 border-r-2 border-slate-300">
                                 Total
                             </th>
                             {leftSpacerWidth > 0 && <th style={{ width: leftSpacerWidth, minWidth: leftSpacerWidth, padding: 0 }} />}
@@ -134,10 +134,26 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                         </tr>
                     </thead>
                     <tbody>
-                        {/* Grouped calculations - group header without totals */}
+                        {/* Grouped calculations with group subtotals */}
                         {(filteredGroups || []).map((group) => {
                             const groupCalcs = filteredCalcs.filter(c => c.groupId === group.id)
                             if (groupCalcs.length === 0) return null
+
+                            // Compute group subtotals (flows only)
+                            const groupSubtotalByPeriod = viewHeaders.map((header, hi) => {
+                                return groupCalcs.reduce((sum, calc) => {
+                                    const calcRef = `R${calcIndexMap.get(calc.id)}`
+                                    const resultArray = calculationResults[calcRef] || []
+                                    const calcType = calculationTypes?.[calcRef] || 'flow'
+                                    if (calcType === 'stock' || calcType === 'stock_start') return sum
+                                    if (viewMode === 'M') {
+                                        return sum + (resultArray[header.index] ?? 0)
+                                    } else {
+                                        return sum + getAggregatedValueForArray(resultArray, header.indices || [header.index], calcType)
+                                    }
+                                }, 0)
+                            })
+                            const groupSubtotal = groupSubtotalByPeriod.reduce((s, v) => s + v, 0)
 
                             return (
                                 <React.Fragment key={group.id}>
@@ -168,7 +184,7 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className={`py-1 px-3 text-right text-xs font-medium w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-white border-r border-slate-200 ${total < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                                                <td className={`py-1 px-3 text-right text-xs font-medium w-[96px] min-w-[96px] sticky left-[240px] z-20 bg-white border-r-2 border-slate-300 ${total < 0 ? 'text-red-600' : 'text-slate-900'}`}>
                                                     {formatValue(total, { accounting: true })}
                                                 </td>
                                                 <VirtualizedPeriodCells
@@ -182,6 +198,25 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                                             </tr>
                                         )
                                     })}
+                                    {/* Group subtotal row */}
+                                    {groupCalcs.length > 1 && (
+                                        <tr className="bg-rose-50/40 border-b border-rose-200">
+                                            <td className="py-1 px-3 text-xs font-semibold text-rose-700 w-[240px] min-w-[240px] sticky left-0 z-20 bg-rose-50/40">
+                                                Total {group.name}
+                                            </td>
+                                            <td className={`py-1 px-3 text-right text-xs font-bold w-[96px] min-w-[96px] sticky left-[240px] z-20 bg-rose-50/40 border-r-2 border-slate-300 ${groupSubtotal < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                                                {formatValue(groupSubtotal, { accounting: true })}
+                                            </td>
+                                            <VirtualizedPeriodCells
+                                                values={groupSubtotalByPeriod}
+                                                visibleRange={visibleRange}
+                                                leftSpacerWidth={leftSpacerWidth}
+                                                rightSpacerWidth={rightSpacerWidth}
+                                                cellClassName={(val) => `py-1 px-0.5 text-right text-[11px] font-semibold min-w-[55px] w-[55px] border-r border-rose-100 ${val < 0 ? 'text-red-600' : 'text-rose-800'}`}
+                                                formatOptions={{ accounting: true }}
+                                            />
+                                        </tr>
+                                    )}
                                 </React.Fragment>
                             )
                         })}
@@ -221,7 +256,7 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className={`py-1 px-3 text-right text-xs font-medium w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-white border-r border-slate-200 ${total < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                                        <td className={`py-1 px-3 text-right text-xs font-medium w-[96px] min-w-[96px] sticky left-[240px] z-20 bg-white border-r-2 border-slate-300 ${total < 0 ? 'text-red-600' : 'text-slate-900'}`}>
                                             {formatValue(total, { accounting: true })}
                                         </td>
                                         <VirtualizedPeriodCells
@@ -244,7 +279,7 @@ const CalculationsTimeSeriesPreview = memo(function CalculationsTimeSeriesPrevie
                             <td className="py-1.5 px-3 text-xs font-semibold text-slate-700 w-[240px] min-w-[240px] sticky left-0 z-20 bg-slate-100">
                                 Grand Total
                             </td>
-                            <td className={`py-1.5 px-3 text-right text-xs font-bold w-[96px] min-w-[96px] sticky left-[240px] z-10 bg-slate-100 border-r border-slate-300 ${overallTotal < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                            <td className={`py-1.5 px-3 text-right text-xs font-bold w-[96px] min-w-[96px] sticky left-[240px] z-20 bg-slate-100 border-r-2 border-slate-300 ${overallTotal < 0 ? 'text-red-600' : 'text-slate-900'}`}>
                                 {formatValue(overallTotal, { accounting: true })}
                             </td>
                             <VirtualizedPeriodCells

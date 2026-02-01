@@ -366,8 +366,8 @@
       "tabId": 1,
       "groupId": 4,
       "name": "EBT",
-      "formula": "R15 + R16 + R151 + R174 * F2 + R153",
-      "description": "Earnings before taxes (incl. agency fee, DSRF fees). Agency/upfront/commitment fees capitalised during construction and amortised via R14"
+      "formula": "R15 + R16 + R151 + R174 * F2 + R153 * F2",
+      "description": "Earnings before taxes (incl. agency fee, DSRF fees during ops). Establishment fees capitalised during construction and amortised via R14"
     },
     {
       "id": 18,

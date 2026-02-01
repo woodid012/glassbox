@@ -997,7 +997,7 @@
       "id": 9080,
       "groupId": 57,
       "name": "DSRF Establishment Fee",
-      "formula": "M8.1 * C1.51 / 100 * F1.Start",
+      "formula": "MAXVAL(M8.1) * C1.51 / 100 * F1.Start",
       "type": "flow",
       "_moduleId": "M8",
       "_moduleOutputKey": "establishment_fee"

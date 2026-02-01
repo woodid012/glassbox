@@ -659,6 +659,8 @@ Key formatting functions:
 
 ## Future Tasks
 
+- **Bank guarantee facilities:** Not yet modelled. Infrastructure projects typically require performance bonds, environmental bonds, and other bank guarantees with annual fees (typically 1-2% of face value). These are separate from the DSRF and should be added as a new module or input group with their own fee structure and BS treatment.
+
 - **Module definitions as data file:** Move module template definitions (name, description, input schema, output-to-calc mappings) from JS files (`utils/modules/*.js`) into a JSON data file (`data/model-modules.json`), consistent with `model-inputs.json` and `model-calculations.json`. Only solver functions (M1 binary search, M8 forward-looking sums) remain as JS. The Modules page becomes a template launcher that reads from this data file, creates calc groups, and links inputs — no JS module execution for fully converted modules.
 
 ## Debugging BS Imbalances (Proven Process)
