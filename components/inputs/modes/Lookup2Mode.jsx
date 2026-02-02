@@ -7,6 +7,7 @@ import {
     spreadLookup2ValueToMonthly,
     groupInputsBySubgroup
 } from '../utils/inputHelpers'
+import { getGroupRef } from '@/utils/groupRefResolver'
 
 export default function Lookup2Mode({
     group,
@@ -27,6 +28,7 @@ export default function Lookup2Mode({
     const subgroupedInputs = groupInputsBySubgroup(groupInputs, group)
     const selectedIndices = group.selectedIndices || {}
     const prefillEnabled = config.prefillLookups !== false
+    const groupRef = getGroupRef(group, groupInputs)
 
     // Helper to get selected input for a subgroup (using index)
     const getSelectedForSubgroup = (subgroupId, inputs) => {
@@ -55,10 +57,13 @@ export default function Lookup2Mode({
                 <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
                         <th className="w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 bg-slate-50"></th>
-                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-[192px] min-w-[192px] max-w-[192px] sticky left-[32px] z-20 bg-slate-50">
+                        <th className="text-left py-2 px-1 text-xs font-semibold text-slate-500 uppercase w-[52px] min-w-[52px] max-w-[52px] sticky left-[32px] z-25 bg-slate-50">
+                            Ref
+                        </th>
+                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-[192px] min-w-[192px] max-w-[192px] sticky left-[84px] z-20 bg-slate-50">
                             Label
                         </th>
-                        <th className="text-right py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-[96px] min-w-[96px] max-w-[96px] sticky left-[224px] z-10 bg-slate-50 border-r border-slate-300">
+                        <th className="text-right py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-[96px] min-w-[96px] max-w-[96px] sticky left-[276px] z-10 bg-slate-50 border-r border-slate-300">
                             Total
                         </th>
                         {periods.map((p, i) => (
@@ -96,16 +101,19 @@ export default function Lookup2Mode({
                                                 <Trash2 className="w-3.5 h-3.5" />
                                             </button>
                                         </td>
-                                        <td colSpan={periods.length + 2} className="py-1.5 px-3 sticky left-[32px] z-20 bg-blue-50">
-                                            <EditableCell
-                                                value={sg.name}
-                                                onChange={(val) => onUpdateSubgroup?.(group.id, sg.id, 'name', val)}
-                                                className="text-xs font-semibold text-blue-800"
-                                            />
+                                        <td colSpan={periods.length + 4} className="py-1.5 px-3 sticky left-[32px] z-20 bg-blue-50">
+                                            <div className="flex items-center gap-2">
+                                                <EditableCell
+                                                    value={sg.name}
+                                                    onChange={(val) => onUpdateSubgroup?.(group.id, sg.id, 'name', val)}
+                                                    className="text-xs font-semibold text-blue-800"
+                                                />
+                                            </div>
                                         </td>
                                     </tr>
                                 )}
 
+                                {/* Ref badge for groups without subgroups - removed, now shown per-row */}
                                 {/* Option rows for this subgroup */}
                                 {sg.inputs.map((input, inputIdx) => {
                                     const rowIndex = globalRowIndex++
@@ -125,8 +133,15 @@ export default function Lookup2Mode({
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
                                             </td>
+                                            <td className={`py-0 px-1 w-[52px] min-w-[52px] max-w-[52px] sticky left-[32px] z-25 ${showSelectedHighlight ? 'bg-amber-50/30' : 'bg-white'}`}>
+                                                {groupRef && (
+                                                    <span className="text-[10px] px-1 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 select-all">
+                                                        {groupRef}.{sg.id ?? inputIdx + 1}
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td
-                                                className={`py-0 px-0 w-[192px] min-w-[192px] max-w-[192px] sticky left-[32px] z-20 ${sg.id ? 'pl-4' : ''} ${isCellSelected(group.id, rowIndex, -1) ? 'bg-blue-100' : showSelectedHighlight ? 'bg-amber-50/30' : 'bg-white'}`}
+                                                className={`py-0 px-0 w-[192px] min-w-[192px] max-w-[192px] sticky left-[84px] z-20 ${sg.id ? 'pl-4' : ''} ${isCellSelected(group.id, rowIndex, -1) ? 'bg-blue-100' : showSelectedHighlight ? 'bg-amber-50/30' : 'bg-white'}`}
                                                 onClick={(e) => {
                                                     if (e.shiftKey) {
                                                         handleCellShiftSelect(group.id, rowIndex, -1)
@@ -141,7 +156,7 @@ export default function Lookup2Mode({
                                                     className={`font-medium text-slate-700 ${sg.id ? 'pl-2' : ''}`}
                                                 />
                                             </td>
-                                            <td className="py-1.5 px-3 text-right font-semibold text-slate-900 w-[96px] min-w-[96px] max-w-[96px] sticky left-[224px] z-10 bg-slate-50 border-r border-slate-300">
+                                            <td className="py-1.5 px-3 text-right font-semibold text-slate-900 w-[96px] min-w-[96px] max-w-[96px] sticky left-[276px] z-10 bg-slate-50 border-r border-slate-300">
                                                 {total.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                                             </td>
                                             {periods.map((p, i) => (
@@ -178,7 +193,7 @@ export default function Lookup2Mode({
 
                                 {/* Add option button for this subgroup */}
                                 <tr className="bg-slate-50/30">
-                                    <td colSpan={periods.length + 3} className={`py-1 ${sg.id ? 'pl-12' : 'pl-10'}`}>
+                                    <td colSpan={periods.length + 4} className={`py-1 ${sg.id ? 'pl-12' : 'pl-10'}`}>
                                         <button
                                             onClick={() => onAddInput(group.id, sg.id)}
                                             className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-600"
@@ -193,7 +208,8 @@ export default function Lookup2Mode({
                                 {group.showSelected !== false && (
                                     <tr className="bg-amber-50 border-t-2 border-amber-300 border-b-2 border-amber-300">
                                         <td className="py-0 px-1 w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 bg-amber-50"></td>
-                                        <td className="py-1 px-2 w-[192px] min-w-[192px] max-w-[192px] sticky left-[32px] z-20 bg-amber-50">
+                                        <td className="py-0 px-1 w-[52px] min-w-[52px] max-w-[52px] sticky left-[32px] z-25 bg-amber-50"></td>
+                                        <td className="py-1 px-2 w-[192px] min-w-[192px] max-w-[192px] sticky left-[84px] z-20 bg-amber-50">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs text-amber-700">Selection:</span>
                                                 <select
@@ -213,7 +229,7 @@ export default function Lookup2Mode({
                                                 </select>
                                             </div>
                                         </td>
-                                        <td className="py-1.5 px-3 text-right font-semibold text-amber-900 w-[96px] min-w-[96px] max-w-[96px] sticky left-[224px] z-10 bg-amber-50 border-r border-amber-300">
+                                        <td className="py-1.5 px-3 text-right font-semibold text-amber-900 w-[96px] min-w-[96px] max-w-[96px] sticky left-[276px] z-10 bg-amber-50 border-r border-amber-300">
                                             {selectedTotal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                                         </td>
                                         {selectedValues.map((val, i) => (
@@ -229,7 +245,7 @@ export default function Lookup2Mode({
 
                     {/* Add subgroup button */}
                     <tr className="bg-slate-50/50">
-                        <td colSpan={periods.length + 3} className="py-1 px-10">
+                        <td colSpan={periods.length + 4} className="py-1 px-10">
                             <button
                                 onClick={() => onAddSubgroup?.(group.id)}
                                 className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-600"

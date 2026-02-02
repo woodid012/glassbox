@@ -13,7 +13,7 @@ export default function GroupControls({
     onRemoveGroup
 }) {
     const entryMode = group.entryMode || 'values'
-    const showRange = entryMode !== 'lookup'
+    const showRange = entryMode !== 'lookup' && entryMode !== 'label'
     const showInterval = entryMode === 'values' || entryMode === 'series' || entryMode === 'lookup' || entryMode === 'lookup2'
     const showSelected = entryMode === 'lookup' || entryMode === 'lookup2'
 

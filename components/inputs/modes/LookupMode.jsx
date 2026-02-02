@@ -12,6 +12,7 @@ import {
     groupInputsBySubgroup,
     getMonthsPerPeriod
 } from '../utils/inputHelpers'
+import { getGroupRef } from '@/utils/groupRefResolver'
 
 export default function LookupMode({
     group,
@@ -34,6 +35,7 @@ export default function LookupMode({
     const subgroupedInputs = groupInputsBySubgroup(groupInputs, group)
     const selectedIndices = group.selectedIndices || {}
     const prefillEnabled = config.prefillLookups !== false
+    const groupRef = getGroupRef(group, groupInputs)
 
     // Helper to get selected input for a subgroup (using index)
     const getSelectedForSubgroup = (subgroupId, inputs) => {
@@ -137,15 +139,33 @@ export default function LookupMode({
                                             sticky={true}
                                         />
                                         <td colSpan={periods.length + 2} className="py-1.5 px-3 sticky left-[32px] z-20 bg-blue-50">
-                                            <EditableCell
-                                                value={sg.name}
-                                                onChange={(val) => onUpdateSubgroup?.(group.id, sg.id, 'name', val)}
-                                                className="text-xs font-semibold text-blue-800"
-                                            />
+                                            <div className="flex items-center gap-2">
+                                                {groupRef && (
+                                                    <span className="text-[10px] px-1 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 flex-shrink-0 select-all">
+                                                        {groupRef}.{sg.id}
+                                                    </span>
+                                                )}
+                                                <EditableCell
+                                                    value={sg.name}
+                                                    onChange={(val) => onUpdateSubgroup?.(group.id, sg.id, 'name', val)}
+                                                    className="text-xs font-semibold text-blue-800"
+                                                />
+                                            </div>
                                         </td>
                                     </tr>
                                 )}
 
+                                {/* Ref badge for groups without subgroups */}
+                                {!sg.id && groupRef && sg.inputs.length > 0 && (
+                                    <tr className="bg-slate-50 border-b border-slate-100">
+                                        <td className="w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 bg-slate-50"></td>
+                                        <td colSpan={periods.length + 2} className="py-1 px-3 sticky left-[32px] z-20 bg-slate-50">
+                                            <span className="text-[10px] px-1 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 select-all">
+                                                {groupRef}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                )}
                                 {/* Option rows for this subgroup */}
                                 {sg.inputs.map((input, inputIdx) => {
                                     const rowIndex = globalRowIndex++

@@ -55,6 +55,9 @@ export default function IndicesSection({
                 <table className="w-full">
                     <thead className={cn(theme.bg.sectionHeader, 'border-b', theme.border.light)}>
                         <tr>
+                            <th className={cn('px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider', theme.text.secondary, 'w-16')}>
+                                Ref
+                            </th>
                             <th className={cn('px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider', theme.text.secondary)}>
                                 Name
                             </th>
@@ -78,6 +81,11 @@ export default function IndicesSection({
                                 key={index.id}
                                 className="border-b border-slate-200 hover:bg-slate-50"
                             >
+                                <td className="px-4 py-3">
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 select-all">
+                                        I{index.id}
+                                    </span>
+                                </td>
                                 <td className="px-4 py-3">
                                     <input
                                         type="text"

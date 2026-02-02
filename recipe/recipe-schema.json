@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Glass Box Recipe",
+  "description": "A complete project finance model blueprint",
+  "type": "object",
+  "required": ["project", "timeline", "keyPeriods", "inputs", "calculations"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": ["name", "type", "currency"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["BESS", "Solar", "Wind", "Hybrid", "Other"] },
+        "currency": { "type": "string" },
+        "financialYearEnd": { "type": "integer", "minimum": 1, "maximum": 12 }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "required": ["startYear", "startMonth", "endYear", "endMonth"],
+      "properties": {
+        "startYear": { "type": "integer" },
+        "startMonth": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "endYear": { "type": "integer" },
+        "endMonth": { "type": "integer", "minimum": 1, "maximum": 12 }
+      }
+    },
+    "keyPeriods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "generates"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "generates": { "type": "string", "pattern": "^F\\d+$" },
+          "periods": { "type": "integer" },
+          "periodsFromRef": { "type": "string" },
+          "startAnchor": { "type": "string" },
+          "startOffset": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "integer" },
+              "unit": { "type": "string", "enum": ["months", "days"] }
+            }
+          },
+          "startYear": { "type": "integer" },
+          "startMonth": { "type": "integer" },
+          "endYear": { "type": "integer" },
+          "endMonth": { "type": "integer" },
+          "isGroup": { "type": "boolean" },
+          "childIds": { "type": "array", "items": { "type": "integer" } },
+          "parentGroupId": { "type": "integer" }
+        }
+      }
+    },
+    "indices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "ref", "rate"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "ref": { "type": "string", "pattern": "^I\\d+$" },
+          "rate": { "type": "number" },
+          "period": { "type": "string" },
+          "startYear": { "type": "integer" },
+          "startMonth": { "type": "integer" }
+        }
+      }
+    },
+    "inputGroups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "ref"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "ref": { "type": "string" },
+          "refIndex": { "type": "integer" },
+          "mode": { "type": "string" },
+          "frequency": { "type": "string", "enum": ["M", "Q", "Y"] },
+          "groupType": { "type": "string" },
+          "entryMode": { "type": "string" },
+          "linkedKeyPeriodId": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "groupId", "name"],
+        "properties": {
+          "id": { "type": "integer" },
+          "groupId": { "type": "integer" },
+          "name": { "type": "string" },
+          "ref": { "type": "string" },
+          "mode": { "type": "string" },
+          "value": { "type": "number" },
+          "values": { "type": "object" },
+          "unit": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "tabs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" }
+        }
+      }
+    },
+    "calculationGroups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "integer" },
+          "tabId": { "type": ["integer", "string"] },
+          "name": { "type": "string" }
+        }
+      }
+    },
+    "calculations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "groupId", "name", "formula"],
+        "properties": {
+          "id": { "type": "integer" },
+          "groupId": { "type": "integer" },
+          "name": { "type": "string" },
+          "formula": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "type": "string", "enum": ["flow", "stock", "stock_start", "flag"] },
+          "sign": { "type": "string", "enum": ["positive", "negative"] },
+          "financialStatement": { "type": "string", "enum": ["pnl", "bs", "cf", "funding"] },
+          "category": { "type": "string" },
+          "validation": {
+            "type": "object",
+            "properties": {
+              "rule": { "type": "string" },
+              "threshold": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "moduleGroups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "templateId"],
+        "properties": {
+          "id": { "type": "integer" },
+          "tabId": { "type": "integer" },
+          "name": { "type": "string" },
+          "templateId": { "type": "string" }
+        }
+      }
+    },
+    "moduleCalculations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "groupId", "name", "formula"],
+        "properties": {
+          "id": { "type": "integer" },
+          "groupId": { "type": "integer" },
+          "name": { "type": "string" },
+          "formula": { "type": "string" },
+          "type": { "type": "string" },
+          "moduleId": { "type": "string" },
+          "moduleOutputKey": { "type": "string" }
+        }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "templateId", "name", "inputs"],
+        "properties": {
+          "id": { "type": "integer" },
+          "templateId": { "type": "string" },
+          "name": { "type": "string" },
+          "mRefPrefix": { "type": ["string", "null"] },
+          "inputs": { "type": "object" },
+          "outputs": { "type": "array" },
+          "calcIds": { "type": "array", "items": { "type": "integer" } },
+          "enabled": { "type": "boolean" },
+          "fullyConverted": { "type": "boolean" },
+          "partiallyConverted": { "type": "boolean" }
+        }
+      }
+    },
+    "mRefMap": {
+      "type": "object",
+      "description": "Maps M-ref strings (M1.2, M2.3) to R-ref strings (R9063, R9001)"
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "balanceSheet": {
+          "type": "object",
+          "properties": {
+            "checkRef": { "type": "string" },
+            "rule": { "type": "string" },
+            "threshold": { "type": "number" }
+          }
+        },
+        "sourcesAndUses": {
+          "type": "object",
+          "properties": {
+            "checkRef": { "type": "string" },
+            "rule": { "type": "string" },
+            "threshold": { "type": "number" }
+          }
+        },
+        "formulaIntegrity": {
+          "type": "object",
+          "properties": {
+            "noHardcodedNumbers": { "type": "boolean" },
+            "allRefsExist": { "type": "boolean" },
+            "noCircularDeps": { "type": "boolean" }
+          }
+        },
+        "covenants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "ref": { "type": "string" },
+              "rule": { "type": "string" },
+              "threshold": { "type": "number" },
+              "period": { "type": "string" }
+            }
+          }
+        },
+        "irr": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "cashFlowRef": { "type": "string" },
+              "expectedRange": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        }
+      }
+    },
+    "bestPractices": {
+      "type": "object",
+      "properties": {
+        "signConvention": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "category": { "type": "string" },
+                  "expectedSign": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "corkscrewPattern": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "requiredFor": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "noMixing": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" }
+          }
+        },
+        "units": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

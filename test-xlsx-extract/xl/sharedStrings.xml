@@ -1,0 +1,1275 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1272" uniqueCount="1272">
+<si><t>Ref</t></si>
+<si><t>Name</t></si>
+<si><t>Value</t></si>
+<si><t>2027-04</t></si>
+<si><t>2027-05</t></si>
+<si><t>2027-06</t></si>
+<si><t>2027-07</t></si>
+<si><t>2027-08</t></si>
+<si><t>2027-09</t></si>
+<si><t>2027-10</t></si>
+<si><t>2027-11</t></si>
+<si><t>2027-12</t></si>
+<si><t>2028-01</t></si>
+<si><t>2028-02</t></si>
+<si><t>2028-03</t></si>
+<si><t>2028-04</t></si>
+<si><t>2028-05</t></si>
+<si><t>2028-06</t></si>
+<si><t>2028-07</t></si>
+<si><t>2028-08</t></si>
+<si><t>2028-09</t></si>
+<si><t>2028-10</t></si>
+<si><t>2028-11</t></si>
+<si><t>2028-12</t></si>
+<si><t>2029-01</t></si>
+<si><t>2029-02</t></si>
+<si><t>2029-03</t></si>
+<si><t>2029-04</t></si>
+<si><t>2029-05</t></si>
+<si><t>2029-06</t></si>
+<si><t>2029-07</t></si>
+<si><t>2029-08</t></si>
+<si><t>2029-09</t></si>
+<si><t>2029-10</t></si>
+<si><t>2029-11</t></si>
+<si><t>2029-12</t></si>
+<si><t>2030-01</t></si>
+<si><t>2030-02</t></si>
+<si><t>2030-03</t></si>
+<si><t>2030-04</t></si>
+<si><t>2030-05</t></si>
+<si><t>2030-06</t></si>
+<si><t>2030-07</t></si>
+<si><t>2030-08</t></si>
+<si><t>2030-09</t></si>
+<si><t>2030-10</t></si>
+<si><t>2030-11</t></si>
+<si><t>2030-12</t></si>
+<si><t>2031-01</t></si>
+<si><t>2031-02</t></si>
+<si><t>2031-03</t></si>
+<si><t>2031-04</t></si>
+<si><t>2031-05</t></si>
+<si><t>2031-06</t></si>
+<si><t>2031-07</t></si>
+<si><t>2031-08</t></si>
+<si><t>2031-09</t></si>
+<si><t>2031-10</t></si>
+<si><t>2031-11</t></si>
+<si><t>2031-12</t></si>
+<si><t>2032-01</t></si>
+<si><t>2032-02</t></si>
+<si><t>2032-03</t></si>
+<si><t>2032-04</t></si>
+<si><t>2032-05</t></si>
+<si><t>2032-06</t></si>
+<si><t>2032-07</t></si>
+<si><t>2032-08</t></si>
+<si><t>2032-09</t></si>
+<si><t>2032-10</t></si>
+<si><t>2032-11</t></si>
+<si><t>2032-12</t></si>
+<si><t>2033-01</t></si>
+<si><t>2033-02</t></si>
+<si><t>2033-03</t></si>
+<si><t>2033-04</t></si>
+<si><t>2033-05</t></si>
+<si><t>2033-06</t></si>
+<si><t>2033-07</t></si>
+<si><t>2033-08</t></si>
+<si><t>2033-09</t></si>
+<si><t>2033-10</t></si>
+<si><t>2033-11</t></si>
+<si><t>2033-12</t></si>
+<si><t>2034-01</t></si>
+<si><t>2034-02</t></si>
+<si><t>2034-03</t></si>
+<si><t>2034-04</t></si>
+<si><t>2034-05</t></si>
+<si><t>2034-06</t></si>
+<si><t>2034-07</t></si>
+<si><t>2034-08</t></si>
+<si><t>2034-09</t></si>
+<si><t>2034-10</t></si>
+<si><t>2034-11</t></si>
+<si><t>2034-12</t></si>
+<si><t>2035-01</t></si>
+<si><t>2035-02</t></si>
+<si><t>2035-03</t></si>
+<si><t>2035-04</t></si>
+<si><t>2035-05</t></si>
+<si><t>2035-06</t></si>
+<si><t>2035-07</t></si>
+<si><t>2035-08</t></si>
+<si><t>2035-09</t></si>
+<si><t>2035-10</t></si>
+<si><t>2035-11</t></si>
+<si><t>2035-12</t></si>
+<si><t>2036-01</t></si>
+<si><t>2036-02</t></si>
+<si><t>2036-03</t></si>
+<si><t>2036-04</t></si>
+<si><t>2036-05</t></si>
+<si><t>2036-06</t></si>
+<si><t>2036-07</t></si>
+<si><t>2036-08</t></si>
+<si><t>2036-09</t></si>
+<si><t>2036-10</t></si>
+<si><t>2036-11</t></si>
+<si><t>2036-12</t></si>
+<si><t>2037-01</t></si>
+<si><t>2037-02</t></si>
+<si><t>2037-03</t></si>
+<si><t>2037-04</t></si>
+<si><t>2037-05</t></si>
+<si><t>2037-06</t></si>
+<si><t>2037-07</t></si>
+<si><t>2037-08</t></si>
+<si><t>2037-09</t></si>
+<si><t>2037-10</t></si>
+<si><t>2037-11</t></si>
+<si><t>2037-12</t></si>
+<si><t>2038-01</t></si>
+<si><t>2038-02</t></si>
+<si><t>2038-03</t></si>
+<si><t>2038-04</t></si>
+<si><t>2038-05</t></si>
+<si><t>2038-06</t></si>
+<si><t>2038-07</t></si>
+<si><t>2038-08</t></si>
+<si><t>2038-09</t></si>
+<si><t>2038-10</t></si>
+<si><t>2038-11</t></si>
+<si><t>2038-12</t></si>
+<si><t>2039-01</t></si>
+<si><t>2039-02</t></si>
+<si><t>2039-03</t></si>
+<si><t>2039-04</t></si>
+<si><t>2039-05</t></si>
+<si><t>2039-06</t></si>
+<si><t>2039-07</t></si>
+<si><t>2039-08</t></si>
+<si><t>2039-09</t></si>
+<si><t>2039-10</t></si>
+<si><t>2039-11</t></si>
+<si><t>2039-12</t></si>
+<si><t>2040-01</t></si>
+<si><t>2040-02</t></si>
+<si><t>2040-03</t></si>
+<si><t>2040-04</t></si>
+<si><t>2040-05</t></si>
+<si><t>2040-06</t></si>
+<si><t>2040-07</t></si>
+<si><t>2040-08</t></si>
+<si><t>2040-09</t></si>
+<si><t>2040-10</t></si>
+<si><t>2040-11</t></si>
+<si><t>2040-12</t></si>
+<si><t>2041-01</t></si>
+<si><t>2041-02</t></si>
+<si><t>2041-03</t></si>
+<si><t>2041-04</t></si>
+<si><t>2041-05</t></si>
+<si><t>2041-06</t></si>
+<si><t>2041-07</t></si>
+<si><t>2041-08</t></si>
+<si><t>2041-09</t></si>
+<si><t>2041-10</t></si>
+<si><t>2041-11</t></si>
+<si><t>2041-12</t></si>
+<si><t>2042-01</t></si>
+<si><t>2042-02</t></si>
+<si><t>2042-03</t></si>
+<si><t>2042-04</t></si>
+<si><t>2042-05</t></si>
+<si><t>2042-06</t></si>
+<si><t>2042-07</t></si>
+<si><t>2042-08</t></si>
+<si><t>2042-09</t></si>
+<si><t>2042-10</t></si>
+<si><t>2042-11</t></si>
+<si><t>2042-12</t></si>
+<si><t>2043-01</t></si>
+<si><t>2043-02</t></si>
+<si><t>2043-03</t></si>
+<si><t>2043-04</t></si>
+<si><t>2043-05</t></si>
+<si><t>2043-06</t></si>
+<si><t>2043-07</t></si>
+<si><t>2043-08</t></si>
+<si><t>2043-09</t></si>
+<si><t>2043-10</t></si>
+<si><t>2043-11</t></si>
+<si><t>2043-12</t></si>
+<si><t>2044-01</t></si>
+<si><t>2044-02</t></si>
+<si><t>2044-03</t></si>
+<si><t>2044-04</t></si>
+<si><t>2044-05</t></si>
+<si><t>2044-06</t></si>
+<si><t>2044-07</t></si>
+<si><t>2044-08</t></si>
+<si><t>2044-09</t></si>
+<si><t>2044-10</t></si>
+<si><t>2044-11</t></si>
+<si><t>2044-12</t></si>
+<si><t>2045-01</t></si>
+<si><t>2045-02</t></si>
+<si><t>2045-03</t></si>
+<si><t>2045-04</t></si>
+<si><t>2045-05</t></si>
+<si><t>2045-06</t></si>
+<si><t>2045-07</t></si>
+<si><t>2045-08</t></si>
+<si><t>2045-09</t></si>
+<si><t>2045-10</t></si>
+<si><t>2045-11</t></si>
+<si><t>2045-12</t></si>
+<si><t>2046-01</t></si>
+<si><t>2046-02</t></si>
+<si><t>2046-03</t></si>
+<si><t>2046-04</t></si>
+<si><t>2046-05</t></si>
+<si><t>2046-06</t></si>
+<si><t>2046-07</t></si>
+<si><t>2046-08</t></si>
+<si><t>2046-09</t></si>
+<si><t>2046-10</t></si>
+<si><t>2046-11</t></si>
+<si><t>2046-12</t></si>
+<si><t>2047-01</t></si>
+<si><t>2047-02</t></si>
+<si><t>2047-03</t></si>
+<si><t>2047-04</t></si>
+<si><t>2047-05</t></si>
+<si><t>2047-06</t></si>
+<si><t>2047-07</t></si>
+<si><t>2047-08</t></si>
+<si><t>2047-09</t></si>
+<si><t>2047-10</t></si>
+<si><t>2047-11</t></si>
+<si><t>2047-12</t></si>
+<si><t>2048-01</t></si>
+<si><t>2048-02</t></si>
+<si><t>2048-03</t></si>
+<si><t>2048-04</t></si>
+<si><t>2048-05</t></si>
+<si><t>2048-06</t></si>
+<si><t>2048-07</t></si>
+<si><t>2048-08</t></si>
+<si><t>2048-09</t></si>
+<si><t>2048-10</t></si>
+<si><t>2048-11</t></si>
+<si><t>2048-12</t></si>
+<si><t>2049-01</t></si>
+<si><t>2049-02</t></si>
+<si><t>2049-03</t></si>
+<si><t>2049-04</t></si>
+<si><t>2049-05</t></si>
+<si><t>2049-06</t></si>
+<si><t>2049-07</t></si>
+<si><t>2049-08</t></si>
+<si><t>2049-09</t></si>
+<si><t>2049-10</t></si>
+<si><t>2049-11</t></si>
+<si><t>2049-12</t></si>
+<si><t>2050-01</t></si>
+<si><t>2050-02</t></si>
+<si><t>2050-03</t></si>
+<si><t>2050-04</t></si>
+<si><t>2050-05</t></si>
+<si><t>2050-06</t></si>
+<si><t>2050-07</t></si>
+<si><t>2050-08</t></si>
+<si><t>2050-09</t></si>
+<si><t>2050-10</t></si>
+<si><t>2050-11</t></si>
+<si><t>2050-12</t></si>
+<si><t>2051-01</t></si>
+<si><t>2051-02</t></si>
+<si><t>2051-03</t></si>
+<si><t>2051-04</t></si>
+<si><t>2051-05</t></si>
+<si><t>2051-06</t></si>
+<si><t>2051-07</t></si>
+<si><t>2051-08</t></si>
+<si><t>2051-09</t></si>
+<si><t>2051-10</t></si>
+<si><t>2051-11</t></si>
+<si><t>2051-12</t></si>
+<si><t>2052-01</t></si>
+<si><t>2052-02</t></si>
+<si><t>2052-03</t></si>
+<si><t>2052-04</t></si>
+<si><t>2052-05</t></si>
+<si><t>2052-06</t></si>
+<si><t>2052-07</t></si>
+<si><t>2052-08</t></si>
+<si><t>2052-09</t></si>
+<si><t>2052-10</t></si>
+<si><t>2052-11</t></si>
+<si><t>2052-12</t></si>
+<si><t>2053-01</t></si>
+<si><t>2053-02</t></si>
+<si><t>2053-03</t></si>
+<si><t>2053-04</t></si>
+<si><t>2053-05</t></si>
+<si><t>2053-06</t></si>
+<si><t>2053-07</t></si>
+<si><t>2053-08</t></si>
+<si><t>2053-09</t></si>
+<si><t>2053-10</t></si>
+<si><t>2053-11</t></si>
+<si><t>2053-12</t></si>
+<si><t>2054-01</t></si>
+<si><t>2054-02</t></si>
+<si><t>2054-03</t></si>
+<si><t>2054-04</t></si>
+<si><t>2054-05</t></si>
+<si><t>2054-06</t></si>
+<si><t>2054-07</t></si>
+<si><t>2054-08</t></si>
+<si><t>2054-09</t></si>
+<si><t>2054-10</t></si>
+<si><t>2054-11</t></si>
+<si><t>2054-12</t></si>
+<si><t>2055-01</t></si>
+<si><t>2055-02</t></si>
+<si><t>2055-03</t></si>
+<si><t>2055-04</t></si>
+<si><t>2055-05</t></si>
+<si><t>2055-06</t></si>
+<si><t>2055-07</t></si>
+<si><t>2055-08</t></si>
+<si><t>2055-09</t></si>
+<si><t>2055-10</t></si>
+<si><t>2055-11</t></si>
+<si><t>2055-12</t></si>
+<si><t>2056-01</t></si>
+<si><t>2056-02</t></si>
+<si><t>2056-03</t></si>
+<si><t>2056-04</t></si>
+<si><t>2056-05</t></si>
+<si><t>2056-06</t></si>
+<si><t>2056-07</t></si>
+<si><t>2056-08</t></si>
+<si><t>2056-09</t></si>
+<si><t>2056-10</t></si>
+<si><t>2056-11</t></si>
+<si><t>2056-12</t></si>
+<si><t>2057-01</t></si>
+<si><t>2057-02</t></si>
+<si><t>2057-03</t></si>
+<si><t>2057-04</t></si>
+<si><t>2057-05</t></si>
+<si><t>2057-06</t></si>
+<si><t>2057-07</t></si>
+<si><t>2057-08</t></si>
+<si><t>2057-09</t></si>
+<si><t>2057-10</t></si>
+<si><t>2057-11</t></si>
+<si><t>2057-12</t></si>
+<si><t>2058-01</t></si>
+<si><t>2058-02</t></si>
+<si><t>2058-03</t></si>
+<si><t>2058-04</t></si>
+<si><t>2058-05</t></si>
+<si><t>2058-06</t></si>
+<si><t>2058-07</t></si>
+<si><t>2058-08</t></si>
+<si><t>2058-09</t></si>
+<si><t>2058-10</t></si>
+<si><t>2058-11</t></si>
+<si><t>2058-12</t></si>
+<si><t>2059-01</t></si>
+<si><t>2059-02</t></si>
+<si><t>2059-03</t></si>
+<si><t>2059-04</t></si>
+<si><t>2059-05</t></si>
+<si><t>2059-06</t></si>
+<si><t>2059-07</t></si>
+<si><t>2059-08</t></si>
+<si><t>2059-09</t></si>
+<si><t>2059-10</t></si>
+<si><t>2059-11</t></si>
+<si><t>2059-12</t></si>
+<si><t>2060-01</t></si>
+<si><t>2060-02</t></si>
+<si><t>2060-03</t></si>
+<si><t>C1.1</t></si>
+<si><t>Capacity (MW)</t></si>
+<si><t>C1.2</t></si>
+<si><t>Storage Hours</t></si>
+<si><t>C1.3</t></si>
+<si><t>Energy Storage (MWh)</t></si>
+<si><t>C1.4</t></si>
+<si><t>Cycles Per Day</t></si>
+<si><t>C1.5</t></si>
+<si><t>Annual Energy (MWh)</t></si>
+<si><t>C1.10</t></si>
+<si><t>Tolling Cost ($/MW/hr)</t></si>
+<si><t>C1.11</t></si>
+<si><t>Tax Rate (%)</t></si>
+<si><t>C1.12</t></si>
+<si><t>WACC (%)</t></si>
+<si><t>C1.13</t></si>
+<si><t>Receivable Days</t></si>
+<si><t>C1.14</t></si>
+<si><t>Payable Days</t></si>
+<si><t>C1.15</t></si>
+<si><t>GST Rate (%)</t></si>
+<si><t>C1.16</t></si>
+<si><t>DSRA Months Cover</t></si>
+<si><t>C1.17</t></si>
+<si><t>MRA Target ($)</t></si>
+<si><t>C1.18</t></si>
+<si><t>Min Cash Balance</t></si>
+<si><t>C1.19</t></si>
+<si><t>Max Gearing (%)</t></si>
+<si><t>C1.20</t></si>
+<si><t>Construction Interest Rate (%)</t></si>
+<si><t>C1.21</t></si>
+<si><t>Operations Interest Rate (%)</t></si>
+<si><t>C1.23</t></si>
+<si><t>Contingency (%)</t></si>
+<si><t>C1.24</t></si>
+<si><t>Depreciation Life (Years)</t></si>
+<si><t>C1.25</t></si>
+<si><t>Contracted DSCR Target</t></si>
+<si><t>C1.26</t></si>
+<si><t>Uncontracted DSCR Target</t></si>
+<si><t>C1.27</t></si>
+<si><t>Debt Tenor (Years)</t></si>
+<si><t>C1.28</t></si>
+<si><t>Minimum Cash Balance ($M)</t></si>
+<si><t>C1.29</t></si>
+<si><t>Dividend Withholding Tax (%)</t></si>
+<si><t>C1.30</t></si>
+<si><t>Terminal Value ($M)</t></si>
+<si><t>C1.31</t></si>
+<si><t>GST Receipt Delay (Months)</t></si>
+<si><t>C1.32</t></si>
+<si><t>Debt Margin - Construction (%)</t></si>
+<si><t>C1.33</t></si>
+<si><t>Debt Margin - Operations (%)</t></si>
+<si><t>C1.34</t></si>
+<si><t>Establishment Fee (%)</t></si>
+<si><t>C1.35</t></si>
+<si><t>Upfront Fees ($M)</t></si>
+<si><t>C1.36</t></si>
+<si><t>Commitment Fee (% of Margin)</t></si>
+<si><t>C1.41</t></si>
+<si><t>A Very Small Number</t></si>
+<si><t>C1.43</t></si>
+<si><t>Minor Event Revenue ($/MW)</t></si>
+<si><t>C1.44</t></si>
+<si><t>Minor Event Frequency (Years)</t></si>
+<si><t>C1.45</t></si>
+<si><t>Major Event Revenue ($/MW)</t></si>
+<si><t>C1.46</t></si>
+<si><t>Major Event Frequency (Years)</t></si>
+<si><t>C1.47</t></si>
+<si><t>Lock-up DSCR Threshold</t></si>
+<si><t>C1.48</t></si>
+<si><t>Lock-up ADSCR Threshold</t></si>
+<si><t>C1.49</t></si>
+<si><t>Lock-up Release Periods (Qtrs)</t></si>
+<si><t>C1.50</t></si>
+<si><t>DSRF Active</t></si>
+<si><t>C1.51</t></si>
+<si><t>DSRF Establishment Fee (%)</t></si>
+<si><t>C1.52</t></si>
+<si><t>DSRF Commitment Fee (% of Margin)</t></si>
+<si><t>C1.53</t></si>
+<si><t>DSRF Base Margin (%)</t></si>
+<si><t>C1.54</t></si>
+<si><t>DSRF Facility Months of DS</t></si>
+<si><t>C1.56</t></si>
+<si><t>Life Extension Revenue Factor (%)</t></si>
+<si><t>Unit</t></si>
+<si><t>V1.1</t></si>
+<si><t>EPC - BESS</t></si>
+<si><t>$ M</t></si>
+<si><t>V1.2</t></si>
+<si><t>EPC - BOP</t></si>
+<si><t>V1.3</t></si>
+<si><t>Connection Cost</t></si>
+<si><t>V1.4</t></si>
+<si><t>Contingency (EPC)</t></si>
+<si><t>V1.5</t></si>
+<si><t>Demolition</t></si>
+<si><t>V1.6</t></si>
+<si><t>Development Costs</t></si>
+<si><t>V1.7</t></si>
+<si><t>Development Fee</t></si>
+<si><t>V1.8</t></si>
+<si><t>Initial Entry Costs</t></si>
+<si><t>V1.9</t></si>
+<si><t>Land Transaction</t></si>
+<si><t>V1.10</t></si>
+<si><t>Other Construction</t></si>
+<si><t>V1.11</t></si>
+<si><t>Construction Management</t></si>
+<si><t>V1.12</t></si>
+<si><t>Construction Insurance</t></si>
+<si><t>V1.13</t></si>
+<si><t>Land Lease (Construction)</t></si>
+<si><t>V1</t></si>
+<si><t>Total V1</t></si>
+<si><t>S1.14</t></si>
+<si><t>O&amp;amp;M MSA</t></si>
+<si><t>S1.15</t></si>
+<si><t>Land Lease</t></si>
+<si><t>S1.16</t></si>
+<si><t>Connection Opex</t></si>
+<si><t>S1.17</t></si>
+<si><t>SPV costs</t></si>
+<si><t>S1.18</t></si>
+<si><t>Asset management fees</t></si>
+<si><t>S1.19</t></si>
+<si><t>Maintenance capex and additional service O&amp;amp;M charges</t></si>
+<si><t>S1.20</t></si>
+<si><t>Insurance (yrs 1-2)</t></si>
+<si><t>S1.21</t></si>
+<si><t>Insurance (yrs 3+)</t></si>
+<si><t>S1</t></si>
+<si><t>Total S1</t></si>
+<si><t>G8.156</t></si>
+<si><t>Base Maintenance</t></si>
+<si><t>G8</t></si>
+<si><t>Total G8</t></si>
+<si><t>G101.141</t></si>
+<si><t>Agency Fee</t></si>
+<si><t>G101</t></si>
+<si><t>Total G101</t></si>
+<si><t>Type</t></si>
+<si><t>F1</t></si>
+<si><t>Construction</t></si>
+<si><t>Flag</t></si>
+<si><t>F1.Start</t></si>
+<si><t>Construction Start</t></si>
+<si><t>F1.End</t></si>
+<si><t>Construction End</t></si>
+<si><t>F2</t></si>
+<si><t>Total Operations</t></si>
+<si><t>F2.Start</t></si>
+<si><t>Total Operations Start</t></si>
+<si><t>F2.End</t></si>
+<si><t>Total Operations End</t></si>
+<si><t>F3</t></si>
+<si><t>Normal Operations</t></si>
+<si><t>F3.Start</t></si>
+<si><t>Normal Operations Start</t></si>
+<si><t>F3.End</t></si>
+<si><t>Normal Operations End</t></si>
+<si><t>F4</t></si>
+<si><t>Life Extension</t></si>
+<si><t>F4.Start</t></si>
+<si><t>Life Extension Start</t></si>
+<si><t>F4.End</t></si>
+<si><t>Life Extension End</t></si>
+<si><t>F5</t></si>
+<si><t>Terminal Value</t></si>
+<si><t>F5.Start</t></si>
+<si><t>Terminal Value Start</t></si>
+<si><t>F5.End</t></si>
+<si><t>Terminal Value End</t></si>
+<si><t>F9</t></si>
+<si><t>Revenue Periods</t></si>
+<si><t>F9.Start</t></si>
+<si><t>Revenue Periods Start</t></si>
+<si><t>F9.End</t></si>
+<si><t>Revenue Periods End</t></si>
+<si><t>F6</t></si>
+<si><t>Offtake</t></si>
+<si><t>F6.Start</t></si>
+<si><t>Offtake Start</t></si>
+<si><t>F6.End</t></si>
+<si><t>Offtake End</t></si>
+<si><t>F7</t></si>
+<si><t>Merchant</t></si>
+<si><t>F7.Start</t></si>
+<si><t>Merchant Start</t></si>
+<si><t>F7.End</t></si>
+<si><t>Merchant End</t></si>
+<si><t>F10</t></si>
+<si><t>Debt Facilities</t></si>
+<si><t>F10.Start</t></si>
+<si><t>Debt Facilities Start</t></si>
+<si><t>F10.End</t></si>
+<si><t>Debt Facilities End</t></si>
+<si><t>F11</t></si>
+<si><t>Construction Facility</t></si>
+<si><t>F11.Start</t></si>
+<si><t>Construction Facility Start</t></si>
+<si><t>F11.End</t></si>
+<si><t>Construction Facility End</t></si>
+<si><t>F8</t></si>
+<si><t>Ops Debt</t></si>
+<si><t>F8.Start</t></si>
+<si><t>Ops Debt Start</t></si>
+<si><t>F8.End</t></si>
+<si><t>Ops Debt End</t></si>
+<si><t>F12</t></si>
+<si><t>Maintenance</t></si>
+<si><t>F12.Start</t></si>
+<si><t>Maintenance Start</t></si>
+<si><t>F12.End</t></si>
+<si><t>Maintenance End</t></si>
+<si><t>I2</t></si>
+<si><t>CPI (2.5%)</t></si>
+<si><t>Index</t></si>
+<si><t>T.MiY</t></si>
+<si><t>Months in Year</t></si>
+<si><t>Time</t></si>
+<si><t>T.DiY</t></si>
+<si><t>Days in Year</t></si>
+<si><t>T.DiM</t></si>
+<si><t>Days in Month</t></si>
+<si><t>T.HiY</t></si>
+<si><t>Hours in Year</t></si>
+<si><t>T.HiD</t></si>
+<si><t>Hours in Day</t></si>
+<si><t>T.HiM</t></si>
+<si><t>Hours in Month</t></si>
+<si><t>T.QiY</t></si>
+<si><t>Quarters in Year</t></si>
+<si><t>T.MiQ</t></si>
+<si><t>Months in Quarter</t></si>
+<si><t>T.DiQ</t></si>
+<si><t>Days in Quarter</t></si>
+<si><t>T.QE</t></si>
+<si><t>Quarter End</t></si>
+<si><t>T.CYE</t></si>
+<si><t>Calendar Year End</t></si>
+<si><t>T.FYE</t></si>
+<si><t>Financial Year End</t></si>
+<si><t>L1</t></si>
+<si><t>Lookup</t></si>
+<si><t>L1.1</t></si>
+<si><t>L1.1.1</t></si>
+<si><t>L1.1.2</t></si>
+<si><t>L1.105</t></si>
+<si><t>L1.106</t></si>
+<si><t>L1.107</t></si>
+<si><t>L1.108</t></si>
+<si><t>L1.2</t></si>
+<si><t>L1.2.1</t></si>
+<si><t>L1.2.2</t></si>
+<si><t>L2</t></si>
+<si><t>L2.1</t></si>
+<si><t>L2.2</t></si>
+<si><t>L2.31</t></si>
+<si><t>L2.36</t></si>
+<si><t>L3</t></si>
+<si><t>L3.1</t></si>
+<si><t>L3.154</t></si>
+<si><t>L3.2</t></si>
+<si><t>L3.3</t></si>
+<si><t>L3.32</t></si>
+<si><t>L3.33</t></si>
+<si><t>L3.34</t></si>
+<si><t>L3.35</t></si>
+<si><t>L3.4</t></si>
+<si><t>L3.5</t></si>
+<si><t>Formula</t></si>
+<si><t>R119</t></si>
+<si><t>Model Period</t></si>
+<si><t>CUMSUM(1)</t></si>
+<si><t>R120</t></si>
+<si><t>Ops Period</t></si>
+<si><t>CUMSUM(F2)</t></si>
+<si><t>R3</t></si>
+<si><t>Capex + Cont</t></si>
+<si><t>V1 * (1 + C1.23 / 100)</t></si>
+<si><t>R112</t></si>
+<si><t>Capex to Apply GST</t></si>
+<si><t>V1 - V1.1 - V1.9</t></si>
+<si><t>R4</t></si>
+<si><t>Tolling Revenue</t></si>
+<si><t>C1.10 * C1.1 * T.HiY / T.MiY / 10^6 * F6 * I2</t></si>
+<si><t>R5</t></si>
+<si><t>FCAS Revenue</t></si>
+<si><t>L1.2 * C1.1 / T.MiY / 10^6 * F7 * I2</t></si>
+<si><t>R9</t></si>
+<si><t>Total OPEX (Nominal)</t></si>
+<si><t>-S1 * I2</t></si>
+<si><t>R111</t></si>
+<si><t>Monthly Decay Factor</t></si>
+<si><t>(1 - L3.5/100) ^ (T.DiM/T.DiY)</t></si>
+<si><t>R206</t></si>
+<si><t>Maintenance Capex (Add-back)</t></si>
+<si><t>S1.19 * I2</t></si>
+<si><t>R174</t></si>
+<si><t>-S3 * I2</t></si>
+<si><t>R23</t></si>
+<si><t>Capex</t></si>
+<si><t>-V1 * F1</t></si>
+<si><t>R33</t></si>
+<si><t>DSRA Contribution</t></si>
+<si><t>0</t></si>
+<si><t>R34</t></si>
+<si><t>DSRA Release</t></si>
+<si><t>R151</t></si>
+<si><t>Interest Income</t></si>
+<si><t>R152</t></si>
+<si><t>DSRA Shortfall Contribution</t></si>
+<si><t>R147</t></si>
+<si><t>Agency Fees</t></si>
+<si><t>CUMSUM(S3 * I2 * F1)</t></si>
+<si><t>R148</t></si>
+<si><t>Construction Cash Reserving</t></si>
+<si><t>R50</t></si>
+<si><t>Monthly Discount Rate</t></si>
+<si><t>(1 + C1.12 / 100) ^ (1/T.MiY) - 1</t></si>
+<si><t>R131</t></si>
+<si><t>Contingent Equity</t></si>
+<si><t>R136</t></si>
+<si><t>C1.30 * I2 * F5</t></si>
+<si><t>R171</t></si>
+<si><t>All-in Interest Rate - Construction (%)</t></si>
+<si><t>L2.2 + C1.32</t></si>
+<si><t>R172</t></si>
+<si><t>All-in Interest Rate - Operations (%)</t></si>
+<si><t>L2.2 + C1.33</t></si>
+<si><t>M6.1</t></si>
+<si><t>MRA (Maintenance Reserve): Opening Balance</t></si>
+<si><t>(pre-computed)</t></si>
+<si><t>M6.2</t></si>
+<si><t>MRA (Maintenance Reserve): Funding</t></si>
+<si><t>M6.3</t></si>
+<si><t>MRA (Maintenance Reserve): Drawdown</t></si>
+<si><t>M6.4</t></si>
+<si><t>MRA (Maintenance Reserve): Release</t></si>
+<si><t>M6.5</t></si>
+<si><t>MRA (Maintenance Reserve): Closing Balance</t></si>
+<si><t>R60</t></si>
+<si><t>Capex + Contingency</t></si>
+<si><t>CUMSUM(R3 * F1)</t></si>
+<si><t>M3.1</t></si>
+<si><t>GST Paid/Received: GST Base Amount</t></si>
+<si><t>M3.2</t></si>
+<si><t>GST Paid/Received: GST Amount</t></si>
+<si><t>R112 * C1.15/100</t></si>
+<si><t>M3.3</t></si>
+<si><t>GST Paid/Received: GST Paid (Outflow)</t></si>
+<si><t>-M3.2 * F1</t></si>
+<si><t>M3.4</t></si>
+<si><t>GST Paid/Received: GST Receivable - Opening</t></si>
+<si><t>SHIFT(M3.6, 1)</t></si>
+<si><t>M3.5</t></si>
+<si><t>GST Paid/Received: GST Received (Inflow)</t></si>
+<si><t>SHIFT(CUMSUM(-M3.3), C1.31) - SHIFT(CUMSUM(-M3.3), C1.31+1)</t></si>
+<si><t>M3.6</t></si>
+<si><t>GST Paid/Received: GST Receivable - Closing</t></si>
+<si><t>CUMSUM(-M3.3) - CUMSUM(M3.5)</t></si>
+<si><t>M3.7</t></si>
+<si><t>GST Paid/Received: Net GST Cash Flow</t></si>
+<si><t>M3.3 + M3.5</t></si>
+<si><t>M3.8</t></si>
+<si><t>GST Paid/Received: GST Received (Construction)</t></si>
+<si><t>M3.5 * F1</t></si>
+<si><t>M3.9</t></si>
+<si><t>GST Paid/Received: GST Received (Operations)</t></si>
+<si><t>M3.5 * F2</t></si>
+<si><t>R175</t></si>
+<si><t>Tolling Quarterly Accrual</t></si>
+<si><t>R4 + SHIFT(R4,1)*(1-SHIFT(T.QE,1)) + SHIFT(R4,2)*(1-SHIFT(T.QE,2))*(1-SHIFT(T.QE,1))</t></si>
+<si><t>R96</t></si>
+<si><t>Payables</t></si>
+<si><t>ABS(R9) * C1.14 / 30</t></si>
+<si><t>R11</t></si>
+<si><t>Degradation Index</t></si>
+<si><t>CUMPROD(1 - F2 + F2 * R111)</t></si>
+<si><t>R51</t></si>
+<si><t>Discount Factor</t></si>
+<si><t>CUMPROD(1 / (1 + R50))</t></si>
+<si><t>R26</t></si>
+<si><t>MRA Contribution</t></si>
+<si><t>-M6.2</t></si>
+<si><t>R27</t></si>
+<si><t>MRA Release</t></si>
+<si><t>R149</t></si>
+<si><t>MRA Drawdown (Maintenance)</t></si>
+<si><t>R62</t></si>
+<si><t>MRA Funding</t></si>
+<si><t>CUMSUM(M6.2)</t></si>
+<si><t>R186</t></si>
+<si><t>MRA Balance</t></si>
+<si><t>R24</t></si>
+<si><t>GST Paid on Capex</t></si>
+<si><t>R25</t></si>
+<si><t>GST Received (Operations)</t></si>
+<si><t>R202</t></si>
+<si><t>GST Received (Construction)</t></si>
+<si><t>R65</t></si>
+<si><t>GST Received</t></si>
+<si><t>CUMSUM(M3.8)</t></si>
+<si><t>R185</t></si>
+<si><t>GST Receivable</t></si>
+<si><t>R176</t></si>
+<si><t>Tolling Receivable</t></si>
+<si><t>R175 * (1 - T.QE)</t></si>
+<si><t>R189</t></si>
+<si><t>Trade Payables</t></si>
+<si><t>R12</t></si>
+<si><t>Operating Adjustment</t></si>
+<si><t>L3.1 / 100 * L3.2 / 100 * L3.3 / 100 * L3.4 / 100 * R11</t></si>
+<si><t>R61</t></si>
+<si><t>GST Paid</t></si>
+<si><t>CUMSUM(R24)</t></si>
+<si><t>R44</t></si>
+<si><t>Capex (incl GST)</t></si>
+<si><t>R23 + R24 - R25</t></si>
+<si><t>R28</t></si>
+<si><t>Investing CF</t></si>
+<si><t>R23 + R24 + R25 + R26 + R27 + R149 + R202</t></si>
+<si><t>R6</t></si>
+<si><t>Market Arbitrage Revenue</t></si>
+<si><t>L1.1 * C1.1 / 10^6 / T.MiY * F7 * R12 * I2</t></si>
+<si><t>R179</t></si>
+<si><t>Minor Event Revenue</t></si>
+<si><t>C1.1 * C1.43 / C1.44 / T.MiY / 10^6 * F7 * R12 * I2</t></si>
+<si><t>R180</t></si>
+<si><t>Major Event Revenue</t></si>
+<si><t>C1.1 * C1.45 / C1.46 / T.MiY / 10^6 * F7 * R12 * I2</t></si>
+<si><t>R181</t></si>
+<si><t>Market Event Revenue</t></si>
+<si><t>R179 + R180</t></si>
+<si><t>R7</t></si>
+<si><t>Merchant Revenue</t></si>
+<si><t>(R5 + R6 + R181) * (1 - F4 + F4 * C1.56 / 100)</t></si>
+<si><t>R8</t></si>
+<si><t>Total Revenue</t></si>
+<si><t>R4 + R7</t></si>
+<si><t>R177</t></si>
+<si><t>Merchant Receivable</t></si>
+<si><t>R7 * C1.13 / 30</t></si>
+<si><t>R10</t></si>
+<si><t>Gross Margin</t></si>
+<si><t>R8 + R9</t></si>
+<si><t>R95</t></si>
+<si><t>Receivables</t></si>
+<si><t>R176 + R177</t></si>
+<si><t>R13</t></si>
+<si><t>EBITDA</t></si>
+<si><t>R10 + R206</t></si>
+<si><t>R97</t></si>
+<si><t>Net Working Capital</t></si>
+<si><t>R95 - R96</t></si>
+<si><t>R184</t></si>
+<si><t>Trade Receivables</t></si>
+<si><t>R20</t></si>
+<si><t>Operating CF EBITDA</t></si>
+<si><t>R43</t></si>
+<si><t>FCF EBITDA</t></si>
+<si><t>R115</t></si>
+<si><t>Contracted CFADS</t></si>
+<si><t>R13 * R4 / R8 * F2</t></si>
+<si><t>R116</t></si>
+<si><t>Merchant CFADS</t></si>
+<si><t>R13 * R7 / R8 * F2</t></si>
+<si><t>R98</t></si>
+<si><t>Net WC Movement</t></si>
+<si><t>R97 - SHIFT(R97, 1)</t></si>
+<si><t>R208</t></si>
+<si><t>Contracted CFADS Post Capex</t></si>
+<si><t>R115 - R206 * R4 / R8 * F2</t></si>
+<si><t>R205</t></si>
+<si><t>Total CFADS</t></si>
+<si><t>R115 + R116</t></si>
+<si><t>R209</t></si>
+<si><t>Merchant CFADS Post Capex</t></si>
+<si><t>R116 - R206 * R7 / R8 * F2</t></si>
+<si><t>R21</t></si>
+<si><t>Operating CF WC Movement</t></si>
+<si><t>-R98</t></si>
+<si><t>R207</t></si>
+<si><t>Total CFADS Post Capex</t></si>
+<si><t>R208 + R209</t></si>
+<si><t>M1.1</t></si>
+<si><t>Operation Debt: Sized Debt Amount</t></si>
+<si><t>M1.2</t></si>
+<si><t>Operation Debt: Opening Balance</t></si>
+<si><t>M1.3</t></si>
+<si><t>Operation Debt: Interest Payment</t></si>
+<si><t>M1.4</t></si>
+<si><t>Operation Debt: Principal Payment</t></si>
+<si><t>M1.5</t></si>
+<si><t>Operation Debt: Total Debt Service</t></si>
+<si><t>M1.6</t></si>
+<si><t>Operation Debt: Closing Balance</t></si>
+<si><t>M1.7</t></si>
+<si><t>Operation Debt: Period DSCR</t></si>
+<si><t>M1.8</t></si>
+<si><t>Operation Debt: Cumulative Principal</t></si>
+<si><t>R22</t></si>
+<si><t>Operating CF</t></si>
+<si><t>R20 + R21</t></si>
+<si><t>R45</t></si>
+<si><t>FCF WC Movement</t></si>
+<si><t>R144</t></si>
+<si><t>Upfront Fees</t></si>
+<si><t>(M1.1 * C1.34 / 100 + C1.35) * F1.Start</t></si>
+<si><t>R146</t></si>
+<si><t>Commitment Fees</t></si>
+<si><t>M1.1 * C1.33 / 100 * C1.36 / 100 / T.MiY * F1</t></si>
+<si><t>R118</t></si>
+<si><t>DSCR</t></si>
+<si><t>R70</t></si>
+<si><t>Debt Opening Balance</t></si>
+<si><t>R71</t></si>
+<si><t>Debt Interest Paid</t></si>
+<si><t>R72</t></si>
+<si><t>Debt Principal Repayment</t></si>
+<si><t>R73</t></si>
+<si><t>Debt Service (P+I)</t></si>
+<si><t>R74</t></si>
+<si><t>Debt Closing Balance</t></si>
+<si><t>M8.1</t></si>
+<si><t>DSRF (Debt Service Reserve Facility): Facility Limit</t></si>
+<si><t>M8.2</t></si>
+<si><t>DSRF (Debt Service Reserve Facility): Establishment Fee</t></si>
+<si><t>M8.3</t></si>
+<si><t>DSRF (Debt Service Reserve Facility): Commitment Fee</t></si>
+<si><t>M8.4</t></si>
+<si><t>DSRF (Debt Service Reserve Facility): Refinancing Fees</t></si>
+<si><t>M8.5</t></si>
+<si><t>DSRF (Debt Service Reserve Facility): Effective Margin (%)</t></si>
+<si><t>M8.6</t></si>
+<si><t>DSRF (Debt Service Reserve Facility): Total DSRF Fees</t></si>
+<si><t>M8.7</t></si>
+<si><t>DSRF (Debt Service Reserve Facility): Total DSRF Fees (Cumulative)</t></si>
+<si><t>M8.8</t></si>
+<si><t>DSRF (Debt Service Reserve Facility): DS + DSRF Fees</t></si>
+<si><t>M8.9</t></si>
+<si><t>DSRF (Debt Service Reserve Facility): Adjusted DSCR</t></si>
+<si><t>R46</t></si>
+<si><t>FCFF</t></si>
+<si><t>R43 + R44 + R45</t></si>
+<si><t>R199</t></si>
+<si><t>Upfront Fees Paid</t></si>
+<si><t>-R144</t></si>
+<si><t>R200</t></si>
+<si><t>Commitment Fees Paid</t></si>
+<si><t>-R146</t></si>
+<si><t>R173</t></si>
+<si><t>Financing Fees</t></si>
+<si><t>CUMSUM(R144 + R146)</t></si>
+<si><t>R16</t></si>
+<si><t>Interest Expense</t></si>
+<si><t>-R71</t></si>
+<si><t>R32</t></si>
+<si><t>Interest Paid</t></si>
+<si><t>R31</t></si>
+<si><t>Principal Repayment</t></si>
+<si><t>-R72</t></si>
+<si><t>R188</t></si>
+<si><t>Operations Debt</t></si>
+<si><t>R153</t></si>
+<si><t>DSRF Fees</t></si>
+<si><t>-M8.6</t></si>
+<si><t>R145</t></si>
+<si><t>DSRF Facility Limit</t></si>
+<si><t>M4.1</t></si>
+<si><t>Construction Funding: Total Funding Requirements</t></si>
+<si><t>M4.9 + M4.5</t></si>
+<si><t>M4.2</t></si>
+<si><t>Construction Funding: Senior Debt</t></si>
+<si><t>MIN(M1.1, M4.9 * C1.19/100)</t></si>
+<si><t>M4.3</t></si>
+<si><t>Construction Funding: Equity</t></si>
+<si><t>M4.1 - M4.2</t></si>
+<si><t>M4.4</t></si>
+<si><t>Construction Funding: Gearing %</t></si>
+<si><t>M4.2 / M4.9 * 100</t></si>
+<si><t>M4.5</t></si>
+<si><t>Construction Funding: IDC</t></si>
+<si><t>CUMSUM(M4.8)</t></si>
+<si><t>M4.6</t></si>
+<si><t>Construction Funding: Debt Drawdown</t></si>
+<si><t>M4.2 - SHIFT(M4.2, 1)</t></si>
+<si><t>M4.7</t></si>
+<si><t>Construction Funding: Equity Drawdown</t></si>
+<si><t>M4.3 - SHIFT(M4.3, 1)</t></si>
+<si><t>M4.8</t></si>
+<si><t>Construction Funding: IDC (Period)</t></si>
+<si><t>SHIFT(M4.2, 1) * R171/100 / T.MiY * F1</t></si>
+<si><t>M4.9</t></si>
+<si><t>Construction Funding: Total Uses (ex-IDC)</t></si>
+<si><t>R60 + CUMSUM(R61) + CUMSUM(R173)</t></si>
+<si><t>R47</t></si>
+<si><t>FCF Debt Service</t></si>
+<si><t>R31 + R32</t></si>
+<si><t>R178</t></si>
+<si><t>Total Debt Service</t></si>
+<si><t>R31 + R32 + R174 + R153</t></si>
+<si><t>R29</t></si>
+<si><t>Construction Debt Drawdown</t></si>
+<si><t>R201</t></si>
+<si><t>IDC Paid</t></si>
+<si><t>-M4.8</t></si>
+<si><t>R63</t></si>
+<si><t>IDC</t></si>
+<si><t>R66</t></si>
+<si><t>Senior Debt</t></si>
+<si><t>R35</t></si>
+<si><t>Construction Equity Injection</t></si>
+<si><t>R203</t></si>
+<si><t>Total Capital Additions</t></si>
+<si><t>V1 + M4.8</t></si>
+<si><t>R198</t></si>
+<si><t>Construction Debt</t></si>
+<si><t>M4.2 * F1</t></si>
+<si><t>R48</t></si>
+<si><t>FCF Debt Drawdown</t></si>
+<si><t>R64</t></si>
+<si><t>Total Uses</t></si>
+<si><t>R60 + R63 + R173 + R147 + R62 + R61</t></si>
+<si><t>R196</t></si>
+<si><t>Construction WIP</t></si>
+<si><t>(CUMSUM(V1 * F1) + R63) * F1</t></si>
+<si><t>R169</t></si>
+<si><t>Financing CF (ex-Dist)</t></si>
+<si><t>R29 + R31 + R32 + R174 + R33 + R34 + R35 + R151 + R152 + R153 + R199 + R200 + R201</t></si>
+<si><t>R132</t></si>
+<si><t>Equity Injections</t></si>
+<si><t>-R35</t></si>
+<si><t>M2.1</t></si>
+<si><t>Depreciation &amp;amp; Amortization: Opening Book Value</t></si>
+<si><t>MAX(0, (CUMSUM(R203) - R203) - CUMSUM(R203) / C1.24 / T.MiY * (CUMSUM(F2) - F2))</t></si>
+<si><t>M2.2</t></si>
+<si><t>Depreciation &amp;amp; Amortization: Capital Addition</t></si>
+<si><t>CUMSUM(R203) * F2.Start</t></si>
+<si><t>M2.3</t></si>
+<si><t>Depreciation &amp;amp; Amortization: Depreciation Expense</t></si>
+<si><t>MIN(M2.1 + M2.2, CUMSUM(R203) / C1.24 / T.MiY) * F2</t></si>
+<si><t>M2.4</t></si>
+<si><t>Depreciation &amp;amp; Amortization: Accumulated Depreciation</t></si>
+<si><t>CUMSUM(M2.3)</t></si>
+<si><t>M2.5</t></si>
+<si><t>Depreciation &amp;amp; Amortization: Closing Book Value</t></si>
+<si><t>MAX(0, CUMSUM(R203) - CUMSUM(R203) / C1.24 / T.MiY * CUMSUM(F2))</t></si>
+<si><t>R190</t></si>
+<si><t>Total Liabilities</t></si>
+<si><t>R198 + R188 + R189</t></si>
+<si><t>R49</t></si>
+<si><t>FCFE</t></si>
+<si><t>R46 + R47 + R48</t></si>
+<si><t>R67</t></si>
+<si><t>Committed Equity</t></si>
+<si><t>R64 - R65 - R66</t></si>
+<si><t>R170</t></si>
+<si><t>Net CF (ex-Dist)</t></si>
+<si><t>R22 + R28 + R169</t></si>
+<si><t>R14</t></si>
+<si><t>P&amp;amp;L Depreciation</t></si>
+<si><t>-M2.3</t></si>
+<si><t>R80</t></si>
+<si><t>D&amp;amp;A Opening Book Value</t></si>
+<si><t>R81</t></si>
+<si><t>D&amp;amp;A Asset Addition</t></si>
+<si><t>R82</t></si>
+<si><t>D&amp;amp;A Depreciation Expense</t></si>
+<si><t>R83</t></si>
+<si><t>D&amp;amp;A Accumulated Depreciation</t></si>
+<si><t>R84</t></si>
+<si><t>D&amp;amp;A Closing Book Value</t></si>
+<si><t>R68</t></si>
+<si><t>Total Sources</t></si>
+<si><t>R65 + R66 + R67</t></si>
+<si><t>R15</t></si>
+<si><t>EBIT</t></si>
+<si><t>R13 + R14</t></si>
+<si><t>R183</t></si>
+<si><t>PP&amp;amp;E (Net Book Value)</t></si>
+<si><t>R69</t></si>
+<si><t>Sources = Uses Check</t></si>
+<si><t>R68 - R64</t></si>
+<si><t>R17</t></si>
+<si><t>EBT</t></si>
+<si><t>R15 + R16 + R174 - R144 - R146 + R153</t></si>
+<si><t>M5.1</t></si>
+<si><t>Tax &amp;amp; Tax Losses: Taxable Income Before Losses</t></si>
+<si><t>M5.2</t></si>
+<si><t>Tax &amp;amp; Tax Losses: Tax Losses - Opening</t></si>
+<si><t>CUMSUM(MAX(0, -R17)) - SHIFT(MIN(CUMSUM(MAX(0, -R17)), CUMSUM(MAX(0, R17))), 1)</t></si>
+<si><t>M5.3</t></si>
+<si><t>Tax &amp;amp; Tax Losses: Tax Losses - Generated</t></si>
+<si><t>MAX(0, -R17) * F2</t></si>
+<si><t>M5.4</t></si>
+<si><t>Tax &amp;amp; Tax Losses: Tax Losses - Utilised</t></si>
+<si><t>MIN(CUMSUM(M5.3), CUMSUM(MAX(0, R17))) - SHIFT(MIN(CUMSUM(M5.3), CUMSUM(MAX(0, R17))), 1)</t></si>
+<si><t>M5.5</t></si>
+<si><t>Tax &amp;amp; Tax Losses: Tax Losses - Closing</t></si>
+<si><t>CUMSUM(M5.3) - MIN(CUMSUM(M5.3), CUMSUM(MAX(0, R17)))</t></si>
+<si><t>M5.6</t></si>
+<si><t>Tax &amp;amp; Tax Losses: Net Taxable Income</t></si>
+<si><t>MAX(0, R17 - M5.4)</t></si>
+<si><t>M5.7</t></si>
+<si><t>Tax &amp;amp; Tax Losses: Tax Payable</t></si>
+<si><t>M5.6 * C1.11/100</t></si>
+<si><t>R18</t></si>
+<si><t>Tax Expense</t></si>
+<si><t>-M5.7</t></si>
+<si><t>R100</t></si>
+<si><t>Tax Taxable Income</t></si>
+<si><t>R101</t></si>
+<si><t>Loss Pool Opening</t></si>
+<si><t>R102</t></si>
+<si><t>Losses Utilised</t></si>
+<si><t>R105</t></si>
+<si><t>Loss Pool Closing</t></si>
+<si><t>R103</t></si>
+<si><t>Tax Net Taxable Income</t></si>
+<si><t>R104</t></si>
+<si><t>Tax Payable</t></si>
+<si><t>R19</t></si>
+<si><t>NPAT</t></si>
+<si><t>R17 + R18</t></si>
+<si><t>M7.1</t></si>
+<si><t>Distributions: Cash Available for Dist</t></si>
+<si><t>M7.2</t></si>
+<si><t>Distributions: RE - Opening</t></si>
+<si><t>M7.3</t></si>
+<si><t>Distributions: RE - NPAT</t></si>
+<si><t>M7.4</t></si>
+<si><t>Distributions: RE Test</t></si>
+<si><t>M7.5</t></si>
+<si><t>Distributions: NPAT Test</t></si>
+<si><t>M7.6</t></si>
+<si><t>Distributions: Dividend Paid</t></si>
+<si><t>M7.7</t></si>
+<si><t>Distributions: RE - Movement</t></si>
+<si><t>M7.8</t></si>
+<si><t>Distributions: RE - Closing</t></si>
+<si><t>M7.9</t></si>
+<si><t>Distributions: SC - Opening</t></si>
+<si><t>M7.10</t></si>
+<si><t>Distributions: Post-SC Cash Available</t></si>
+<si><t>M7.11</t></si>
+<si><t>Distributions: SC - Repayment</t></si>
+<si><t>M7.12</t></si>
+<si><t>Distributions: SC - Closing</t></si>
+<si><t>M7.13</t></si>
+<si><t>Distributions: Total Distributions</t></si>
+<si><t>M7.14</t></si>
+<si><t>Distributions: Withholding Tax</t></si>
+<si><t>M7.15</t></si>
+<si><t>Distributions: Net to Equity</t></si>
+<si><t>M7.16</t></si>
+<si><t>Distributions: DSCR Test</t></si>
+<si><t>M7.17</t></si>
+<si><t>Distributions: ADSCR Test</t></si>
+<si><t>M7.18</t></si>
+<si><t>Distributions: DSRA Test</t></si>
+<si><t>M7.19</t></si>
+<si><t>Distributions: All Tests Pass</t></si>
+<si><t>M7.20</t></si>
+<si><t>Distributions: Consecutive Pass Qtrs</t></si>
+<si><t>M7.21</t></si>
+<si><t>Distributions: Lock-up Active</t></si>
+<si><t>R142</t></si>
+<si><t>Prior RE</t></si>
+<si><t>R138</t></si>
+<si><t>P&amp;amp;L Dividends Declared</t></si>
+<si><t>-M7.6</t></si>
+<si><t>R143</t></si>
+<si><t>Share Capital Returned</t></si>
+<si><t>-M7.11</t></si>
+<si><t>R140</t></si>
+<si><t>RE - Movement</t></si>
+<si><t>R141</t></si>
+<si><t>RE - Closing</t></si>
+<si><t>R154</t></si>
+<si><t>Share Capital Repayment</t></si>
+<si><t>R155</t></si>
+<si><t>Dividends Paid</t></si>
+<si><t>R159</t></si>
+<si><t>SC - Cash Available</t></si>
+<si><t>R160</t></si>
+<si><t>SC - Repayment</t></si>
+<si><t>R161</t></si>
+<si><t>SC - Cumulative Returned</t></si>
+<si><t>CUMSUM(M7.11)</t></si>
+<si><t>R123</t></si>
+<si><t>Cash Available</t></si>
+<si><t>R164</t></si>
+<si><t>RE - Opening Balance</t></si>
+<si><t>R165</t></si>
+<si><t>RE - NPAT</t></si>
+<si><t>R166</t></si>
+<si><t>RE - Test Result</t></si>
+<si><t>R168</t></si>
+<si><t>NPAT - Test Result</t></si>
+<si><t>R133</t></si>
+<si><t>Dividends</t></si>
+<si><t>R134</t></si>
+<si><t>R191</t></si>
+<si><t>Share Capital</t></si>
+<si><t>CUMSUM(M4.7) * F1 + M7.12 * F2</t></si>
+<si><t>R192</t></si>
+<si><t>Retained Earnings</t></si>
+<si><t>R39</t></si>
+<si><t>Financing CF</t></si>
+<si><t>R169 + R154 + R155</t></si>
+<si><t>R40</t></si>
+<si><t>Net Cashflow</t></si>
+<si><t>R170 + R154 + R155</t></si>
+<si><t>R135</t></si>
+<si><t>Investor Tax</t></si>
+<si><t>-(R133 + R134) * C1.29 / 100</t></si>
+<si><t>R193</t></si>
+<si><t>Total Equity</t></si>
+<si><t>R191 + R192</t></si>
+<si><t>R41</t></si>
+<si><t>Cash Opening Balance</t></si>
+<si><t>CUMSUM(R40) - R40</t></si>
+<si><t>R42</t></si>
+<si><t>Cash Closing Balance</t></si>
+<si><t>CUMSUM(R40)</t></si>
+<si><t>R137</t></si>
+<si><t>Net Cash Flow to Equity</t></si>
+<si><t>R131 + R132 + R133 + R134 + R135 + R136</t></si>
+<si><t>R194</t></si>
+<si><t>Total L + E</t></si>
+<si><t>R190 + R193</t></si>
+<si><t>R182</t></si>
+<si><t>Cash &amp;amp; Cash Equivalents</t></si>
+<si><t>R187</t></si>
+<si><t>Total Assets</t></si>
+<si><t>R182 + R196 + R183 + R184 + R185 + R186</t></si>
+<si><t>R195</t></si>
+<si><t>Balance Check</t></si>
+<si><t>R187 - R194</t></si>
+<si><t>Glass Box Financial Model Export</t></si>
+<si><t>Exported: 2026-01-29T07:43:05.517Z</t></si>
+<si><t>Timeline</t></si>
+<si><t>Start Year</t></si>
+<si><t>Start Month</t></si>
+<si><t>End Year</t></si>
+<si><t>End Month</t></si>
+<si><t>Total Periods</t></si>
+<si><t>Sheet Guide</t></si>
+<si><t>Sheet</t></si>
+<si><t>Contents</t></si>
+<si><t>Constants</t></si>
+<si><t>Single-value inputs (C1.X) replicated across periods</t></si>
+<si><t>CAPEX</t></si>
+<si><t>Capital expenditure time series (V1.X)</t></si>
+<si><t>OPEX</t></si>
+<si><t>Operating expenditure time series (S1.X)</t></si>
+<si><t>Flags &amp;amp; Time</t></si>
+<si><t>Period flags (F), indices (I), time constants (T), lookups (L)</t></si>
+<si><t>Calcs</t></si>
+<si><t>Calculations (R) + module outputs (M) interleaved in dependency order</t></si>
+<si><t>Formula Notes</t></si>
+<si><t>- Calcs sheet contains both R-calcs and M-module outputs in topological order</t></si>
+<si><t>- Module outputs with GlassBox formulas are converted to Excel formulas</t></si>
+<si><t>- Iterative debt sizing (M1) uses pre-computed static values (amber cells)</t></si>
+<si><t>- Change a constant on the Constants sheet and Calcs will recalculate</t></si>
+<si><t>- Amber/italic cells = pre-computed static values (formula too complex for Excel)</t></si>
+</sst>

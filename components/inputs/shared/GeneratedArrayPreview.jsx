@@ -55,59 +55,33 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
                           viewMode === 'Q' ? 'Quarterly' :
                           viewMode === 'Y' ? 'Yearly' : 'Financial Year'
 
-    // Constants mode: show only label + constant value, no time periods
+    // Constants mode: show in a compact multi-column grid with subgroup dividers
     if (isConstant) {
         return (
-            <div className="mt-4 border-t border-slate-200 pt-3">
-                <div className="overflow-x-auto">
-                    <table className="text-sm">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="w-6 min-w-[24px] bg-slate-50"></th>
-                                <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-80 min-w-[320px] bg-slate-50">
-                                    Label
-                                </th>
-                                <th className="text-center py-1.5 px-3 text-xs font-semibold text-slate-500 uppercase w-28 min-w-[112px] bg-slate-50">
-                                    Constant
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {subgroupedInputs.map(sg => (
-                                <React.Fragment key={sg.id ?? 'root'}>
-                                    {sg.id && (
-                                        <tr className="bg-blue-50 border-b border-blue-100">
-                                            <td className="w-6 min-w-[24px] bg-blue-50"></td>
-                                            <td colSpan={2} className="py-1 px-3 text-xs font-semibold text-blue-700 bg-blue-50">
-                                                {sg.name}
-                                            </td>
-                                        </tr>
-                                    )}
-                                    {sg.inputs.map(input => (
-                                        <tr key={input.id} className="border-b border-slate-100 hover:bg-blue-50/30 h-7">
-                                            <td className="w-6 min-w-[24px] bg-white"></td>
-                                            <td className={`py-0 px-3 text-xs text-slate-700 w-80 min-w-[320px] bg-white ${sg.id ? 'pl-6' : ''}`}>
-                                                {input.name}
-                                            </td>
-                                            <td className="py-0 px-3 text-center text-xs font-medium text-slate-900 w-28 min-w-[112px]">
-                                                {(input.value ?? 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </React.Fragment>
+            <div className="mt-4 border-t border-slate-200 pt-3 space-y-2">
+                {subgroupedInputs.map(sg => (
+                    <div key={sg.id ?? 'root'}>
+                        {sg.id && (
+                            <div className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide px-3 mb-1 mt-1">{sg.name}</div>
+                        )}
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-0.5 px-3">
+                            {sg.inputs.map(input => (
+                                <div key={input.id} className="flex items-center justify-between py-1 px-2 rounded hover:bg-blue-50/30 min-w-0">
+                                    <span className="text-xs text-slate-600 truncate mr-2">{input.name}</span>
+                                    <span className="text-xs font-semibold text-slate-900 tabular-nums whitespace-nowrap">
+                                        {(input.value ?? 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                                    </span>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
-                </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         )
     }
 
     return (
         <div className="mt-4 border-t border-slate-200 pt-3">
-            <div className="text-xs font-semibold text-slate-500 uppercase mb-2 px-3">
-                Generated Time Series Preview ({viewModeLabel})
-            </div>
             <div className="overflow-x-auto">
                 <table className="text-sm table-fixed">
                     <thead>
@@ -143,7 +117,7 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
                                     </tr>
                                 )}
                                 {/* Input rows */}
-                                {sg.inputs.map(input => {
+                                {sg.inputs.map((input, inputIdx) => {
                                     const rawValues = getValuesArray(input, previewPeriods, viewMode, group, config)
                                     // Apply forward-fill for lookup groups when prefill is enabled
                                     let values = rawValues
@@ -155,13 +129,16 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
                                         })
                                     }
                                     const total = values.reduce((sum, v) => sum + (parseFloat(v) || 0), 0)
+                                    const isSelected = isLookupMode && sg.id != null && ((group.selectedIndices || {})[sg.id] ?? 0) === inputIdx
+                                    const isUnselectedLookup = isLookupMode && sg.id != null && !isSelected
+                                    const rowBg = isSelected ? 'bg-amber-50/40' : 'bg-white'
                                     return (
-                                        <tr key={input.id} className="border-b border-slate-100 hover:bg-blue-50/30">
-                                            <td className="w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 bg-white"></td>
-                                            <td className={`py-1 px-3 text-xs text-slate-700 w-[192px] min-w-[192px] max-w-[192px] sticky left-[32px] z-20 bg-white ${sg.id ? 'pl-6' : ''}`}>
-                                                {input.name}
+                                        <tr key={input.id} className={`border-b border-slate-100 hover:bg-blue-50/30 ${isSelected ? 'bg-amber-50/40' : ''} ${isUnselectedLookup ? 'opacity-40' : ''}`}>
+                                            <td className={`w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 ${rowBg}`}></td>
+                                            <td className={`py-1 px-3 text-xs w-[192px] min-w-[192px] max-w-[192px] sticky left-[32px] z-20 ${rowBg} ${isSelected ? 'text-amber-800 font-medium' : 'text-slate-700'} ${sg.id ? 'pl-6' : ''}`}>
+                                                {isSelected ? `Selected: ${input.name}` : input.name}
                                             </td>
-                                            <td className="py-1 px-3 text-right text-xs font-medium text-slate-900 w-[96px] min-w-[96px] max-w-[96px] sticky left-[224px] z-10 bg-white border-r border-slate-200">
+                                            <td className={`py-1 px-3 text-right text-xs font-medium text-slate-900 w-[96px] min-w-[96px] max-w-[96px] sticky left-[224px] z-10 ${rowBg} border-r border-slate-200`}>
                                                 {total.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                                             </td>
                                             {values.map((val, i) => (
@@ -172,8 +149,8 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
                                         </tr>
                                     )
                                 })}
-                                {/* Subgroup subtotal */}
-                                {sg.id && (() => {
+                                {/* Subgroup subtotal (hidden for lookup modes) */}
+                                {!isLookupMode && sg.id && (() => {
                                     let sgPeriodTotals = calculatePeriodTotals(sg.inputs, previewPeriods, viewMode, group, config)
                                     if (isLookupMode && prefillEnabled) {
                                         let lastNonZero = 0
@@ -202,7 +179,8 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
                                 })()}
                             </React.Fragment>
                         ))}
-                        {/* Group total */}
+                        {/* Group total (hidden for lookup modes) */}
+                        {!isLookupMode && (
                         <tr className="bg-slate-100">
                             <td className="w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 bg-slate-100"></td>
                             <td className="py-1.5 px-3 text-xs font-semibold text-slate-700 w-[192px] min-w-[192px] max-w-[192px] sticky left-[32px] z-20 bg-slate-100">
@@ -217,6 +195,7 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
                                 </td>
                             ))}
                         </tr>
+                        )}
                     </tbody>
                 </table>
             </div>

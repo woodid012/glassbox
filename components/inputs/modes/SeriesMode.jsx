@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react'
 import EditableCell from '../shared/EditableCell'
 import SubgroupTable from '../shared/SubgroupTable'
 import { formatPeriodLabel } from '../utils/inputHelpers'
+import { getGroupRef } from '@/utils/groupRefResolver'
 
 // Helper to calculate count for an input
 function calculateInputCount(input, periods, group) {
@@ -40,6 +41,12 @@ export default function SeriesMode({
     onUpdateSubgroup,
     onRemoveSubgroup
 }) {
+    const groupRef = getGroupRef(group, groupInputs)
+    const getInputRef = (input) => {
+        const inputNum = group.id === 100 ? input.id - 99 : input.id
+        return groupRef ? `${groupRef}.${inputNum}` : null
+    }
+
     return (
         <div className="overflow-x-auto">
             <SubgroupTable
@@ -47,7 +54,7 @@ export default function SeriesMode({
                     groupInputs={groupInputs}
                     periods={periods}
                     config={config}
-                    colSpan={11}
+                    colSpan={12}
                     onAddInput={onAddInput}
                     onRemoveInput={onRemoveInput}
                     onAddSubgroup={onAddSubgroup}
@@ -62,6 +69,9 @@ export default function SeriesMode({
                     renderHeaders={() => (
                         <tr className="bg-slate-50 border-b border-slate-200">
                             <th className="w-8 min-w-[32px] bg-slate-50"></th>
+                            <th className="text-left py-2 px-1 text-xs font-semibold text-slate-500 uppercase w-16 min-w-[64px] bg-slate-50">
+                                Ref
+                            </th>
                             <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase w-48 min-w-[192px] bg-slate-50">
                                 Label
                             </th>
@@ -96,6 +106,7 @@ export default function SeriesMode({
                     )}
                     renderSubgroupHeaderCells={(sg, sgTotal, sgExtraData) => (
                         <>
+                            <td className="bg-blue-50"></td>
                             <td className="py-1.5 px-3 text-right font-semibold text-blue-800 w-24 min-w-[96px] bg-blue-50">
                                 {sgExtraData?.count ?? 0}
                             </td>
@@ -148,6 +159,11 @@ export default function SeriesMode({
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
+                                </td>
+                                <td className="py-0 px-1 w-16 min-w-[64px] bg-white">
+                                    <span className="text-[10px] px-1 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 select-all">
+                                        {getInputRef(input)}
+                                    </span>
                                 </td>
                                 <td className={`py-0 px-0 w-48 min-w-[192px] bg-white ${sg.id ? 'pl-4' : ''}`}>
                                     <EditableCell
@@ -270,6 +286,7 @@ export default function SeriesMode({
                     }}
                     renderGroupTotalCells={(groupGrandTotal, groupExtraData) => (
                         <>
+                            <td className="bg-slate-200"></td>
                             <td className="py-2 px-3 text-right font-bold text-slate-900 w-24 min-w-[96px] bg-slate-200">
                                 {groupExtraData?.count ?? 0}
                             </td>
