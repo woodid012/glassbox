@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Hexagon, Settings } from 'lucide-react'
+import { Hexagon, Settings, Loader2 } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useDashboard } from '../context/DashboardContext'
 import DashboardNavigation from './DashboardNavigation'
@@ -18,8 +18,11 @@ export default function DashboardShell({ children }) {
         setInputsEditMode,
         appState,
         setters,
-        derived
+        derived,
+        autoSaveState
     } = useDashboard()
+
+    const { hasLoadedFromStorage } = autoSaveState
 
     const {
         showConfig,
@@ -44,6 +47,22 @@ export default function DashboardShell({ children }) {
         pathname === '/dashboard/modules' ||
         pathname === '/dashboard/calculations'
     )
+
+    if (!hasLoadedFromStorage) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                        <Hexagon className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                        <span className="text-sm font-medium text-slate-600">Loading model...</span>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-slate-50">
