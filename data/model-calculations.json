@@ -183,63 +183,72 @@
       "groupId": 27,
       "name": "Capex + Cont",
       "formula": "V1 * (1 + C1.23 / 100)",
-      "description": "CAPEX with contingency applied"
+      "description": "CAPEX with contingency applied",
+      "type": "flow"
     },
     {
       "id": 112,
       "groupId": 27,
       "name": "Capex to Apply GST",
       "formula": "V1 - V1.1 - V1.9",
-      "description": "CAPEX minus EPC-BESS (import) minus Land Transaction (stamp duty) - both GST-free"
+      "description": "CAPEX minus EPC-BESS (import) minus Land Transaction (stamp duty) - both GST-free",
+      "type": "flow"
     },
     {
       "id": 4,
       "groupId": 28,
       "name": "Tolling Revenue",
       "formula": "C1.10 * C1.1 * T.HiY / T.MiY / 10^6 * F6 * I2",
-      "description": "Contracted tolling revenue"
+      "description": "Contracted tolling revenue",
+      "type": "flow"
     },
     {
       "id": 5,
       "groupId": 28,
       "name": "FCAS Revenue",
       "formula": "L1.2 * C1.1 / T.MiY / 10^6 * F7 * I2",
-      "description": "Frequency control ancillary services"
+      "description": "Frequency control ancillary services",
+      "type": "flow"
     },
     {
       "id": 6,
       "groupId": 28,
       "name": "Market Arbitrage Revenue",
       "formula": "L1.1 * C1.1 / 10^6 / T.MiY * F7 * R12 * I2",
-      "description": "Arbitrage revenue (L1.1 annual, /12 for monthly)"
+      "description": "Arbitrage revenue (L1.1 annual, /12 for monthly)",
+      "type": "flow"
     },
     {
       "id": 179,
       "groupId": 28,
       "name": "Minor Event Revenue",
       "formula": "C1.1 * C1.43 / C1.44 / T.MiY / 10^6 * F7 * R12 * I2",
-      "description": "Minor augmentation event revenue (capacity * $/MW / frequency / 12, technical adj, CPI-indexed)"
+      "description": "Minor augmentation event revenue (capacity * $/MW / frequency / 12, technical adj, CPI-indexed)",
+      "type": "flow"
     },
     {
       "id": 180,
       "groupId": 28,
       "name": "Major Event Revenue",
       "formula": "C1.1 * C1.45 / C1.46 / T.MiY / 10^6 * F7 * R12 * I2",
-      "description": "Major augmentation event revenue (capacity * $/MW / frequency / 12, technical adj, CPI-indexed)"
+      "description": "Major augmentation event revenue (capacity * $/MW / frequency / 12, technical adj, CPI-indexed)",
+      "type": "flow"
     },
     {
       "id": 181,
       "groupId": 28,
       "name": "Market Event Revenue",
       "formula": "R179 + R180",
-      "description": "Minor + Major event revenue"
+      "description": "Minor + Major event revenue",
+      "type": "flow"
     },
     {
       "id": 7,
       "groupId": 28,
       "name": "Merchant Revenue",
       "formula": "(R5 + R6 + R181) * (1 - F4 + F4 * C1.56 / 100)",
-      "description": "FCAS + Arbitrage + Market Events (95% during Life Extension)"
+      "description": "FCAS + Arbitrage + Market Events (95% during Life Extension)",
+      "type": "flow"
     },
     {
       "id": 8,
@@ -247,7 +256,8 @@
       "groupId": 4,
       "name": "Total Revenue",
       "formula": "R4 + R7",
-      "description": "Tolling + Merchant"
+      "description": "Tolling + Merchant",
+      "type": "flow"
     },
     {
       "id": 9,
@@ -255,7 +265,8 @@
       "groupId": 4,
       "name": "Total OPEX (Nominal)",
       "formula": "-S1 * I2",
-      "description": "OPEX group sum"
+      "description": "OPEX group sum",
+      "type": "flow"
     },
     {
       "id": 10,
@@ -263,7 +274,8 @@
       "groupId": 4,
       "name": "Gross Margin",
       "formula": "R8 + R9",
-      "description": "Revenue minus OPEX"
+      "description": "Revenue minus OPEX",
+      "type": "flow"
     },
     {
       "id": 111,
@@ -295,7 +307,8 @@
       "groupId": 4,
       "name": "EBITDA",
       "formula": "R10",
-      "description": "Earnings before interest, taxes, depreciation, amortization"
+      "description": "Earnings before interest, taxes, depreciation, amortization",
+      "type": "flow"
     },
     {
       "id": 14,
@@ -303,7 +316,8 @@
       "groupId": 4,
       "name": "P&L Depreciation",
       "formula": "-R9003 - R9113 - R9123 - R9133",
-      "description": "D&A + IDC/CommFees amort + Refi fees amort + Maintenance capex D&A"
+      "description": "D&A + IDC/CommFees amort + Refi fees amort + Maintenance capex D&A",
+      "type": "flow"
     },
     {
       "id": 15,
@@ -311,7 +325,8 @@
       "groupId": 4,
       "name": "EBIT",
       "formula": "R13 + R14",
-      "description": "Earnings before interest and taxes"
+      "description": "Earnings before interest and taxes",
+      "type": "flow"
     },
     {
       "id": 16,
@@ -319,7 +334,8 @@
       "groupId": 4,
       "name": "Interest Expense",
       "formula": "-R71",
-      "description": "From Operations Debt"
+      "description": "From Operations Debt",
+      "type": "flow"
     },
     {
       "id": 17,
@@ -327,7 +343,8 @@
       "groupId": 4,
       "name": "EBT",
       "formula": "R15 + R16 + R151 + R174 * F2 + R153 * F2",
-      "description": "Earnings before taxes (incl. agency fee, DSRF fees during ops). Establishment fees capitalised during construction and amortised via R14"
+      "description": "Earnings before taxes (incl. agency fee, DSRF fees during ops). Establishment fees capitalised during construction and amortised via R14",
+      "type": "flow"
     },
     {
       "id": 18,
@@ -335,7 +352,8 @@
       "groupId": 4,
       "name": "Tax Expense",
       "formula": "-R9031",
-      "description": "From Tax module"
+      "description": "From Tax module",
+      "type": "flow"
     },
     {
       "id": 19,
@@ -343,7 +361,8 @@
       "groupId": 4,
       "name": "NPAT",
       "formula": "R17 + R18",
-      "description": "Net Profit After Tax"
+      "description": "Net Profit After Tax",
+      "type": "flow"
     },
     {
       "id": 142,
@@ -396,7 +415,8 @@
       "groupId": 30,
       "name": "Operating CF EBITDA",
       "formula": "R13",
-      "description": ""
+      "description": "",
+      "type": "flow"
     },
     {
       "id": 21,
@@ -404,7 +424,8 @@
       "groupId": 30,
       "name": "Operating CF WC Movement",
       "formula": "-R98",
-      "description": "Negative of NWC increase (increase uses cash)"
+      "description": "Negative of NWC increase (increase uses cash)",
+      "type": "flow"
     },
     {
       "id": 174,
@@ -412,7 +433,8 @@
       "groupId": 32,
       "name": "Agency Fee",
       "formula": "-S3 * I2",
-      "description": "Facility agent fee (indexed by CPI). During construction: capitalised via R9110. During operations: expensed via R17"
+      "description": "Facility agent fee (indexed by CPI). During construction: capitalised via R9110. During operations: expensed via R17",
+      "type": "flow"
     },
     {
       "id": 22,
@@ -420,7 +442,8 @@
       "groupId": 30,
       "name": "Operating CF",
       "formula": "R20 + R21",
-      "description": "EBITDA + WC Movement"
+      "description": "EBITDA + WC Movement",
+      "type": "flow"
     },
     {
       "id": 23,
@@ -428,7 +451,8 @@
       "groupId": 31,
       "name": "Capex",
       "formula": "-V1 * F1",
-      "description": ""
+      "description": "",
+      "type": "flow"
     },
     {
       "id": 24,
@@ -436,7 +460,8 @@
       "groupId": 31,
       "name": "GST Paid on Capex",
       "formula": "R9008",
-      "description": "From GST module (gst_paid outflow, all periods)"
+      "description": "From GST module (gst_paid outflow, all periods)",
+      "type": "flow"
     },
     {
       "id": 25,
@@ -444,7 +469,8 @@
       "groupId": 31,
       "name": "GST Received (Operations)",
       "formula": "R9014",
-      "description": "GST receipts during operations (from module construction/operations split)"
+      "description": "GST receipts during operations (from module construction/operations split)",
+      "type": "flow"
     },
     {
       "id": 26,
@@ -452,7 +478,8 @@
       "groupId": 31,
       "name": "MRA Contribution",
       "formula": "-R9033",
-      "description": "Cash contributed to MRA (funding outflow at F1.End)"
+      "description": "Cash contributed to MRA (funding outflow at F1.End)",
+      "type": "flow"
     },
     {
       "id": 27,
@@ -460,7 +487,8 @@
       "groupId": 31,
       "name": "MRA Release",
       "formula": "R9035",
-      "description": "Cash released from MRA at end of maintenance period"
+      "description": "Cash released from MRA at end of maintenance period",
+      "type": "flow"
     },
     {
       "id": 149,
@@ -468,14 +496,16 @@
       "groupId": 31,
       "name": "MRA Drawdown (Maintenance)",
       "formula": "R9034",
-      "description": "Cash inflow from MRA to fund maintenance capex (offsets R250 in Investing CF)"
+      "description": "Cash inflow from MRA to fund maintenance capex (offsets R250 in Investing CF)",
+      "type": "flow"
     },
     {
       "id": 250,
       "groupId": 31,
       "name": "Maintenance Capex",
       "formula": "-S2 * I2 * F12",
-      "description": "Gross maintenance capex outflow (CPI-indexed, quarterly during F12)"
+      "description": "Gross maintenance capex outflow (CPI-indexed, quarterly during F12)",
+      "type": "flow"
     },
     {
       "id": 202,
@@ -483,7 +513,8 @@
       "groupId": 31,
       "name": "GST Received (Construction)",
       "formula": "R9013",
-      "description": "GST refund received during construction (self-funding: prior period refund offsets current GST payment)"
+      "description": "GST refund received during construction (self-funding: prior period refund offsets current GST payment)",
+      "type": "flow"
     },
     {
       "id": 28,
@@ -491,7 +522,8 @@
       "groupId": 31,
       "name": "Investing CF",
       "formula": "R23 + R24 + R25 + R26 + R27 + R149 + R202 + R250",
-      "description": "Investing CF subtotal"
+      "description": "Investing CF subtotal",
+      "type": "flow"
     },
     {
       "id": 29,
@@ -499,7 +531,8 @@
       "groupId": 32,
       "name": "Construction Debt Drawdown",
       "formula": "R9020",
-      "description": "From Construction Funding module"
+      "description": "From Construction Funding module",
+      "type": "flow"
     },
     {
       "id": 31,
@@ -507,7 +540,8 @@
       "groupId": 32,
       "name": "Principal Repayment",
       "formula": "-R72",
-      "description": "From Operations Debt"
+      "description": "From Operations Debt",
+      "type": "flow"
     },
     {
       "id": 32,
@@ -515,7 +549,8 @@
       "groupId": 32,
       "name": "Interest Paid",
       "formula": "-R71",
-      "description": "From Operations Debt"
+      "description": "From Operations Debt",
+      "type": "flow"
     },
     {
       "id": 178,
@@ -523,7 +558,8 @@
       "groupId": 32,
       "name": "Total Debt Service",
       "formula": "R31 + R32 + R174 + R153",
-      "description": "Principal + Interest + Agency Fee + DSRF Fees"
+      "description": "Principal + Interest + Agency Fee + DSRF Fees",
+      "type": "flow"
     },
     {
       "id": 33,
@@ -531,7 +567,8 @@
       "groupId": 32,
       "name": "DSRA Contribution",
       "formula": "0",
-      "description": ""
+      "description": "",
+      "type": "flow"
     },
     {
       "id": 34,
@@ -539,7 +576,8 @@
       "groupId": 32,
       "name": "DSRA Release",
       "formula": "0",
-      "description": ""
+      "description": "",
+      "type": "flow"
     },
     {
       "id": 151,
@@ -547,7 +585,8 @@
       "groupId": 32,
       "name": "Interest Income",
       "formula": "MAX(0, SHIFT(R42, 1)) * C1.58 / 100 / T.MiY * F2",
-      "description": "Interest earned on prior period closing cash at C1.58 (% pa), monthly. Operations only; MAX(0,...) prevents interest on overdrafts"
+      "description": "Interest earned on prior period closing cash at C1.58 (% pa), monthly. Operations only; MAX(0,...) prevents interest on overdrafts",
+      "type": "flow"
     },
     {
       "id": 152,
@@ -555,7 +594,8 @@
       "groupId": 32,
       "name": "DSRA Shortfall Contribution",
       "formula": "0",
-      "description": "Placeholder - additional funding to DSRA when balance below target"
+      "description": "Placeholder - additional funding to DSRA when balance below target",
+      "type": "flow"
     },
     {
       "id": 153,
@@ -563,7 +603,8 @@
       "groupId": 32,
       "name": "DSRF Fees",
       "formula": "-R9082",
-      "description": "Total DSRF fees (establishment + commitment + refinancing) from DSRF module"
+      "description": "Total DSRF fees (establishment + commitment + refinancing) from DSRF module",
+      "type": "flow"
     },
     {
       "id": 199,
@@ -571,7 +612,8 @@
       "groupId": 32,
       "name": "Upfront Fees Paid",
       "formula": "-R144",
-      "description": "Cash outflow for upfront financing fees"
+      "description": "Cash outflow for upfront financing fees",
+      "type": "flow"
     },
     {
       "id": 200,
@@ -579,7 +621,8 @@
       "groupId": 32,
       "name": "Commitment Fees Paid",
       "formula": "-R146",
-      "description": "Cash outflow for commitment fees"
+      "description": "Cash outflow for commitment fees",
+      "type": "flow"
     },
     {
       "id": 201,
@@ -587,7 +630,8 @@
       "groupId": 32,
       "name": "IDC Paid",
       "formula": "-R9022",
-      "description": "Cash outflow for interest during construction"
+      "description": "Cash outflow for interest during construction",
+      "type": "flow"
     },
     {
       "id": 154,
@@ -595,7 +639,8 @@
       "groupId": 32,
       "name": "Share Capital Repayment",
       "formula": "-R9047",
-      "description": "Return of equity capital (from Distributions module)"
+      "description": "Return of equity capital (from Distributions module)",
+      "type": "flow"
     },
     {
       "id": 155,
@@ -603,7 +648,8 @@
       "groupId": 32,
       "name": "Dividends Paid",
       "formula": "-R9042",
-      "description": "Dividend distributions to equity (from Distributions module)"
+      "description": "Dividend distributions to equity (from Distributions module)",
+      "type": "flow"
     },
     {
       "id": 60,
@@ -684,7 +730,7 @@
       "name": "DSRF Facility Limit",
       "formula": "M8.1",
       "description": "DSRF facility limit (notional, from DSRF module)",
-      "type": "flow"
+      "type": "stock"
     },
     {
       "id": 219,
@@ -764,7 +810,8 @@
       "groupId": 32,
       "name": "Construction Equity Injection",
       "formula": "R9021 + R9022",
-      "description": "Equity drawdown + IDC (both equity-funded)"
+      "description": "Equity drawdown + IDC (both equity-funded)",
+      "type": "flow"
     },
     {
       "id": 169,
@@ -772,7 +819,8 @@
       "groupId": 32,
       "name": "Financing CF (ex-Dist)",
       "formula": "R29 + R31 + R32 + R174 + R33 + R34 + R35 + R151 + R152 + R153 + R199 + R200 + R201",
-      "description": "Financing flows excluding shareholder distributions"
+      "description": "Financing flows excluding shareholder distributions",
+      "type": "flow"
     },
     {
       "id": 39,
@@ -780,7 +828,8 @@
       "groupId": 32,
       "name": "Financing CF",
       "formula": "R169 + R154 + R155",
-      "description": "Sum of all financing flows (including distributions)"
+      "description": "Sum of all financing flows (including distributions)",
+      "type": "flow"
     },
     {
       "id": 170,
@@ -788,7 +837,8 @@
       "groupId": 13,
       "name": "Net CF (ex-Dist)",
       "formula": "R22 + R28 + R169",
-      "description": "Net cashflow before shareholder distributions"
+      "description": "Net cashflow before shareholder distributions",
+      "type": "flow"
     },
     {
       "id": 40,
@@ -796,7 +846,8 @@
       "groupId": 13,
       "name": "Net Cashflow",
       "formula": "R170 + R154 + R155",
-      "description": "Net cashflow including distributions"
+      "description": "Net cashflow including distributions",
+      "type": "flow"
     },
     {
       "id": 41,
@@ -821,14 +872,16 @@
       "groupId": 34,
       "name": "SC - Cash Available",
       "formula": "R9046",
-      "description": "Cash available for SC repayment (from Distributions module)"
+      "description": "Cash available for SC repayment (from Distributions module)",
+      "type": "flow"
     },
     {
       "id": 160,
       "groupId": 34,
       "name": "SC - Repayment",
       "formula": "R9047",
-      "description": "Share capital repayment (from Distributions module)"
+      "description": "Share capital repayment (from Distributions module)",
+      "type": "flow"
     },
     {
       "id": 161,
@@ -843,7 +896,8 @@
       "groupId": 25,
       "name": "Cash Available",
       "formula": "R9037",
-      "description": "Cash available for distributions (from M7)"
+      "description": "Cash available for distributions (from M7)",
+      "type": "stock"
     },
     {
       "id": 164,
@@ -851,14 +905,15 @@
       "name": "RE - Opening Balance",
       "formula": "R9038",
       "description": "Retained earnings opening (from Distributions module)",
-      "type": "stock"
+      "type": "stock_start"
     },
     {
       "id": 165,
       "groupId": 35,
       "name": "RE - NPAT",
       "formula": "R9039",
-      "description": "NPAT (from Distributions module)"
+      "description": "NPAT (from Distributions module)",
+      "type": "flow"
     },
     {
       "id": 166,
@@ -882,7 +937,8 @@
       "groupId": 20,
       "name": "FCF EBITDA",
       "formula": "R13",
-      "description": ""
+      "description": "",
+      "type": "flow"
     },
     {
       "id": 44,
@@ -890,7 +946,8 @@
       "groupId": 20,
       "name": "Capex (incl GST)",
       "formula": "R23 + R24 - R25",
-      "description": ""
+      "description": "",
+      "type": "flow"
     },
     {
       "id": 45,
@@ -898,7 +955,8 @@
       "groupId": 20,
       "name": "FCF WC Movement",
       "formula": "R21",
-      "description": ""
+      "description": "",
+      "type": "flow"
     },
     {
       "id": 46,
@@ -906,7 +964,8 @@
       "groupId": 20,
       "name": "FCFF",
       "formula": "R43 + R44 + R45",
-      "description": "Free Cash Flow to Firm"
+      "description": "Free Cash Flow to Firm",
+      "type": "flow"
     },
     {
       "id": 47,
@@ -914,7 +973,8 @@
       "groupId": 20,
       "name": "FCF Debt Service",
       "formula": "R31 + R32",
-      "description": ""
+      "description": "",
+      "type": "flow"
     },
     {
       "id": 48,
@@ -922,7 +982,8 @@
       "groupId": 20,
       "name": "FCF Debt Drawdown",
       "formula": "R29",
-      "description": "Construction + Ops debt"
+      "description": "Construction + Ops debt",
+      "type": "flow"
     },
     {
       "id": 49,
@@ -930,7 +991,8 @@
       "groupId": 20,
       "name": "FCFE",
       "formula": "R46 + R47 + R48",
-      "description": "Free Cash Flow to Equity"
+      "description": "Free Cash Flow to Equity",
+      "type": "flow"
     },
     {
       "id": 50,
@@ -956,7 +1018,8 @@
       "groupId": 26,
       "name": "Contingent Equity",
       "formula": "0",
-      "description": "Additional equity calls beyond initial (if any)"
+      "description": "Additional equity calls beyond initial (if any)",
+      "type": "flow"
     },
     {
       "id": 132,
@@ -964,7 +1027,8 @@
       "groupId": 26,
       "name": "Equity Injections",
       "formula": "-R35",
-      "description": "Periodic equity drawdowns during construction (outflow)"
+      "description": "Periodic equity drawdowns during construction (outflow)",
+      "type": "flow"
     },
     {
       "id": 133,
@@ -972,7 +1036,8 @@
       "groupId": 26,
       "name": "Dividends",
       "formula": "R9042",
-      "description": "Dividend distributions to equity (from Distributions module)"
+      "description": "Dividend distributions to equity (from Distributions module)",
+      "type": "flow"
     },
     {
       "id": 134,
@@ -980,7 +1045,8 @@
       "groupId": 26,
       "name": "Share Capital Repayment",
       "formula": "R9047",
-      "description": "Return of equity capital (from Distributions module)"
+      "description": "Return of equity capital (from Distributions module)",
+      "type": "flow"
     },
     {
       "id": 135,
@@ -988,7 +1054,8 @@
       "groupId": 26,
       "name": "Investor Tax",
       "formula": "-(R133 + R134) * C1.29 / 100",
-      "description": "Withholding tax on distributions (outflow)"
+      "description": "Withholding tax on distributions (outflow)",
+      "type": "flow"
     },
     {
       "id": 136,
@@ -996,7 +1063,8 @@
       "groupId": 26,
       "name": "Terminal Value",
       "formula": "C1.30 * I2 * F5",
-      "description": "Fixed terminal value ($17.5M) indexed by CPI at TV period"
+      "description": "Fixed terminal value ($17.5M) indexed by CPI at TV period",
+      "type": "flow"
     },
     {
       "id": 137,
@@ -1004,7 +1072,8 @@
       "groupId": 26,
       "name": "Net Cash Flow to Equity",
       "formula": "R131 + R132 + R133 + R134 + R135 + R136",
-      "description": "Total equity cash flows for IRR calculation"
+      "description": "Total equity cash flows for IRR calculation",
+      "type": "flow"
     },
     {
       "id": 115,
@@ -1012,7 +1081,8 @@
       "groupId": 24,
       "name": "Contracted CFADS",
       "formula": "R13 * R4 / R8 * F2",
-      "description": "EBITDA allocated to contracted revenue (Tolling)"
+      "description": "EBITDA allocated to contracted revenue (Tolling)",
+      "type": "flow"
     },
     {
       "id": 116,
@@ -1020,7 +1090,8 @@
       "groupId": 24,
       "name": "Merchant CFADS",
       "formula": "R13 * R7 / R8 * F2",
-      "description": "EBITDA allocated to merchant revenue (FCAS + Arb)"
+      "description": "EBITDA allocated to merchant revenue (FCAS + Arb)",
+      "type": "flow"
     },
     {
       "id": 118,
@@ -1037,28 +1108,32 @@
       "groupId": 24,
       "name": "Total CFADS",
       "formula": "R115 + R116",
-      "description": "Combined contracted + merchant CFADS for ADSCR calculation"
+      "description": "Combined contracted + merchant CFADS for ADSCR calculation",
+      "type": "flow"
     },
     {
       "id": 208,
       "groupId": 24,
       "name": "Contracted CFADS Post Capex",
       "formula": "R115",
-      "description": "Contracted CFADS (maintenance already in OPEX/EBITDA)"
+      "description": "Contracted CFADS (maintenance already in OPEX/EBITDA)",
+      "type": "flow"
     },
     {
       "id": 209,
       "groupId": 24,
       "name": "Merchant CFADS Post Capex",
       "formula": "R116",
-      "description": "Merchant CFADS (maintenance already in OPEX/EBITDA)"
+      "description": "Merchant CFADS (maintenance already in OPEX/EBITDA)",
+      "type": "flow"
     },
     {
       "id": 207,
       "groupId": 24,
       "name": "Total CFADS Post Capex",
       "formula": "R208 + R209",
-      "description": "Total CFADS after maintenance capex deduction"
+      "description": "Total CFADS after maintenance capex deduction",
+      "type": "flow"
     },
     {
       "id": 70,
@@ -1075,7 +1150,8 @@
       "groupId": 15,
       "name": "Debt Interest Paid",
       "formula": "R9066",
-      "description": "From iterative debt sizing module"
+      "description": "From iterative debt sizing module",
+      "type": "flow"
     },
     {
       "id": 72,
@@ -1083,7 +1159,8 @@
       "groupId": 15,
       "name": "Debt Principal Repayment",
       "formula": "R9067",
-      "description": "From iterative debt sizing module"
+      "description": "From iterative debt sizing module",
+      "type": "flow"
     },
     {
       "id": 73,
@@ -1091,7 +1168,8 @@
       "groupId": 15,
       "name": "Debt Service (P+I)",
       "formula": "R9068",
-      "description": "Interest + Principal from iterative debt sizing module"
+      "description": "Interest + Principal from iterative debt sizing module",
+      "type": "flow"
     },
     {
       "id": 74,
@@ -1108,7 +1186,8 @@
       "groupId": 16,
       "name": "Total Capital Additions",
       "formula": "V1 * F1",
-      "description": "Per-period base capex during construction only - D&A depreciable base. IDC, fees excluded (separate amortising assets). Contingency excluded (buffer, not asset cost)."
+      "description": "Per-period base capex during construction only - D&A depreciable base. IDC, fees excluded (separate amortising assets). Contingency excluded (buffer, not asset cost).",
+      "type": "flow"
     },
     {
       "id": 80,
@@ -1125,7 +1204,8 @@
       "groupId": 16,
       "name": "D&A Asset Addition",
       "formula": "R9002",
-      "description": "From D&A module"
+      "description": "From D&A module",
+      "type": "flow"
     },
     {
       "id": 82,
@@ -1133,7 +1213,8 @@
       "groupId": 16,
       "name": "D&A Depreciation Expense",
       "formula": "R9003",
-      "description": "From D&A module"
+      "description": "From D&A module",
+      "type": "flow"
     },
     {
       "id": 83,
@@ -1213,7 +1294,8 @@
       "groupId": 18,
       "name": "Net WC Movement",
       "formula": "R97 - SHIFT(R97, 1)",
-      "description": "Change in NWC = Closing NWC - Prior NWC"
+      "description": "Change in NWC = Closing NWC - Prior NWC",
+      "type": "flow"
     },
     {
       "id": 100,
@@ -1221,7 +1303,8 @@
       "groupId": 19,
       "name": "Tax Taxable Income",
       "formula": "R9025",
-      "description": "From Tax module"
+      "description": "From Tax module",
+      "type": "flow"
     },
     {
       "id": 101,
@@ -1238,7 +1321,8 @@
       "groupId": 19,
       "name": "Losses Utilised",
       "formula": "R9028",
-      "description": "From Tax module"
+      "description": "From Tax module",
+      "type": "flow"
     },
     {
       "id": 105,
@@ -1255,7 +1339,8 @@
       "groupId": 19,
       "name": "Tax Net Taxable Income",
       "formula": "R9030",
-      "description": "From Tax module"
+      "description": "From Tax module",
+      "type": "flow"
     },
     {
       "id": 104,
@@ -1263,7 +1348,8 @@
       "groupId": 19,
       "name": "Tax Payable",
       "formula": "R9031",
-      "description": "From Tax module"
+      "description": "From Tax module",
+      "type": "flow"
     },
     {
       "id": 171,
@@ -1510,112 +1596,128 @@
       "groupId": 29,
       "name": "O&M MSA",
       "formula": "S1.14 * I2 * F2",
-      "description": "Operations & Maintenance MSA cost (CPI-indexed, ops only)"
+      "description": "Operations & Maintenance MSA cost (CPI-indexed, ops only)",
+      "type": "flow"
     },
     {
       "id": 221,
       "groupId": 29,
       "name": "Land Lease",
       "formula": "S1.15 * I2 * F2",
-      "description": "Land lease payments (CPI-indexed, ops only)"
+      "description": "Land lease payments (CPI-indexed, ops only)",
+      "type": "flow"
     },
     {
       "id": 222,
       "groupId": 29,
       "name": "Connection Opex",
       "formula": "S1.16 * I2 * F2",
-      "description": "Network connection charges (CPI-indexed, ops only)"
+      "description": "Network connection charges (CPI-indexed, ops only)",
+      "type": "flow"
     },
     {
       "id": 223,
       "groupId": 29,
       "name": "SPV Costs",
       "formula": "S1.17 * I2 * F2",
-      "description": "Special purpose vehicle administration costs (CPI-indexed, ops only)"
+      "description": "Special purpose vehicle administration costs (CPI-indexed, ops only)",
+      "type": "flow"
     },
     {
       "id": 224,
       "groupId": 29,
       "name": "Asset Management Fees",
       "formula": "S1.18 * I2 * F2",
-      "description": "Asset management fee (CPI-indexed, ops only)"
+      "description": "Asset management fee (CPI-indexed, ops only)",
+      "type": "flow"
     },
     {
       "id": 225,
       "groupId": 29,
       "name": "Maintenance Capex & O&M Charges",
       "formula": "S1.19 * I2 * F2",
-      "description": "Maintenance capex and additional service O&M charges (CPI-indexed, ops only)"
+      "description": "Maintenance capex and additional service O&M charges (CPI-indexed, ops only)",
+      "type": "flow"
     },
     {
       "id": 226,
       "groupId": 29,
       "name": "Insurance (yrs 1-2)",
       "formula": "S1.20 * I2 * F2",
-      "description": "Insurance premiums for first 2 years of operations (CPI-indexed)"
+      "description": "Insurance premiums for first 2 years of operations (CPI-indexed)",
+      "type": "flow"
     },
     {
       "id": 227,
       "groupId": 29,
       "name": "Insurance (yrs 3+)",
       "formula": "S1.21 * I2 * F2",
-      "description": "Insurance premiums from year 3 onwards (CPI-indexed)"
+      "description": "Insurance premiums from year 3 onwards (CPI-indexed)",
+      "type": "flow"
     },
     {
       "id": 228,
       "groupId": 29,
       "name": "Total OPEX Breakdown",
       "formula": "R220 + R221 + R222 + R223 + R224 + R225 + R226 + R227",
-      "description": "Sum of all OPEX components (should reconcile to -R9, i.e. S1 * I2)"
+      "description": "Sum of all OPEX components (should reconcile to -R9, i.e. S1 * I2)",
+      "type": "flow"
     },
     {
       "id": 300,
       "tabId": 7,
       "groupId": 60,
       "name": "Contracted Revenue",
-      "formula": "R4"
+      "formula": "R4",
+      "type": "flow"
     },
     {
       "id": 301,
       "tabId": 7,
       "groupId": 60,
       "name": "Merchant Revenue",
-      "formula": "R7"
+      "formula": "R7",
+      "type": "flow"
     },
     {
       "id": 302,
       "tabId": 7,
       "groupId": 60,
       "name": "Total Revenue",
-      "formula": "R8"
+      "formula": "R8",
+      "type": "flow"
     },
     {
       "id": 303,
       "tabId": 7,
       "groupId": 60,
       "name": "OPEX",
-      "formula": "R9"
+      "formula": "R9",
+      "type": "flow"
     },
     {
       "id": 304,
       "tabId": 7,
       "groupId": 60,
       "name": "EBITDA",
-      "formula": "R13"
+      "formula": "R13",
+      "type": "flow"
     },
     {
       "id": 305,
       "tabId": 7,
       "groupId": 60,
       "name": "Working Capital Adj",
-      "formula": "-R98"
+      "formula": "-R98",
+      "type": "flow"
     },
     {
       "id": 306,
       "tabId": 7,
       "groupId": 60,
       "name": "Operating Cash Flows",
-      "formula": "R22"
+      "formula": "R22",
+      "type": "flow"
     },
     {
       "id": 310,
@@ -1623,63 +1725,72 @@
       "groupId": 60,
       "name": "Total Capex",
       "formula": "-V1 * F1",
-      "description": "Total capex ex contingency (per period)"
+      "description": "Total capex ex contingency (per period)",
+      "type": "flow"
     },
     {
       "id": 313,
       "tabId": 7,
       "groupId": 60,
       "name": "IDC: Senior Debt",
-      "formula": "-R9022"
+      "formula": "-R9022",
+      "type": "flow"
     },
     {
       "id": 314,
       "tabId": 7,
       "groupId": 60,
       "name": "Upfront Fees: Senior Debt",
-      "formula": "-R144"
+      "formula": "-R144",
+      "type": "flow"
     },
     {
       "id": 315,
       "tabId": 7,
       "groupId": 60,
       "name": "Upfront Fees: DSRF",
-      "formula": "-R9080 * F1"
+      "formula": "-R9080 * F1",
+      "type": "flow"
     },
     {
       "id": 316,
       "tabId": 7,
       "groupId": 60,
       "name": "Commitment Fees: Senior Debt",
-      "formula": "-R146"
+      "formula": "-R146",
+      "type": "flow"
     },
     {
       "id": 317,
       "tabId": 7,
       "groupId": 60,
       "name": "Commitment Fees: DSRF",
-      "formula": "-R9081 * F1"
+      "formula": "-R9081 * F1",
+      "type": "flow"
     },
     {
       "id": 318,
       "tabId": 7,
       "groupId": 60,
       "name": "Agency Fee (Construction)",
-      "formula": "-S3 * I2 * F1"
+      "formula": "-S3 * I2 * F1",
+      "type": "flow"
     },
     {
       "id": 319,
       "tabId": 7,
       "groupId": 60,
       "name": "MRA: Initial Funding",
-      "formula": "-R9033"
+      "formula": "-R9033",
+      "type": "flow"
     },
     {
       "id": 320,
       "tabId": 7,
       "groupId": 60,
       "name": "GST Paid",
-      "formula": "R24"
+      "formula": "R24",
+      "type": "flow"
     },
     {
       "id": 321,
@@ -1687,28 +1798,32 @@
       "groupId": 60,
       "name": "Total Construction Outflows",
       "formula": "R310 + R313 + R314 + R315 + R316 + R317 + R318 + R319 + R320",
-      "description": "All construction outflows: capex + IDC + fees + MRA + GST"
+      "description": "All construction outflows: capex + IDC + fees + MRA + GST",
+      "type": "flow"
     },
     {
       "id": 325,
       "tabId": 7,
       "groupId": 60,
       "name": "GST Received (Funding)",
-      "formula": "R9013 * F1"
+      "formula": "R9013 * F1",
+      "type": "flow"
     },
     {
       "id": 326,
       "tabId": 7,
       "groupId": 60,
       "name": "Committed Equity (incl IDC)",
-      "formula": "R9021 + R9022"
+      "formula": "R9021 + R9022",
+      "type": "flow"
     },
     {
       "id": 327,
       "tabId": 7,
       "groupId": 60,
       "name": "Senior Debt",
-      "formula": "R9020"
+      "formula": "R9020",
+      "type": "flow"
     },
     {
       "id": 328,
@@ -1716,105 +1831,120 @@
       "groupId": 60,
       "name": "Total Funding",
       "formula": "R325 + R326 + R327",
-      "description": "GST received + equity drawdown + debt drawdown"
+      "description": "GST received + equity drawdown + debt drawdown",
+      "type": "flow"
     },
     {
       "id": 330,
       "tabId": 7,
       "groupId": 60,
       "name": "Cash Flow After Funding",
-      "formula": "R306 + R321 + R328"
+      "formula": "R306 + R321 + R328",
+      "type": "flow"
     },
     {
       "id": 331,
       "tabId": 7,
       "groupId": 60,
       "name": "Interest Income",
-      "formula": "R151"
+      "formula": "R151",
+      "type": "flow"
     },
     {
       "id": 332,
       "tabId": 7,
       "groupId": 60,
       "name": "GST Received (Ops)",
-      "formula": "R25"
+      "formula": "R25",
+      "type": "flow"
     },
     {
       "id": 333,
       "tabId": 7,
       "groupId": 60,
       "name": "Tax",
-      "formula": "R18"
+      "formula": "R18",
+      "type": "flow"
     },
     {
       "id": 335,
       "tabId": 7,
       "groupId": 60,
       "name": "MRA Release",
-      "formula": "R9035"
+      "formula": "R9035",
+      "type": "flow"
     },
     {
       "id": 336,
       "tabId": 7,
       "groupId": 60,
       "name": "Maintenance Capex",
-      "formula": "-R9034"
+      "formula": "-R9034",
+      "type": "flow"
     },
     {
       "id": 340,
       "tabId": 7,
       "groupId": 60,
       "name": "Interest Expense",
-      "formula": "R16"
+      "formula": "R16",
+      "type": "flow"
     },
     {
       "id": 341,
       "tabId": 7,
       "groupId": 60,
       "name": "Principal Repayment",
-      "formula": "R31"
+      "formula": "R31",
+      "type": "flow"
     },
     {
       "id": 342,
       "tabId": 7,
       "groupId": 60,
       "name": "Agency Fee (Ops)",
-      "formula": "R174 * F2"
+      "formula": "R174 * F2",
+      "type": "flow"
     },
     {
       "id": 343,
       "tabId": 7,
       "groupId": 60,
       "name": "Total Debt Service",
-      "formula": "R340 + R341 + R342"
+      "formula": "R340 + R341 + R342",
+      "type": "flow"
     },
     {
       "id": 344,
       "tabId": 7,
       "groupId": 60,
       "name": "DSRF Fees",
-      "formula": "R153"
+      "formula": "R153",
+      "type": "flow"
     },
     {
       "id": 350,
       "tabId": 7,
       "groupId": 60,
       "name": "Dividends",
-      "formula": "R155"
+      "formula": "R155",
+      "type": "flow"
     },
     {
       "id": 351,
       "tabId": 7,
       "groupId": 60,
       "name": "Share Capital Repayment",
-      "formula": "R154"
+      "formula": "R154",
+      "type": "flow"
     },
     {
       "id": 352,
       "tabId": 7,
       "groupId": 60,
       "name": "Net Cash Flow",
-      "formula": "R40"
+      "formula": "R40",
+      "type": "flow"
     },
     {
       "id": 353,
@@ -1829,84 +1959,96 @@
       "tabId": 7,
       "groupId": 61,
       "name": "Revenue Accrued",
-      "formula": "R8"
+      "formula": "R8",
+      "type": "flow"
     },
     {
       "id": 361,
       "tabId": 7,
       "groupId": 61,
       "name": "OPEX Accrued",
-      "formula": "R9"
+      "formula": "R9",
+      "type": "flow"
     },
     {
       "id": 362,
       "tabId": 7,
       "groupId": 61,
       "name": "EBITDA",
-      "formula": "R13"
+      "formula": "R13",
+      "type": "flow"
     },
     {
       "id": 363,
       "tabId": 7,
       "groupId": 61,
       "name": "Depreciation",
-      "formula": "R14"
+      "formula": "R14",
+      "type": "flow"
     },
     {
       "id": 364,
       "tabId": 7,
       "groupId": 61,
       "name": "EBIT",
-      "formula": "R15"
+      "formula": "R15",
+      "type": "flow"
     },
     {
       "id": 365,
       "tabId": 7,
       "groupId": 61,
       "name": "Interest Income",
-      "formula": "R151"
+      "formula": "R151",
+      "type": "flow"
     },
     {
       "id": 366,
       "tabId": 7,
       "groupId": 61,
       "name": "Interest Expense",
-      "formula": "R16"
+      "formula": "R16",
+      "type": "flow"
     },
     {
       "id": 367,
       "tabId": 7,
       "groupId": 61,
       "name": "DSRF Fees",
-      "formula": "R153"
+      "formula": "R153",
+      "type": "flow"
     },
     {
       "id": 368,
       "tabId": 7,
       "groupId": 61,
       "name": "Agency Fee",
-      "formula": "R174 * F2"
+      "formula": "R174 * F2",
+      "type": "flow"
     },
     {
       "id": 369,
       "tabId": 7,
       "groupId": 61,
       "name": "EBT",
-      "formula": "R17"
+      "formula": "R17",
+      "type": "flow"
     },
     {
       "id": 370,
       "tabId": 7,
       "groupId": 61,
       "name": "Tax",
-      "formula": "R18"
+      "formula": "R18",
+      "type": "flow"
     },
     {
       "id": 371,
       "tabId": 7,
       "groupId": 61,
       "name": "NPAT",
-      "formula": "R19"
+      "formula": "R19",
+      "type": "flow"
     }
   ],
   "calculationsTabs": [

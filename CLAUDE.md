@@ -615,6 +615,21 @@ When implementing a ledger pattern:
 - [ ] MAX(0, ...) prevents negative balances
 - [ ] Opening in period N equals Closing in period N-1
 
+## Modules ARE Calculations
+
+Modules and calculations are **the same thing**. A module is just a group of calculations created from a template. At runtime:
+
+1. Module calculations live in `data/model-modules.json` with IDs R9000+ (e.g., R9001, R9066)
+2. `utils/loadModelData.js` merges them into the main `calculations` array
+3. After merging, they are **indistinguishable** from regular calculations — same formula evaluation, same `type` field, same aggregation rules
+4. The only metadata difference: module calcs have `_moduleId` and `_moduleOutputKey` fields
+
+**Implications:**
+- Module calcs have the same `type` field (`flow`, `stock`, `stock_start`, `flag`) as regular calcs
+- They appear in the calculations UI with an orange module badge but are otherwise fully editable
+- Any fix to formula evaluation, aggregation, or type handling applies equally to both
+- When searching for a calculation, check BOTH `model-calculations.json` AND `model-modules.json`
+
 ## Calculation & Module Execution Order (CRITICAL)
 
 The model uses a **two-pass calculation architecture** to handle dependencies between calculations and modules. This is critical to understand when working with module outputs.

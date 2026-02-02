@@ -409,7 +409,7 @@
       "groupId": 55,
       "name": "Distributions: Cash Available for Dist",
       "formula": "MAX(0, CUMSUM(R170) - PREVSUM(R9049) - C1.28) * F2",
-      "type": "flow",
+      "type": "stock",
       "_moduleId": "M7",
       "_moduleOutputKey": "cash_available"
     },
@@ -490,7 +490,7 @@
       "groupId": 55,
       "name": "Distributions: Post-SC Cash Available",
       "formula": "MAX(0, R9037 - R9047)",
-      "type": "flow",
+      "type": "stock",
       "_moduleId": "M7",
       "_moduleOutputKey": "sc_cash_available"
     },
@@ -643,7 +643,7 @@
       "groupId": 56,
       "name": "Opening Balance",
       "formula": "PREVVAL(R9070) + M1.1 * F8.Start",
-      "type": "stock",
+      "type": "stock_start",
       "_moduleId": "M1",
       "_moduleOutputKey": "opening_balance"
     },
@@ -734,7 +734,7 @@
       "groupId": 56,
       "name": "Payment Period Flag",
       "formula": "(T.QE + F8.End - T.QE * F8.End) * F8",
-      "type": "stock",
+      "type": "flag",
       "_moduleId": "M1",
       "_moduleOutputKey": "payment_period_flag"
     },
@@ -928,7 +928,7 @@
       "name": "Short Term Maintenance: Ops Flag (post F12 onset)",
       "formula": "F2 * (CUMSUM(F12) > 0)",
       "description": "1 during operations from F12 onset onwards, 0 before. Used to gate depreciation timing.",
-      "type": "flow",
+      "type": "flag",
       "_moduleId": "M11",
       "_moduleOutputKey": "active_flag"
     },
