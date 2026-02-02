@@ -281,17 +281,17 @@
       "id": 9023,
       "groupId": 52,
       "name": "Construction Funding: Total Uses (ex-IDC)",
-      "formula": "CUMSUM(M4.1)",
+      "formula": "CUMSUM(R9024)",
       "type": "stock",
       "_moduleId": "M4",
       "_moduleOutputKey": "total_uses_ex_idc",
-      "description": "Cumulative net period costs (GST-netted) from solver"
+      "description": "Cumulative net period costs (GST-netted)"
     },
     {
       "id": 9024,
       "groupId": 52,
       "name": "Construction Funding: Period Cost",
-      "formula": "M4.1",
+      "formula": "MAX(0, V1 + R9007 - R9010 + (R219 - SHIFT(R219, 1))) * R9999",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "period_cost"
@@ -739,10 +739,50 @@
       "_moduleOutputKey": "payment_period_flag"
     },
     {
+      "id": 9079,
+      "groupId": 57,
+      "name": "DSRF: Recalc Trigger",
+      "formula": "F2.Start + F13 + F14 + F15 + F16",
+      "type": "flag",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "recalc_trigger",
+      "description": "1 at ops start and each refinancing date"
+    },
+    {
+      "id": 9086,
+      "groupId": 57,
+      "name": "DSRF: Facility Limit",
+      "formula": "PREVVAL(R9086) * (1 - R9079) + FWDSUM(ABS(R9068), C1.54) * R9079 * F2",
+      "type": "stock",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "facility_limit",
+      "description": "Forward-looking sum of next N months DS, recalculated at ops start and refi dates"
+    },
+    {
+      "id": 9087,
+      "groupId": 57,
+      "name": "DSRF: Refi Fees",
+      "formula": "R9086 * (F13 + F14 + F15 + F16) * C1.62 / 100",
+      "type": "flow",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "refi_fees",
+      "description": "One-time refinancing fees at each refi date"
+    },
+    {
+      "id": 9088,
+      "groupId": 57,
+      "name": "DSRF: Effective Margin",
+      "formula": "PREVVAL(R9088) * (1 - R9079) + (C1.53 * F2.Start + C1.63 * (F13 + F14 + F15 + F16)) * R9079 + C1.53 * (CUMSUM(1) == 1)",
+      "type": "stock",
+      "_moduleId": "M8",
+      "_moduleOutputKey": "effective_margin",
+      "description": "Margin steps from base to refi margin at each refi date"
+    },
+    {
       "id": 9080,
       "groupId": 57,
       "name": "DSRF Establishment Fee",
-      "formula": "MAXVAL(M8.1) * C1.51 / 100 * F1.Start",
+      "formula": "MAXVAL(R9086) * C1.51 / 100 * F1.Start",
       "type": "flow",
       "_moduleId": "M8",
       "_moduleOutputKey": "establishment_fee"
@@ -751,7 +791,7 @@
       "id": 9081,
       "groupId": 57,
       "name": "DSRF Commitment Fee",
-      "formula": "M8.1 * M8.3 / 100 * C1.52 / 100 / T.QiY * T.QE * F2",
+      "formula": "R9086 * R9088 / 100 * C1.52 / 100 / T.QiY * T.QE * F2",
       "type": "flow",
       "_moduleId": "M8",
       "_moduleOutputKey": "commitment_fee"
@@ -760,7 +800,7 @@
       "id": 9082,
       "groupId": 57,
       "name": "Total DSRF Fees",
-      "formula": "R9080 + R9081 + M8.2",
+      "formula": "R9080 + R9081 + R9087",
       "type": "flow",
       "_moduleId": "M8",
       "_moduleOutputKey": "total_dsrf_fees"
@@ -1088,9 +1128,7 @@
         "drawdownMethod": "equity_first",
         "constructionFlagRef": "R9999"
       },
-      "outputs": [
-        "net_period_cost"
-      ],
+      "outputs": [],
       "solvedAt": null,
       "calcIds": [
         9015,
@@ -1102,9 +1140,10 @@
         9021,
         9022,
         9023,
-        9024
+        9024,
+        9099
       ],
-      "partiallyConverted": true
+      "fullyConverted": true
     },
     {
       "id": 1769400000000,
@@ -1258,13 +1297,10 @@
           }
         ]
       },
-      "outputs": [
-        "facility_limit",
-        "refi_fees",
-        "effective_margin"
-      ],
+      "outputs": [],
       "enabled": true,
-      "partiallyConverted": true
+      "calcIds": [9079, 9080, 9081, 9082, 9083, 9084, 9085, 9086, 9087, 9088],
+      "fullyConverted": true
     },
     {
       "id": 1769800000000,
@@ -1332,6 +1368,7 @@
     "M3.7": "R9012",
     "M3.8": "R9013",
     "M3.9": "R9014",
+    "M4.1": "R9024",
     "M4.2": "R9015",
     "M4.3": "R9016",
     "M4.4": "R9017",
@@ -1384,6 +1421,11 @@
     "M1.6": "R9070",
     "M1.7": "R9071",
     "M1.8": "R9072",
+    "M8.1": "R9086",
+    "M8.2": "R9087",
+    "M8.3": "R9088",
+    "M8.4": "R9079",
+    "M8.5": "R9080",
     "M8.6": "R9082",
     "M8.7": "R9083",
     "M8.8": "R9084",

@@ -15,25 +15,20 @@ export const TEMPLATE = {
         { key: 'facilityMonthsRef', label: 'Facility Months of DS', type: 'number_or_ref', required: true, default: 6 },
         { key: 'refinancingSchedule', label: 'Refinancing Schedule', type: 'array', required: false, default: [] }
     ],
-    outputs: [
-        { key: 'facility_limit', label: 'Facility Limit', type: 'stock', isSolver: true },
-        { key: 'refi_fees', label: 'Refinancing Fees', type: 'flow', isSolver: true },
-        { key: 'effective_margin', label: 'Effective Margin (%)', type: 'stock', isSolver: true }
-    ],
-    partiallyConverted: true,
+    outputs: [],
+    fullyConverted: true,
     convertedOutputs: [
+        { key: 'recalc_trigger', label: 'Recalc Trigger', calcRef: 'R9079' },
+        { key: 'facility_limit', label: 'Facility Limit', calcRef: 'R9086' },
+        { key: 'refi_fees', label: 'Refi Fees', calcRef: 'R9087' },
+        { key: 'effective_margin', label: 'Effective Margin (%)', calcRef: 'R9088' },
         { key: 'establishment_fee', label: 'Establishment Fee', calcRef: 'R9080' },
         { key: 'commitment_fee', label: 'Commitment Fee', calcRef: 'R9081' },
         { key: 'total_dsrf_fees', label: 'Total DSRF Fees', calcRef: 'R9082' },
         { key: 'total_dsrf_fees_cumulative', label: 'Total DSRF Fees (Cumulative)', calcRef: 'R9083' },
         { key: 'ds_plus_dsrf', label: 'DS + DSRF Fees', calcRef: 'R9084' },
         { key: 'adjusted_dscr', label: 'Adjusted DSCR', calcRef: 'R9085' }
-    ],
-    outputFormulas: {
-        facility_limit: 'Forward-looking sum of next N months DS (recalc at each refi)',
-        refi_fees: 'facility_limit × refiFeePct / 100 at each refi date',
-        effective_margin: 'Steps from base margin to refi margin at each date'
-    }
+    ]
 }
 
 /**

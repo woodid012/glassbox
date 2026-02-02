@@ -330,7 +330,7 @@ function checkArrayFunctions(formula) {
     if (!formula) return issues
 
     // Check for nested array functions
-    const arrayFns = ['CUMSUM', 'CUMSUM_Y', 'CUMPROD', 'CUMPROD_Y', 'SHIFT']
+    const arrayFns = ['CUMSUM', 'CUMSUM_Y', 'CUMPROD', 'CUMPROD_Y', 'SHIFT', 'FWDSUM']
 
     arrayFns.forEach(fn => {
         const pattern = new RegExp(`${fn}\\s*\\([^)]*(?:CUMSUM|CUMPROD|SHIFT)[^)]*\\)`, 'i')

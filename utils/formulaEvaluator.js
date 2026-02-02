@@ -375,6 +375,44 @@ export function maxval(innerArray, periods) {
 }
 
 /**
+ * FWDSUM - Forward-looking sum of next N periods
+ * FWDSUM(innerArray, N) returns sum of values from [i, i+N-1] at each period i
+ * @param {number[]} innerArray - Array of values to sum
+ * @param {number} windowSize - Number of periods to look ahead (inclusive of current)
+ * @param {number} periods - Total number of periods
+ * @returns {number[]} Forward sum array
+ */
+export function fwdsum(innerArray, windowSize, periods) {
+    const result = new Array(periods).fill(0)
+    for (let i = 0; i < periods; i++) {
+        let sum = 0
+        const end = Math.min(i + windowSize, periods)
+        for (let j = i; j < end; j++) {
+            sum += innerArray[j] || 0
+        }
+        result[i] = sum
+    }
+    return result
+}
+
+/**
+ * Resolve the window size argument for FWDSUM.
+ * Can be a literal number or a reference (e.g., C1.54).
+ */
+function resolveFwdsumWindow(windowExpr, allRefs) {
+    const trimmed = windowExpr.trim()
+    const asNum = parseFloat(trimmed)
+    if (!isNaN(asNum)) return Math.round(asNum)
+    // Try to resolve as a reference
+    const refValues = allRefs[trimmed]
+    if (refValues) {
+        const val = refValues.find(v => v !== 0) ?? refValues[0] ?? 6
+        return Math.round(val)
+    }
+    return 6 // default fallback
+}
+
+/**
  * Process array functions in a formula and return the processed formula with placeholders
  * @param {string} formula - The formula string containing array functions
  * @param {Object} allRefs - Map of reference names to their value arrays
@@ -424,6 +462,21 @@ export function processArrayFunctions(formula, allRefs, timeline) {
         arrayFnResults[placeholder] = resultArray
         processedFormula = processedFormula.replace(match[0], placeholder)
         maxvalRegex.lastIndex = 0
+    }
+
+    // FWDSUM(expr, N) - Forward-looking sum of next N periods
+    const fwdsumRegex = /FWDSUM\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi
+    while ((match = fwdsumRegex.exec(processedFormula)) !== null) {
+        const innerExpr = match[1]
+        const windowExpr = match[2]
+        const windowSize = resolveFwdsumWindow(windowExpr, allRefs)
+        const innerArray = evalExprForAllPeriods(innerExpr, allRefs, timeline.periods)
+        const resultArray = fwdsum(innerArray, windowSize, timeline.periods)
+
+        const placeholder = `__ARRAYFN${arrayFnCounter++}__`
+        arrayFnResults[placeholder] = resultArray
+        processedFormula = processedFormula.replace(match[0], placeholder)
+        fwdsumRegex.lastIndex = 0
     }
 
     // CUMSUM_Y(expr) - Cumulative sum at year boundaries only
@@ -668,6 +721,22 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
             countRegex.lastIndex = 0
         }
 
+        // Extract FWDSUM calls - resolved via full-array pre-computation
+        const fwdsumRegex2 = /FWDSUM\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi
+        while ((match = fwdsumRegex2.exec(processedF)) !== null) {
+            const placeholder = `__CLFWDSUM${placeholderIdx++}__`
+            parsed.fwdsumCalls = parsed.fwdsumCalls || []
+            parsed.fwdsumCalls.push({
+                placeholder,
+                innerExpr: match[1].trim(),
+                windowExpr: match[2].trim(),
+                resolvedValues: null,
+                original: match[0]
+            })
+            processedF = processedF.replace(match[0], placeholder)
+            fwdsumRegex2.lastIndex = 0
+        }
+
         // Extract MAXVAL calls - resolved via full-array pre-computation
         const maxvalRegex2 = /MAXVAL\s*\(([^)]+)\)/gi
         while ((match = maxvalRegex2.exec(processedF)) !== null) {
@@ -793,6 +862,24 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
                 }
                 const v = mv.resolvedValue
                 expr = expr.replace(mv.placeholder, v < 0 ? `(${v})` : v.toString())
+            }
+
+            // Resolve FWDSUM placeholders (compute once, cache the array)
+            if (parsed.fwdsumCalls) {
+                for (const fw of parsed.fwdsumCalls) {
+                    if (fw.resolvedValues === null) {
+                        // Resolve window size
+                        const windowSize = resolveFwdsumWindow(fw.windowExpr, context)
+                        // Evaluate inner expression for all periods
+                        const innerValues = new Array(periods).fill(0)
+                        for (let p = 0; p < periods; p++) {
+                            innerValues[p] = evalExprAtPeriod(fw.innerExpr, p)
+                        }
+                        fw.resolvedValues = fwdsum(innerValues, windowSize, periods)
+                    }
+                    const v = fw.resolvedValues[i]
+                    expr = expr.replace(fw.placeholder, v < 0 ? `(${v})` : v.toString())
+                }
             }
 
             // Substitute regular refs at period i

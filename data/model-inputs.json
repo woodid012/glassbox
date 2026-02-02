@@ -275,6 +275,42 @@
         "value": 0,
         "unit": "months"
       }
+    },
+    {
+      "id": 13,
+      "name": "Refi 1 (Y5)",
+      "periods": 1,
+      "startYear": 2032,
+      "startMonth": 4,
+      "endYear": 2032,
+      "endMonth": 4
+    },
+    {
+      "id": 14,
+      "name": "Refi 2 (Y10)",
+      "periods": 1,
+      "startYear": 2037,
+      "startMonth": 4,
+      "endYear": 2037,
+      "endMonth": 4
+    },
+    {
+      "id": 15,
+      "name": "Refi 3 (Y15)",
+      "periods": 1,
+      "startYear": 2042,
+      "startMonth": 4,
+      "endYear": 2042,
+      "endMonth": 4
+    },
+    {
+      "id": 16,
+      "name": "Refi 4 (Y20)",
+      "periods": 1,
+      "startYear": 2047,
+      "startMonth": 4,
+      "endYear": 2047,
+      "endMonth": 4
     }
   ],
   "indices": [
@@ -4026,6 +4062,32 @@
       "valueFrequency": "Y",
       "spreadMethod": null,
       "unit": "years"
+    },
+    {
+      "id": 161,
+      "groupId": 100,
+      "subgroupId": 5,
+      "name": "Refi Fee (%)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 1,
+      "valueFrequency": "Y",
+      "unit": "%",
+      "description": "One-time refinancing fee as % of facility limit"
+    },
+    {
+      "id": 162,
+      "groupId": 100,
+      "subgroupId": 5,
+      "name": "Refi Margin (%)",
+      "entryMode": "constant",
+      "values": {},
+      "formulas": {},
+      "value": 1.7,
+      "valueFrequency": "Y",
+      "unit": "%",
+      "description": "Post-refinancing effective margin"
     },
     {
       "id": 156,

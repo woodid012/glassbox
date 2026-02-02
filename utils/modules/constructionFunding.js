@@ -43,10 +43,8 @@ export const TEMPLATE = {
         ], default: 'prorata' },
         { key: 'constructionFlagRef', label: 'Construction Flag', type: 'reference', refType: 'flag', required: true }
     ],
-    outputs: [
-        { key: 'net_period_cost', label: 'Net Period Cost (GST-netted)', type: 'flow', isSolver: true }
-    ],
-    partiallyConverted: true,
+    outputs: [],
+    fullyConverted: true,
     convertedOutputs: [
         { key: 'total_funding', label: 'Total Funding Requirements', calcRef: 'R9015' },
         { key: 'senior_debt', label: 'Senior Debt', calcRef: 'R9016' },
