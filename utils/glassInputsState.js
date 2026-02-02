@@ -401,11 +401,11 @@ export function getDefaultState() {
 export function serializeState(state) {
     return {
         ...state,
-        collapsedInputType1Groups: Array.from(state.collapsedInputType1Groups),
-        collapsedInputGlassGroups: Array.from(state.collapsedInputGlassGroups),
+        collapsedInputType1Groups: Array.from(state.collapsedInputType1Groups || new Set()),
+        collapsedInputGlassGroups: Array.from(state.collapsedInputGlassGroups || new Set()),
         collapsedKeyPeriodGroups: Array.from(state.collapsedKeyPeriodGroups || new Set()),
-        collapsedCalculationsGroups: Array.from(state.collapsedCalculationsGroups),
-        collapsedGroups: Array.from(state.collapsedGroups)
+        collapsedCalculationsGroups: Array.from(state.collapsedCalculationsGroups || new Set()),
+        collapsedGroups: Array.from(state.collapsedGroups || new Set())
     }
 }
 

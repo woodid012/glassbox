@@ -15,10 +15,7 @@
 
 ## Project Overview
 
-This is a Next.js 14 financial model builder with two main pages:
-
-- `/glassinputs` - Time series input definition (flags, indexations, values)
-- `/model-builder` - Formula-based calculations with dependency tracking
+This is a Next.js 14 financial model builder. The entire application lives under `/dashboard` with sub-routes for inputs, key periods, calculations, modules, outputs, and more.
 
 ## Glass Box Philosophy
 
@@ -62,8 +59,7 @@ Exports (full audit trail available)
 
 ## Key Files
 
-- `app/glassinputs/page.jsx` - Input arrays page
-- `app/model-builder/page.jsx` - Calculations page with formula editor
+- `app/dashboard/` - Main application (inputs, calculations, modules, outputs, etc.)
 - `utils/formulaEvaluator.js` - Formula parsing and evaluation
 - `utils/moduleTemplates.js` - Preset modules (debt, depreciation, etc.)
 
@@ -423,6 +419,9 @@ Examples from current model:
 - `F8` - Ops Debt flag (keyPeriod id=8)
 - `F{id}.Start` - First period only
 - `F{id}.End` - Last period only
+- `F{id}.M` - Total months in the key period (constant across all periods)
+- `F{id}.Q` - Total quarters in the key period (F{id}.M / 3)
+- `F{id}.Y` - Total years in the key period (F{id}.M / 12)
 
 **Indexation references (ID-based):**
 
@@ -779,6 +778,5 @@ The BS imbalance always equals exactly one (or a sum of) mismatched stock-flow p
 
 ## Notes
 
-- Some glassinputs components are placeholder stubs - replace with full implementations if available
 - State persists to localStorage
 - Vercel-compatible for deployment
