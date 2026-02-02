@@ -74,7 +74,7 @@ function buildDiffRows(module, actualTemplate, calculations) {
 function FormulaPanel({ module, actualTemplate, calculations }) {
     if (!actualTemplate?.convertedOutputs) return null
     return (
-        <div className="mb-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <div className="mb-2 bg-slate-50 border border-slate-200 rounded-lg p-3">
             {actualTemplate.outputFormulas && Object.keys(actualTemplate.outputFormulas).length > 0 && (
                 <div className="mb-3 p-2 bg-indigo-50 rounded border border-indigo-100">
                     <div className="text-[10px] font-semibold text-indigo-600 uppercase mb-1">Template Patterns</div>
@@ -124,7 +124,7 @@ function DiffPanel({ module, actualTemplate, calculations }) {
     if (!actualTemplate?.convertedOutputs) return null
     const diffRows = buildDiffRows(module, actualTemplate, calculations)
     return (
-        <div className="mb-3 bg-amber-50/50 border border-amber-200 rounded-lg p-3">
+        <div className="mb-2 bg-amber-50/50 border border-amber-200 rounded-lg p-3">
             <div className="text-[10px] font-semibold text-amber-700 uppercase mb-2">Formula Check: Template vs Actual</div>
             <table className="w-full text-xs">
                 <thead>
@@ -174,7 +174,7 @@ function SolverInfoPanel({ module, moduleIndex, moduleOutputs }) {
     if (!actualTemplate) return null
     const solverLog = moduleOutputs?.[`_solverLog_M${moduleIndex + 1}`]
     return (
-        <div className="mb-3 bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+        <div className="mb-2 bg-indigo-50 border border-indigo-200 rounded-lg p-3">
             <div className="text-[10px] font-semibold text-indigo-700 uppercase mb-2">Solver Details</div>
             {/* Show outputFormulas descriptions for solver outputs */}
             {actualTemplate.outputFormulas && (
@@ -484,7 +484,7 @@ function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleO
 function OutputToolbar({ module, template, inputsEditMode, showFormulas, showDiff, showSolverInfo, onToggleFormulas, onToggleDiff, onToggleSolverInfo }) {
     return (
         <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-slate-400">Outputs</span>
+            <span className="text-xs text-slate-400">{template?.fullyConverted ? 'Results' : 'Preview'}</span>
             {!template?.fullyConverted && template?.partiallyConverted && (
                 <button
                     onClick={() => onToggleSolverInfo(module.id)}
@@ -576,7 +576,7 @@ function PartialModuleOutputs({
 
             {/* Time Series Preview for partial/solver modules */}
             {displayPeriods.length > 0 && (module.templateId !== 'iterative_debt_sizing' || module.solvedAt) && (
-                <div className="mt-4 border-t border-slate-200 pt-3">
+                <div className="border-t border-slate-200 pt-3">
                     <TimeSeriesTable
                         module={module}
                         moduleIndex={moduleIndex}
@@ -612,7 +612,7 @@ function FullyConvertedOutputs({
     const actualTemplate = MODULE_TEMPLATES[module.templateId]
 
     return (
-        <div className="mt-4 border-t border-slate-200 pt-3">
+        <div className="border-t border-slate-200 pt-3">
             <div className="flex items-center gap-2 mb-2">
                 <OutputToolbar
                     module={module}

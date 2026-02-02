@@ -44,14 +44,14 @@ export default function ModuleCard({
 }) {
     return (
         <div
-            className={`border rounded-lg p-4 transition-all ${
+            className={`border rounded-lg p-3 transition-all ${
                 module.enabled === false
                     ? 'border-slate-200 bg-slate-50 opacity-60'
                     : 'border-slate-200 bg-white'
             }`}
         >
             {/* Card Header */}
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <span className="text-xs px-1.5 py-0.5 rounded font-medium text-orange-600 bg-orange-100">
                         M{moduleIndex + 1}
@@ -66,13 +66,6 @@ export default function ModuleCard({
                     ) : (
                         <span className="text-sm font-semibold text-slate-900">{module.name}</span>
                     )}
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${
-                        module.category === 'financing' ? 'bg-blue-100 text-blue-700' :
-                        module.category === 'accounting' ? 'bg-purple-100 text-purple-700' :
-                        'bg-green-100 text-green-700'
-                    }`}>
-                        {module.category}
-                    </span>
                 </div>
                 {inputsEditMode && (
                 <div className="flex items-center gap-2">

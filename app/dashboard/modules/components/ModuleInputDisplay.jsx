@@ -108,7 +108,7 @@ export default function ModuleInputDisplay({ module, template, keyPeriods, allRe
     if (!template) return null
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             {template.inputs.map(inputDef => {
                 // Hide DB Multiplier when Straight Line is selected
                 if (inputDef.key === 'dbMultiplier' &&
