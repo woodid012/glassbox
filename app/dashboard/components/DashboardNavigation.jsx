@@ -11,6 +11,8 @@ const NAV_CONFIG = [
     { id: 'inputs', label: 'Inputs', href: '/dashboard/inputs' },
     { id: 'modules', label: 'Modules', href: '/dashboard/modules' },
     { id: 'calculations', label: 'Calculations', href: '/dashboard/calculations' },
+    { id: 'flows', label: 'Flows', href: '/dashboard/flows' },
+    { id: '_divider' },
     { id: 'outputs', label: 'Outputs', href: '/dashboard/outputs' },
     { id: 'validation', label: 'Validation', href: '/dashboard/validation' },
     { id: 'array-view', label: 'Array View', href: '/dashboard/array-view' },
@@ -29,9 +31,24 @@ export default function DashboardNavigation() {
     } = useDashboard()
 
     const { timeline } = derived
-    const { saveStatus } = autoSaveState
+    const { saveStatus, hasLoadedFromStorage } = autoSaveState
 
     const handleManualSave = async () => {
+        if (!hasLoadedFromStorage) {
+            setManualSaveStatus('error')
+            console.error('Manual save blocked: data has not finished loading yet')
+            setTimeout(() => setManualSaveStatus(null), 3000)
+            return
+        }
+        // Validate state has meaningful data before saving
+        const inputs = appState?.inputGlass || []
+        const calcs = appState?.calculations || []
+        if (inputs.length === 0 && calcs.length === 0) {
+            setManualSaveStatus('error')
+            console.error('Manual save blocked: appState appears empty (0 inputs, 0 calculations)')
+            setTimeout(() => setManualSaveStatus(null), 3000)
+            return
+        }
         setManualSaveStatus('saving')
         try {
             const { serializeState } = await import('@/utils/glassInputsState')
@@ -93,19 +110,23 @@ export default function DashboardNavigation() {
                 <div className="flex items-center gap-4">
                     {/* Navigation Links */}
                     <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                        {NAV_CONFIG.map(item => (
-                            <Link
-                                key={item.id}
-                                href={item.href}
-                                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${
-                                    isActive(item.href)
-                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
-                                }`}
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
+                        {NAV_CONFIG.map(item =>
+                            item.id === '_divider' ? (
+                                <div key={item.id} className="w-px bg-slate-300 mx-1 self-stretch" />
+                            ) : (
+                                <Link
+                                    key={item.id}
+                                    href={item.href}
+                                    className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                                        isActive(item.href)
+                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    {item.label}
+                                </Link>
+                            )
+                        )}
                     </div>
 
                     {/* Live calculation indicator */}
