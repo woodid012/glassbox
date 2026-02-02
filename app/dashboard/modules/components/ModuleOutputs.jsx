@@ -39,7 +39,9 @@ function buildDiffRows(module, actualTemplate, calculations) {
     if (!actualTemplate?.convertedOutputs || !actualTemplate?.outputFormulas) return []
     const rows = []
     actualTemplate.convertedOutputs.forEach(co => {
-        const calc = (calculations || []).find(c => `R${c.id}` === co.calcRef)
+        const ref = resolveCalcRef(co, module, calculations)
+        if (!ref) return // skip outputs with no matching calc
+        const calc = (calculations || []).find(c => `R${c.id}` === ref)
         const actualFormula = calc?.formula || '(not found)'
 
         // Build expected formula from template pattern
@@ -56,7 +58,7 @@ function buildDiffRows(module, actualTemplate, calculations) {
             : null // Can't compare if no pattern
 
         rows.push({
-            calcRef: co.calcRef,
+            calcRef: ref || co.key,
             label: co.label,
             actual: actualFormula,
             expected: expectedPattern || '(no pattern defined)',
@@ -93,10 +95,12 @@ function FormulaPanel({ module, actualTemplate, calculations }) {
                 </thead>
                 <tbody>
                     {(actualTemplate.convertedOutputs || []).map((co) => {
-                        const calc = (calculations || []).find(c => `R${c.id}` === co.calcRef)
+                        const ref = resolveCalcRef(co, module, calculations)
+                        if (!ref) return null
+                        const calc = (calculations || []).find(c => `R${c.id}` === ref)
                         return (
-                            <tr key={co.calcRef} className="border-b border-slate-100 hover:bg-white">
-                                <td className="py-1.5 px-2 font-mono text-blue-600 font-medium">{co.calcRef}</td>
+                            <tr key={ref} className="border-b border-slate-100 hover:bg-white">
+                                <td className="py-1.5 px-2 font-mono text-blue-600 font-medium">{ref}</td>
                                 <td className="py-1.5 px-2 text-slate-700">{co.label}</td>
                                 <td className="py-1.5 px-2 font-mono text-slate-800">
                                     {calc?.formula
@@ -246,6 +250,23 @@ function SolverInfoPanel({ module, moduleIndex, moduleOutputs }) {
 }
 
 /**
+ * Resolve calcRef for a convertedOutput entry.
+ * If the template has a hardcoded calcRef (e.g., GST 'R9006'), use it.
+ * Otherwise, look up from the module's calcIds by matching _moduleOutputKey.
+ */
+function resolveCalcRef(co, module, calculations) {
+    if (co.calcRef) return co.calcRef
+    // Find a moduleCalculation whose _moduleOutputKey matches this output's key
+    if (module.calcIds) {
+        const calc = (calculations || []).find(c =>
+            module.calcIds.includes(c.id) && c._moduleOutputKey === co.key
+        )
+        if (calc) return `R${calc.id}`
+    }
+    return null
+}
+
+/**
  * Time series data table used by both fully converted and solver/partial modules.
  */
 function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleOutputs, calculationResults, calculations, aggregateValues, isFullyConverted }) {
@@ -300,9 +321,11 @@ function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleO
     if (isFullyConverted) {
         // OUTPUT rows from convertedOutputs using calculationResults
         (actualTemplate.convertedOutputs || []).forEach((co, coIdx) => {
-            const calc = (calculations || []).find(c => `R${c.id}` === co.calcRef)
+            const ref = resolveCalcRef(co, module, calculations)
+            if (!ref) return // skip outputs with no matching calc
+            const calc = (calculations || []).find(c => `R${c.id}` === ref)
             const calcType = calc?.type || 'flow'
-            const monthlyValues = calculationResults[co.calcRef] || []
+            const monthlyValues = calculationResults[ref] || []
             const displayValues = aggregateValues(monthlyValues, calcType)
             const isStock = calcType === 'stock' || calcType === 'stock_start'
             const total = isStock
@@ -312,7 +335,7 @@ function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleO
             rows.push(
                 <tr key={`output-${coIdx}`} className="border-b border-slate-100 hover:bg-green-50/30">
                     <td className="py-1.5 px-3 text-xs w-[240px] min-w-[240px] sticky left-0 z-10 bg-white">
-                        <span className="text-blue-600 font-medium">{co.calcRef}</span>
+                        <span className="text-blue-600 font-medium">{ref || co.calcRef || '?'}</span>
                         <span className="text-slate-500 ml-2">{co.label}</span>
                         <span className={`ml-1 text-[9px] px-1 py-0.5 rounded ${
                             isStock ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
@@ -393,14 +416,21 @@ function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleO
         // Add converted outputs (now regular calcs) if available
         if (actualTemplate.convertedOutputs && actualTemplate.convertedOutputs.length > 0) {
             actualTemplate.convertedOutputs.forEach((co, coIdx) => {
-                const monthlyValues = calculationResults[co.calcRef] || []
-                const displayValues = aggregateValues(monthlyValues, 'flow')
-                const total = displayValues.reduce((sum, v) => sum + v, 0)
+                const ref = resolveCalcRef(co, module, calculations)
+                if (!ref) return // skip outputs with no matching calc
+                const calc = (calculations || []).find(c => `R${c.id}` === ref)
+                const calcType = calc?.type || 'flow'
+                const monthlyValues = calculationResults[ref] || []
+                const displayValues = aggregateValues(monthlyValues, calcType)
+                const isStock = calcType === 'stock' || calcType === 'stock_start'
+                const total = isStock
+                    ? (calcType === 'stock_start' ? (displayValues[0] || 0) : (displayValues[displayValues.length - 1] || 0))
+                    : displayValues.reduce((sum, v) => sum + v, 0)
 
                 rows.push(
                     <tr key={`converted-${coIdx}`} className="border-b border-slate-100 hover:bg-green-50/30">
                         <td className="py-1.5 px-3 text-xs w-[240px] min-w-[240px] sticky left-0 z-10 bg-white">
-                            <span className="text-blue-600 font-medium">{co.calcRef}</span>
+                            <span className="text-blue-600 font-medium">{ref || '?'}</span>
                             <span className="text-slate-500 ml-2">{co.label}</span>
                             <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-green-100 text-green-600">calc</span>
                         </td>
