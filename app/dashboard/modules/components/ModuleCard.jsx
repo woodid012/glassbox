@@ -139,15 +139,11 @@ export default function ModuleCard({
                 moduleIndex={moduleIndex}
                 template={template}
                 displayPeriods={displayPeriods}
-                viewMode={viewMode}
                 allRefs={allRefs}
                 moduleOutputs={moduleOutputs}
                 calculationResults={calculationResults}
                 calculations={calculations}
                 inputsEditMode={inputsEditMode}
-                inputGlass={inputGlass}
-                keyPeriods={keyPeriods}
-                indices={indices}
                 showFormulas={showFormulas}
                 showDiff={showDiff}
                 showSolverInfo={showSolverInfo}

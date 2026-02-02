@@ -3,7 +3,6 @@
 import { Code, CheckCircle, AlertTriangle, Info } from 'lucide-react'
 import { MODULE_TEMPLATES } from '@/utils/modules'
 import { formatValue } from '@/utils/valueAggregation'
-import { formatInputDisplay } from './ModuleInputDisplay'
 
 /**
  * Highlight known module input references within a formula string.
@@ -393,14 +392,6 @@ function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleO
 
         // Add converted outputs (now regular calcs) if available
         if (actualTemplate.convertedOutputs && actualTemplate.convertedOutputs.length > 0) {
-            rows.push(
-                <tr key="converted-separator" className="bg-green-50 border-b border-green-200">
-                    <td colSpan={2 + displayPeriods.length} className="py-0.5 text-[10px] text-green-700 text-center font-medium">
-                        CONVERTED TO CALCS (transparent formulas)
-                    </td>
-                </tr>
-            )
-
             actualTemplate.convertedOutputs.forEach((co, coIdx) => {
                 const monthlyValues = calculationResults[co.calcRef] || []
                 const displayValues = aggregateValues(monthlyValues, 'flow')
@@ -463,17 +454,7 @@ function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleO
 function OutputToolbar({ module, template, inputsEditMode, showFormulas, showDiff, showSolverInfo, onToggleFormulas, onToggleDiff, onToggleSolverInfo }) {
     return (
         <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-slate-400">
-                {template?.fullyConverted
-                    ? `${template.convertedOutputs?.length || 0} transparent calculations`
-                    : 'Module outputs: '
-                }
-            </span>
-            {!template?.fullyConverted && template?.partiallyConverted && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-700">
-                    Solver
-                </span>
-            )}
+            <span className="text-xs text-slate-400">Outputs</span>
             {!template?.fullyConverted && template?.partiallyConverted && (
                 <button
                     onClick={() => onToggleSolverInfo(module.id)}
@@ -523,9 +504,9 @@ function OutputToolbar({ module, template, inputsEditMode, showFormulas, showDif
  */
 function PartialModuleOutputs({
     module, moduleIndex, template,
-    displayPeriods, viewMode,
+    displayPeriods,
     allRefs, moduleOutputs, calculationResults, calculations,
-    inputsEditMode, inputGlass, keyPeriods, indices,
+    inputsEditMode,
     showFormulas, showDiff, showSolverInfo,
     onToggleFormulas, onToggleDiff, onToggleSolverInfo,
     aggregateValues
@@ -563,57 +544,9 @@ function PartialModuleOutputs({
                 <DiffPanel module={module} actualTemplate={actualTemplate} calculations={calculations} />
             )}
 
-            {/* Output tags */}
-            {(module.outputs || template?.outputs || []).map((output, outputIdx) => {
-                const outputObj = typeof output === 'string' ? { key: output, label: output.replace(/_/g, ' ') } : output
-                return (
-                    <span key={outputObj.key} className="text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded mr-1">
-                        M{moduleIndex + 1}.{outputIdx + 1} <span className="text-orange-400">({outputObj.label})</span>
-                    </span>
-                )
-            })}
-            {template?.convertedOutputs && template.convertedOutputs.length > 0 && (
-                <div className="mt-2">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs text-slate-400">+ transparent calcs: </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-green-100 text-green-700">
-                            {template.convertedOutputs.length} converted
-                        </span>
-                    </div>
-                </div>
-            )}
-
             {/* Time Series Preview for partial/solver modules */}
             {displayPeriods.length > 0 && (module.templateId !== 'iterative_debt_sizing' || module.solvedAt) && (
                 <div className="mt-4 border-t border-slate-200 pt-3">
-                    {/* Input Summary */}
-                    <div className="mb-3 p-2 bg-slate-50 rounded-lg">
-                        <div className="text-xs font-semibold text-slate-500 uppercase mb-1">Solved With Inputs</div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                            {template.inputs.map(inputDef => {
-                                const value = module.inputs[inputDef.key]
-                                if (value === undefined || value === null || value === '') return null
-                                const formatted = formatInputDisplay(value, { allRefs, inputGlass, keyPeriods, calculations, indices })
-                                return (
-                                    <span key={inputDef.key} className="text-slate-600">
-                                        <span className="text-slate-400">{inputDef.label}:</span>{' '}
-                                        <span className={`font-medium ${
-                                            formatted?.type === 'constant' ? 'text-purple-700' :
-                                            formatted?.type === 'flag' ? 'text-emerald-700' :
-                                            formatted?.type === 'calculation' ? 'text-blue-700' :
-                                            formatted?.type === 'index' ? 'text-amber-700' :
-                                            'text-slate-800'
-                                        }`}>
-                                            {formatted?.display || value}
-                                        </span>
-                                    </span>
-                                )
-                            })}
-                        </div>
-                    </div>
-                    <div className="text-xs font-semibold text-slate-500 uppercase mb-2">
-                        Generated Time Series Preview ({viewMode === 'M' ? 'Monthly' : viewMode === 'Q' ? 'Quarterly' : viewMode === 'Y' ? 'Yearly' : 'Financial Year'})
-                    </div>
                     <TimeSeriesTable
                         module={module}
                         moduleIndex={moduleIndex}
@@ -651,9 +584,6 @@ function FullyConvertedOutputs({
     return (
         <div className="mt-4 border-t border-slate-200 pt-3">
             <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-green-100 text-green-700">
-                    Fully Converted
-                </span>
                 <OutputToolbar
                     module={module}
                     template={{ ...template, fullyConverted: true }}
