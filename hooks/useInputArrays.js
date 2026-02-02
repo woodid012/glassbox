@@ -316,12 +316,21 @@ export function useInputArrays({
             if (firstPeriodIdx >= 0) startArr[firstPeriodIdx] = 1
             if (lastPeriodIdx >= 0) endArr[lastPeriodIdx] = 1
 
+            // Count total active months, derive quarters and years
+            const monthCount = arr.reduce((sum, v) => sum + v, 0)
+            const monthCountArray = new Array(timeline.periods).fill(monthCount)
+            const quarterCountArray = new Array(timeline.periods).fill(monthCount / 3)
+            const yearCountArray = new Array(timeline.periods).fill(monthCount / 12)
+
             flags[`flag_keyperiod_${keyPeriod.id}`] = {
                 id: `flag_keyperiod_${keyPeriod.id}`,
                 name: `${keyPeriod.name}`,
                 array: arr,
                 startArray: startArr,
-                endArray: endArr
+                endArray: endArr,
+                monthCountArray,
+                quarterCountArray,
+                yearCountArray
             }
         })
 

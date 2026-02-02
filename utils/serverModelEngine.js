@@ -101,6 +101,12 @@ function buildReferenceMap(inputs, timeline) {
         refs[`F${kp.id}`] = flag
         refs[`F${kp.id}.Start`] = flagStart
         refs[`F${kp.id}.End`] = flagEnd
+
+        // Period count variants: total months/quarters/years as constant arrays
+        const monthCount = flag.reduce((sum, v) => sum + v, 0)
+        refs[`F${kp.id}.M`] = new Array(periods).fill(monthCount)
+        refs[`F${kp.id}.Q`] = new Array(periods).fill(monthCount / 3)
+        refs[`F${kp.id}.Y`] = new Array(periods).fill(monthCount / 12)
     })
 
     // --- 3. Indexation References (I1, I2) ---
