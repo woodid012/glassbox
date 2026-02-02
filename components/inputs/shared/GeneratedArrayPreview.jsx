@@ -19,6 +19,8 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
     viewMode = 'M',
     keyPeriods = []
 }) {
+    const isLookupMode = group.entryMode === 'lookup' || group.entryMode === 'lookup2'
+    const prefillEnabled = config?.prefillLookups !== false
     // Generate preview periods at viewMode frequency using shared function
     const previewPeriods = useMemo(
         () => generatePeriods(group, config, keyPeriods, viewMode),
@@ -30,10 +32,17 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
         [groupInputs, group]
     )
 
-    const previewGroupTotals = useMemo(
-        () => calculatePeriodTotals(groupInputs, previewPeriods, viewMode, group, config),
-        [groupInputs, previewPeriods, viewMode, group, config]
-    )
+    const previewGroupTotals = useMemo(() => {
+        const raw = calculatePeriodTotals(groupInputs, previewPeriods, viewMode, group, config)
+        if (isLookupMode && prefillEnabled) {
+            let lastNonZero = 0
+            return raw.map(val => {
+                if (val !== 0) { lastNonZero = val; return val }
+                return lastNonZero
+            })
+        }
+        return raw
+    }, [groupInputs, previewPeriods, viewMode, group, config, isLookupMode, prefillEnabled])
 
     const previewGrandTotal = useMemo(
         () => previewGroupTotals.reduce((sum, v) => sum + v, 0),
@@ -135,7 +144,16 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
                                 )}
                                 {/* Input rows */}
                                 {sg.inputs.map(input => {
-                                    const values = getValuesArray(input, previewPeriods, viewMode, group, config)
+                                    const rawValues = getValuesArray(input, previewPeriods, viewMode, group, config)
+                                    // Apply forward-fill for lookup groups when prefill is enabled
+                                    let values = rawValues
+                                    if (isLookupMode && prefillEnabled) {
+                                        let lastNonZero = 0
+                                        values = rawValues.map(val => {
+                                            if (val !== 0) { lastNonZero = val; return val }
+                                            return lastNonZero
+                                        })
+                                    }
                                     const total = values.reduce((sum, v) => sum + (parseFloat(v) || 0), 0)
                                     return (
                                         <tr key={input.id} className="border-b border-slate-100 hover:bg-blue-50/30">
@@ -147,7 +165,7 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
                                                 {total.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                                             </td>
                                             {values.map((val, i) => (
-                                                <td key={i} className="py-1 px-0.5 text-right text-[11px] text-slate-600 min-w-[45px] w-[45px] border-r border-slate-100">
+                                                <td key={i} className={`py-1 px-0.5 text-right text-[11px] min-w-[45px] w-[45px] border-r border-slate-100 ${isLookupMode && prefillEnabled && rawValues[i] === 0 && val !== 0 ? 'text-slate-400' : 'text-slate-600'}`}>
                                                     {val !== 0 ? val.toLocaleString('en-US', { maximumFractionDigits: 2 }) : ''}
                                                 </td>
                                             ))}
@@ -156,7 +174,14 @@ const GeneratedArrayPreview = memo(function GeneratedArrayPreview({
                                 })}
                                 {/* Subgroup subtotal */}
                                 {sg.id && (() => {
-                                    const sgPeriodTotals = calculatePeriodTotals(sg.inputs, previewPeriods, viewMode, group, config)
+                                    let sgPeriodTotals = calculatePeriodTotals(sg.inputs, previewPeriods, viewMode, group, config)
+                                    if (isLookupMode && prefillEnabled) {
+                                        let lastNonZero = 0
+                                        sgPeriodTotals = sgPeriodTotals.map(val => {
+                                            if (val !== 0) { lastNonZero = val; return val }
+                                            return lastNonZero
+                                        })
+                                    }
                                     const sgTotal = sgPeriodTotals.reduce((sum, v) => sum + v, 0)
                                     return (
                                         <tr className="bg-blue-50/50 border-b border-blue-200">

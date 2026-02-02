@@ -72,7 +72,15 @@ export default function Lookup2Mode({
                     {subgroupedInputs.map((sg, sgIndex) => {
                         const selectedInput = getSelectedForSubgroup(sg.id, sg.inputs)
                         const selectedIndex = getSelectedIndexForSubgroup(sg.id)
-                        const selectedValues = selectedInput ? getLookup2ValuesArray(selectedInput, periods, group.frequency) : []
+                        const rawSelectedValues = selectedInput ? getLookup2ValuesArray(selectedInput, periods, group.frequency) : []
+                        let selectedValues = rawSelectedValues
+                        if (prefillEnabled && rawSelectedValues.length > 0) {
+                            let lastNonZero = 0
+                            selectedValues = rawSelectedValues.map(val => {
+                                if (val !== 0) { lastNonZero = val; return val }
+                                return lastNonZero
+                            })
+                        }
                         const selectedTotal = selectedValues.reduce((sum, v) => sum + (parseFloat(v) || 0), 0)
 
                         return (
