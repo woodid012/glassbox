@@ -248,30 +248,44 @@ function buildInputArray(input, group, config, keyPeriods, timeline, timelineLoo
     // Determine the effective frequency for spreading
     const freq = input.valueFrequency || input.seriesFrequency || input.timePeriod || group.frequency || 'M'
 
+    // Determine per-input active window from seriesStartDate / seriesEndDate
+    let inputStartIdx = 0
+    let inputEndIdx = groupPeriods
+    if (input.seriesStartDate && input.seriesStartDate !== 'range') {
+        const [y, m] = input.seriesStartDate.split('-').map(Number)
+        inputStartIdx = (y - startYear) * 12 + (m - startMonth)
+        inputStartIdx = Math.max(0, inputStartIdx)
+    }
+    if (input.seriesEndDate && input.seriesEndDate !== 'range') {
+        const [y, m] = input.seriesEndDate.split('-').map(Number)
+        inputEndIdx = (y - startYear) * 12 + (m - startMonth)
+        inputEndIdx = Math.min(groupPeriods, inputEndIdx)
+    }
+
     if (input.entryMode === 'constant' || input.mode === 'constant') {
         const value = input.value ?? 0
         // Constant entry within a series group — spread by frequency
         if (freq === 'Q') {
-            for (let i = 0; i < groupPeriods; i++) monthlyValues[i] = value / 3
+            for (let i = inputStartIdx; i < inputEndIdx; i++) monthlyValues[i] = value / 3
         } else if (freq === 'Y' || freq === 'FY') {
-            for (let i = 0; i < groupPeriods; i++) monthlyValues[i] = value / 12
+            for (let i = inputStartIdx; i < inputEndIdx; i++) monthlyValues[i] = value / 12
         } else {
-            monthlyValues.fill(value)
+            for (let i = inputStartIdx; i < inputEndIdx; i++) monthlyValues[i] = value
         }
     } else if (input.mode === 'series' && input.value != null && !input.values) {
         const value = input.value
         if (freq === 'Q') {
-            for (let i = 0; i < groupPeriods; i++) monthlyValues[i] = value / 3
+            for (let i = inputStartIdx; i < inputEndIdx; i++) monthlyValues[i] = value / 3
         } else if (freq === 'Y' || freq === 'FY') {
-            for (let i = 0; i < groupPeriods; i++) monthlyValues[i] = value / 12
+            for (let i = inputStartIdx; i < inputEndIdx; i++) monthlyValues[i] = value / 12
         } else {
-            monthlyValues.fill(value)
+            for (let i = inputStartIdx; i < inputEndIdx; i++) monthlyValues[i] = value
         }
     } else if (input.values) {
         // Sparse values object
         for (const [idx, val] of Object.entries(input.values)) {
             const i = parseInt(idx)
-            if (i >= 0 && i < groupPeriods) monthlyValues[i] = val
+            if (i >= inputStartIdx && i < inputEndIdx) monthlyValues[i] = val
         }
     }
 
