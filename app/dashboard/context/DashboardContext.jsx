@@ -7,7 +7,7 @@ const DashboardContext = createContext(null)
 
 export function DashboardProvider({ children }) {
     const [viewMode, setViewMode] = useState('Y')
-    const [inputsEditMode, setInputsEditMode] = useState(true)
+    const [inputsEditMode, setInputsEditMode] = useState(false)
 
     const dashboardState = useDashboardState(viewMode)
 

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { RotateCcw, Check, Loader2, Camera, CheckCircle, FileSpreadsheet, Code, RefreshCw, Save } from 'lucide-react'
+import { Check, Loader2, CheckCircle, FileSpreadsheet, Code, Save } from 'lucide-react'
 import { useDashboard } from '../context/DashboardContext'
 
 const NAV_CONFIG = [
@@ -18,7 +18,6 @@ const NAV_CONFIG = [
 
 export default function DashboardNavigation() {
     const pathname = usePathname()
-    const [snapshotStatus, setSnapshotStatus] = useState(null)
     const [exportStatus, setExportStatus] = useState(null)
     const [manualSaveStatus, setManualSaveStatus] = useState(null)
 
@@ -30,7 +29,6 @@ export default function DashboardNavigation() {
     } = useDashboard()
 
     const { timeline } = derived
-    const { handleRevertToOriginal } = handlers
     const { saveStatus } = autoSaveState
 
     const handleManualSave = async () => {
@@ -53,24 +51,6 @@ export default function DashboardNavigation() {
             console.error('Manual save error:', err)
             setManualSaveStatus('error')
             setTimeout(() => setManualSaveStatus(null), 3000)
-        }
-    }
-
-    const handleSnapshot = async () => {
-        setSnapshotStatus('saving')
-        try {
-            const res = await fetch('/api/snapshot', { method: 'POST' })
-            const data = await res.json()
-            if (res.ok) {
-                setSnapshotStatus('saved')
-                setTimeout(() => setSnapshotStatus(null), 2000)
-            } else {
-                setSnapshotStatus('error')
-                setTimeout(() => setSnapshotStatus(null), 3000)
-            }
-        } catch (err) {
-            setSnapshotStatus('error')
-            setTimeout(() => setSnapshotStatus(null), 3000)
         }
     }
 
@@ -229,39 +209,6 @@ export default function DashboardNavigation() {
                         </button>
                     </div>
 
-                    {/* Snapshot Button */}
-                    <button
-                        onClick={handleSnapshot}
-                        disabled={snapshotStatus === 'saving'}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
-                            snapshotStatus === 'saved'
-                                ? 'bg-green-50 border-green-300 text-green-700'
-                                : snapshotStatus === 'error'
-                                ? 'bg-red-50 border-red-300 text-red-700'
-                                : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-600'
-                        }`}
-                        title="Create manual snapshot backup"
-                    >
-                        {snapshotStatus === 'saving' ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Camera className="w-4 h-4" />
-                        )}
-                        <span className="text-xs font-medium">
-                            {snapshotStatus === 'saving' ? 'Saving...' :
-                             snapshotStatus === 'saved' ? 'Saved!' :
-                             snapshotStatus === 'error' ? 'Error' : 'Snapshot'}
-                        </span>
-                    </button>
-
-                    {/* Revert to Original Button */}
-                    <button
-                        onClick={handleRevertToOriginal}
-                        className="p-2 rounded-lg transition-colors bg-amber-600 text-white hover:bg-amber-700"
-                        title="Revert to original template (discard all changes)"
-                    >
-                        <RotateCcw className="w-5 h-5" />
-                    </button>
                 </div>
             </div>
         </div>
