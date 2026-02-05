@@ -728,7 +728,7 @@
       "tabId": 3,
       "groupId": 36,
       "name": "DSRF Facility Limit",
-      "formula": "M8.1",
+      "formula": "R9086",
       "description": "DSRF facility limit (notional, from DSRF module)",
       "type": "stock"
     },

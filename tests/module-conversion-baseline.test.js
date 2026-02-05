@@ -1,7 +1,8 @@
 /**
- * Baseline capture for M4 and M8 module conversion.
- * Run BEFORE converting solvers to declarative formulas.
- * Saves current solver output values to JSON files for later comparison.
+ * Baseline capture for module conversion verification.
+ * Captures R-calc values (formerly aliased as M4.x, M8.x) for comparison.
+ * M4 and M8 are fullyConverted — their outputs are R9000+ calculations,
+ * no longer aliased via _mRefMap.
  */
 import { describe, it, expect } from 'vitest'
 import { readFileSync, writeFileSync } from 'fs'
@@ -38,17 +39,17 @@ describe('Module Conversion Baseline Capture', () => {
         expect(result.moduleOutputs).toBeDefined()
     })
 
-    it('should capture M4.1 baseline', () => {
-        const m4_1 = result.moduleOutputs['M4.1']
-        expect(m4_1).toBeDefined()
-        expect(m4_1.length).toBeGreaterThan(0)
+    it('should capture R9024 baseline (formerly M4.1)', () => {
+        const r9024 = result.calculationResults['R9024']
+        expect(r9024).toBeDefined()
+        expect(r9024.length).toBeGreaterThan(0)
 
-        const nonZero = m4_1.filter(v => v !== 0)
-        console.log(`M4.1: ${nonZero.length} non-zero periods, sum=${nonZero.reduce((a, b) => a + b, 0).toFixed(2)}`)
+        const nonZero = r9024.filter(v => v !== 0)
+        console.log(`R9024: ${nonZero.length} non-zero periods, sum=${nonZero.reduce((a, b) => a + b, 0).toFixed(2)}`)
 
         const baseline = {
-            ref: 'M4.1',
-            values: m4_1,
+            ref: 'R9024',
+            values: r9024,
             periods: result.timeline.periodLabels
         }
         writeFileSync(
@@ -57,12 +58,12 @@ describe('Module Conversion Baseline Capture', () => {
         )
     })
 
-    it('should capture M8.1-M8.3 baseline', () => {
-        const refs = ['M8.1', 'M8.2', 'M8.3']
+    it('should capture R9086-R9088 baseline (formerly M8.1-M8.3)', () => {
+        const refs = ['R9086', 'R9087', 'R9088']
         const baseline = { periods: result.timeline.periodLabels, outputs: {} }
 
         for (const ref of refs) {
-            const values = result.moduleOutputs[ref]
+            const values = result.calculationResults[ref]
             expect(values).toBeDefined()
             expect(values.length).toBeGreaterThan(0)
 

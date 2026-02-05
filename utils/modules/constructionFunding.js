@@ -1,5 +1,5 @@
-// Construction Funding Module
-import { resolveModuleInput } from './shared'
+// Construction Funding Module — template metadata and drawdown formula sets
+// Solver removed: this module is fullyConverted (all outputs are R9000+ calcs)
 
 /**
  * Formula sets for each drawdown method.
@@ -61,71 +61,3 @@ export const TEMPLATE = {
     outputFormulas: {}
 }
 
-/**
- * Construction Funding solver: computes net period costs after GST refunds.
- *
- * This is a single forward pass (not iterative) since all inputs are known:
- *   - Period capex (V1 * F1)
- *   - GST paid (R9007) and GST received/refunded (R9010)
- *   - Fees delta (R219[i] - R219[i-1])
- *   - GST receivable delta (R61[i] - R61[i-1])
- *
- * The net period cost = capex + GST paid - GST received + fees delta
- * This nets out the 1-period GST timing difference so construction cash ≈ 0.
- */
-export function calculate(inputs, arrayLength, context) {
-    const {
-        constructionCostsRef = null,
-        feesRef = null,
-        gstAmountRef = null,
-        gstReceivedRef = null,
-        constructionFlagRef = null
-    } = inputs
-
-    // Initialize output
-    const net_period_cost = new Array(arrayLength).fill(0)
-
-    // Get input arrays from context
-    const constructionFlag = constructionFlagRef && context[constructionFlagRef]
-        ? context[constructionFlagRef]
-        : new Array(arrayLength).fill(0)
-
-    const gstAmount = gstAmountRef && context[gstAmountRef]
-        ? context[gstAmountRef]
-        : new Array(arrayLength).fill(0)
-
-    const gstReceived = gstReceivedRef && context[gstReceivedRef]
-        ? context[gstReceivedRef]
-        : new Array(arrayLength).fill(0)
-
-    const fees = feesRef && context[feesRef]
-        ? context[feesRef]
-        : new Array(arrayLength).fill(0)
-
-    // Get V1 (period capex) from context
-    const v1 = context['V1'] || new Array(arrayLength).fill(0)
-
-    // Find construction period
-    const consStart = constructionFlag.findIndex(f => f === 1 || f === true)
-    if (consStart < 0) return { net_period_cost }
-
-    for (let i = 0; i < arrayLength; i++) {
-        const isCons = constructionFlag[i] === 1 || constructionFlag[i] === true
-        if (!isCons) continue
-
-        // Period capex (ex-GST)
-        const capex = v1[i] || 0
-
-        // GST: paid this period minus refund received this period
-        const gstPaidThisPeriod = gstAmount[i] || 0
-        const gstReceivedThisPeriod = gstReceived[i] || 0
-
-        // Fees delta (cumulative fees change)
-        const feesDelta = (fees[i] || 0) - (i > 0 ? (fees[i - 1] || 0) : 0)
-
-        // Net period cost = capex + net GST outflow + fees change
-        net_period_cost[i] = Math.max(0, capex + gstPaidThisPeriod - gstReceivedThisPeriod + feesDelta)
-    }
-
-    return { net_period_cost }
-}

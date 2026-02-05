@@ -1,67 +1,37 @@
-// Module system entry point - assembles all modules and exports public API
+// Module system entry point
+// Only iterative_debt_sizing (M1) has an active JS solver.
+// All other modules are fullyConverted — their outputs are R9000+ calculations.
 
-import { TEMPLATE as constructionFundingTemplate, calculate as calculateConstructionFunding } from './constructionFunding'
-import { TEMPLATE as reserveAccountTemplate, calculate as calculateReserveAccount } from './reserveAccount'
-
-import { TEMPLATE as gstReceivableTemplate, calculate as calculateGstReceivable } from './gstReceivable'
-import { TEMPLATE as taxLossesTemplate, calculate as calculateTaxLosses } from './taxLosses'
-import { TEMPLATE as straightLineAmortisationTemplate, calculate as calculateStraightLineAmortisation } from './straightLineAmortisation'
+import { TEMPLATE as constructionFundingTemplate } from './constructionFunding'
 import { TEMPLATE as iterativeDebtSizingTemplate, calculate as calculateIterativeDebtSizing } from './iterativeDebtSizing'
-import { TEMPLATE as distributionsTemplate, calculate as calculateDistributions } from './distributions'
-import { TEMPLATE as dsrfTemplate, calculate as calculateDsrf } from './dsrf'
 
-// Assembled MODULE_TEMPLATES object (same shape as the original)
+// Template metadata for UI (module cards, "add template" buttons)
+// Templates for deleted solvers are sourced from moduleTemplates in model-modules.json
 export const MODULE_TEMPLATES = {
     construction_funding: constructionFundingTemplate,
-    reserve_account: reserveAccountTemplate,
-
-    gst_receivable: gstReceivableTemplate,
-    tax_losses: taxLossesTemplate,
-    straight_line_amortisation: straightLineAmortisationTemplate,
-    distributions: distributionsTemplate,
-    dsrf: dsrfTemplate,
     iterative_debt_sizing: iterativeDebtSizingTemplate
 }
 
-// Dispatcher: routes to the correct module calculation function
+// Dispatcher: only M1 (iterative_debt_sizing) needs a JS solver.
+// All other modules are fullyConverted and evaluated as regular R9000+ calculations.
 export function calculateModuleOutputs(moduleInstance, arrayLength, context) {
-    const template = MODULE_TEMPLATES[moduleInstance.moduleType]
-    if (!template) return {}
-
-    const inputs = moduleInstance.inputs || {}
-
-    // Initialize default outputs (returned if no matching type)
-    const outputs = {}
-    template.outputs.forEach(output => {
-        outputs[output.key] = new Array(arrayLength).fill(0)
-    })
-
-    switch (moduleInstance.moduleType) {
-        case 'construction_funding':
-            return calculateConstructionFunding(inputs, arrayLength, context)
-        case 'reserve_account':
-            return calculateReserveAccount(inputs, arrayLength, context)
-
-        case 'gst_receivable':
-            return calculateGstReceivable(inputs, arrayLength, context)
-        case 'tax_losses':
-            return calculateTaxLosses(inputs, arrayLength, context)
-        case 'straight_line_amortisation':
-            return calculateStraightLineAmortisation(inputs, arrayLength, context)
-        case 'iterative_debt_sizing':
-            return calculateIterativeDebtSizing(inputs, arrayLength, context)
-        case 'distributions':
-            return calculateDistributions(inputs, arrayLength, context)
-        case 'dsrf':
-            return calculateDsrf(inputs, arrayLength, context)
-        default:
-            return outputs
+    if (moduleInstance.moduleType === 'iterative_debt_sizing') {
+        return calculateIterativeDebtSizing(moduleInstance.inputs || {}, arrayLength, context)
     }
+
+    // fullyConverted modules have no solver outputs — return empty
+    const template = MODULE_TEMPLATES[moduleInstance.moduleType]
+    if (template) {
+        const outputs = {}
+        template.outputs.forEach(output => {
+            outputs[output.key] = new Array(arrayLength).fill(0)
+        })
+        return outputs
+    }
+    return {}
 }
 
-// Helper functions (inline to avoid circular imports with helpers.js)
-
-// Get available module output references for a module instance
+// Helper: get available module output references for a module instance
 // Uses numeric indices: M1.1, M1.2, etc.
 export function getModuleOutputRefs(moduleInstance) {
     const template = MODULE_TEMPLATES[moduleInstance.moduleType]
