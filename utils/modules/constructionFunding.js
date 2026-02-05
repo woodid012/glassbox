@@ -16,7 +16,7 @@ export const DRAWDOWN_FORMULAS = {
     },
     equity_first: {
         // Equity-first: draw all equity first (up to target), then debt
-        9024: "M4.1",
+        // Note: R9024 (Period Cost) is NOT swapped — it always uses the net-period-cost formula
         9099: "MAXVAL(R9023) - M1.1",
         9020: "MAX(0, CUMSUM(R9024) - R9099) - MAX(0, CUMSUM(R9024) - R9024 - R9099)",
         9021: "(R9024 - R9020) * R9999",
