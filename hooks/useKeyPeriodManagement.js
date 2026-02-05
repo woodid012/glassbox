@@ -384,7 +384,7 @@ export function useKeyPeriodManagement({
                 setKeyPeriods(finalPeriods)
             }
         }
-    }, [config.startYear, config.startMonth, config.endYear, config.endMonth])
+    }, [config.startYear, config.startMonth, config.endYear, config.endMonth, config.minFrequency])
 
     return {
         addKeyPeriod,

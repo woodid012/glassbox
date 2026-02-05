@@ -236,19 +236,30 @@ export function detectShiftCycles(graph, calculations) {
         return { nodeToCluster, clusters, nonCyclicalShiftDeps }
     }
 
-    // Merge overlapping sets
+    // Merge overlapping sets (union-find style: merge ALL overlapping clusters)
     const merged = []
     for (const nodeSet of allCycleNodeSets) {
         let mergedInto = null
         for (let i = 0; i < merged.length; i++) {
+            let overlaps = false
             for (const node of nodeSet) {
-                if (merged[i].has(node)) { mergedInto = i; break }
+                if (merged[i].has(node)) { overlaps = true; break }
             }
-            if (mergedInto !== null) break
+            if (overlaps) {
+                if (mergedInto === null) {
+                    // First overlap: merge into this set
+                    mergedInto = i
+                    for (const node of nodeSet) merged[mergedInto].add(node)
+                } else {
+                    // Additional overlap: merge this cluster into the first one
+                    for (const node of merged[i]) merged[mergedInto].add(node)
+                    merged.splice(i, 1)
+                    if (i < mergedInto) mergedInto--
+                    i-- // re-check at this index since we spliced
+                }
+            }
         }
-        if (mergedInto !== null) {
-            for (const node of nodeSet) merged[mergedInto].add(node)
-        } else {
+        if (mergedInto === null) {
             merged.push(new Set(nodeSet))
         }
     }
@@ -302,7 +313,7 @@ export function evaluateSingleCalc(formula, context, timeline) {
         const resultArray = new Array(timeline.periods).fill(0)
 
         const formulaWithoutShift = formula.replace(/(?:SHIFT\s*\([^)]+\)|PREVSUM\s*\([^)]+\)|PREVVAL\s*\([^)]+\))/gi, '')
-        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g
+        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End|M|Q|Y))?|T\.[A-Za-z]+)\b/g
         const refsInFormula = [...new Set([...formulaWithoutShift.matchAll(refPattern)].map(m => m[1]))]
 
         // Zero-fill missing refs in context (client-style robustness)
@@ -329,7 +340,7 @@ export function evaluateSingleCalc(formula, context, timeline) {
                 expr = expr.replace(placeholder, arr[i] < 0 ? `(${arr[i]})` : arr[i].toString())
             }
             // Replace any remaining unresolved references with 0
-            expr = expr.replace(/\b(?:[VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g, '0')
+            expr = expr.replace(/\b(?:[VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End|M|Q|Y))?|T\.[A-Za-z]+)\b/g, '0')
             resultArray[i] = evaluateSafeExpression(expr)
         }
 

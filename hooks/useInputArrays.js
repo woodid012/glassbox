@@ -148,20 +148,18 @@ export function useInputArrays({
             const rate = index.indexationRate / 100
 
             for (let i = 0; i < timeline.periods; i++) {
-                const periodYear = timeline.year[i]
-                const periodMonth = timeline.month[i]
-                const periodTotal = periodYear * 12 + periodMonth
+                const periodTotal = timeline.year[i] * 12 + timeline.month[i]
+                const monthsFromBase = periodTotal - indexStartTotal
 
-                // Only calculate indexation for periods on or after indexation start
-                if (periodTotal >= indexStartTotal) {
+                if (monthsFromBase >= 0) {
                     if (index.indexationPeriod === 'monthly') {
-                        // Monthly compounding: count months from indexation start
-                        const monthsElapsed = periodTotal - indexStartTotal
-                        arr[i] = Math.pow(1 + rate / MONTHS_IN_YEAR, monthsElapsed)
+                        // Monthly compounding: true compound monthly rate
+                        const monthlyRate = Math.pow(1 + rate, 1/12) - 1
+                        arr[i] = Math.pow(1 + monthlyRate, monthsFromBase)
                     } else {
-                        // Annual compounding: count calendar years from indexation start
-                        const yearsElapsed = periodYear - indexStartYear
-                        arr[i] = Math.pow(1 + rate, yearsElapsed)
+                        // Annual stepwise: flat for 12 months, then step up
+                        const wholeYears = Math.floor(monthsFromBase / 12)
+                        arr[i] = Math.pow(1 + rate, wholeYears)
                     }
                 } else {
                     arr[i] = 1 // Before indexation starts, factor is 1
@@ -465,7 +463,7 @@ export function useInputArrays({
         })
 
         return arrays
-    }, [inputs, timeline, config.startDate, config.endDate])
+    }, [inputs, timeline, config.startYear, config.startMonth, config.endYear, config.endMonth])
 
     return {
         inputType1Arrays,

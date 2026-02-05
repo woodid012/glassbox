@@ -754,7 +754,7 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
         parsed.processedFormula = processedF
 
         // Collect all refs used in the processed formula (excluding placeholders)
-        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g
+        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End|M|Q|Y))?|T\.[A-Za-z]+)\b/g
         const refs = [...new Set([...processedF.matchAll(refPattern)].map(m => m[1]))]
             .filter(ref => context[ref])
             .sort((a, b) => b.length - a.length)
@@ -769,7 +769,7 @@ export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, conte
     // Helper: evaluate a simple expression at period i, substituting refs from context
     function evalExprAtPeriod(expr, i) {
         // Sort context refs by length (longer first)
-        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End))?|T\.[A-Za-z]+)\b/g
+        const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End|M|Q|Y))?|T\.[A-Za-z]+)\b/g
         const exprRefs = [...new Set([...expr.matchAll(refPattern)].map(m => m[1]))]
             .filter(ref => context[ref])
             .sort((a, b) => b.length - a.length)

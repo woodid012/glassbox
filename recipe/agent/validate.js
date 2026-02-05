@@ -71,8 +71,12 @@ export function validateRecipe(recipe, dataDir) {
   const { calculationResults, timeline } = engineResults
 
   // --- Balance Sheet Check ---
-  if (recipe.validation?.balanceSheet) {
-    const { checkRef, threshold } = recipe.validation.balanceSheet
+  const bsValidation = recipe.validation?.balanceSheet
+    || (recipe.validation?.balanceSheetTolerance != null
+      ? { checkRef: 'R195', threshold: recipe.validation.balanceSheetTolerance }
+      : null)
+  if (bsValidation) {
+    const { checkRef, threshold } = bsValidation
     const values = calculationResults[checkRef]
     if (values) {
       const maxAbs = Math.max(...values.map(v => Math.abs(v)))

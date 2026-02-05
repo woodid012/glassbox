@@ -323,7 +323,7 @@ export function canConvertToExcel(formula) {
     // operators (+,-,*,/,^,>,<,>=,<=,(,)), functions (CUMSUM, CUMPROD, SHIFT, PREVSUM, PREVVAL, MIN, MAX, ABS, COUNT)
     // If formula contains lowercase words (not part of refs), it's descriptive text
     const withoutFunctions = formula.replace(/\b(CUMSUM|CUMPROD|SHIFT|PREVSUM|PREVVAL|MIN|MAX|ABS|COUNT|SUMPRODUCT|SUM|IF)\b/gi, '')
-    const withoutRefs = withoutFunctions.replace(/\b[RMVSCFITLG]\d+(?:\.\d+)*(?:\.(?:Start|End))?\b/g, '')
+    const withoutRefs = withoutFunctions.replace(/\b[RMVSCFITLG]\d+(?:\.\d+)*(?:\.(?:Start|End|M|Q|Y))?\b/g, '')
     const withoutTimeRefs = withoutRefs.replace(/\bT\.[A-Za-z]+\b/g, '')
     if (/[a-z]{3,}/i.test(withoutTimeRefs)) return false  // 3+ consecutive letters = likely English text
 

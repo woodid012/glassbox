@@ -150,13 +150,15 @@ function buildSheetXml(rows, addString) {
 
             if (cell.type === 'static') {
                 // Pre-computed static value — amber background + italic font (style 2)
-                cellsXml.push(`<c r="${cellRef}" s="2"><v>${cell.value}</v></c>`)
+                const safeStaticVal = isFinite(cell.value) ? cell.value : 0
+                cellsXml.push(`<c r="${cellRef}" s="2"><v>${safeStaticVal}</v></c>`)
             } else if (cell.type === 'number') {
-                cellsXml.push(`<c r="${cellRef}"><v>${cell.value}</v></c>`)
+                const safeNumVal = isFinite(cell.value) ? cell.value : 0
+                cellsXml.push(`<c r="${cellRef}"><v>${safeNumVal}</v></c>`)
             } else if (cell.type === 'formula') {
                 cellsXml.push(`<c r="${cellRef}"><f>${escapeXml(cell.value)}</f></c>`)
             } else {
-                const idx = addString(escapeXml(cell.value))
+                const idx = addString(cell.value)
                 cellsXml.push(`<c r="${cellRef}" t="s"><v>${idx}</v></c>`)
             }
         }

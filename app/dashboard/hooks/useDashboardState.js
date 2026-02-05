@@ -528,13 +528,12 @@ export function useDashboardState(viewMode) {
         names['T.FYE'] = 'Financial Year End'
 
         // Lookup names
-        let lookupIndex = 0
         inputGlassGroups
             .filter(group => group.entryMode === 'lookup' || group.entryMode === 'lookup2')
             .forEach(group => {
-                lookupIndex++
                 const groupInputs = inputGlass.filter(input => input.groupId === group.id)
-                const lookupRef = `L${lookupIndex}`
+                const lookupRef = getGroupRef(group, groupInputs)
+                if (!lookupRef) return
                 const selectedIndices = group.selectedIndices || {}
 
                 const subgroups = group.subgroups || []
