@@ -395,7 +395,7 @@ export default function FlowsPage() {
                     let ref = groupRef
                     if (!ref) {
                         // Fallback: try common patterns
-                        const inputNum = input.id
+                        const inputNum = group.id === 100 ? input.id - 99 : input.id
                         if (isValues) ref = `V${group.refIndex}.${inputNum}`
                         else if (isSeries) ref = `S${group.refIndex}.${inputNum}`
                         else ref = `V${group.refIndex}.${inputNum}`
