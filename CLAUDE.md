@@ -776,6 +776,25 @@ The BS imbalance always equals exactly one (or a sum of) mismatched stock-flow p
 
 **Future refactoring path:** Extract shared core into `utils/calculationCore.js`. Both engines wrap the core with their specific concerns (server: input building; client: React hooks/memoization).
 
+## Recipe Module (Future Feature)
+
+The Recipe system is a model generation tool for creating financial models from simplified specs. This is a **future/experimental feature** and not part of core Glassbox functionality.
+
+**Full documentation:** See [RECIPE.md](./RECIPE.md) for complete details on:
+- Spec → Recipe → Model architecture
+- CLI commands (`compile`, `build`, `extract`, `generate`, `validate`)
+- Symbolic references and spec format
+- Templates and workflows
+
+**Quick reference:**
+```bash
+# Build model from spec
+node recipe/agent/index.js build recipe/spec/templates/bess-simple.spec.json
+
+# Validate current model
+node recipe/agent/index.js validate
+```
+
 ## Notes
 
 - State persists to localStorage
