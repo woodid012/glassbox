@@ -226,15 +226,12 @@ export function useKeyPeriodManagement({
         })
     }, [config.minFrequency])
 
-    const addToGroup = useCallback((periodId, groupId, autoLinkToPrevious = false) => {
+    const addToGroup = useCallback((periodId, groupId) => {
         setKeyPeriods(prev => {
             const group = prev.find(p => p.id === groupId)
             if (!group || !group.isGroup) return prev
 
-            const existingChildIds = group.childIds || []
-            const lastChildId = existingChildIds.length > 0 ? existingChildIds[existingChildIds.length - 1] : null
-
-            let updated = prev.map(p => {
+            return prev.map(p => {
                 if (p.id === groupId) {
                     const newChildIds = [...(p.childIds || [])]
                     if (!newChildIds.includes(periodId)) {
@@ -243,20 +240,12 @@ export function useKeyPeriodManagement({
                     return { ...p, childIds: newChildIds }
                 }
                 if (p.id === periodId) {
-                    const updates = { ...p, parentGroupId: groupId }
-                    if (autoLinkToPrevious && lastChildId) {
-                        updates.startLinkedToPeriodId = lastChildId
-                        updates.startLinkToEnd = true
-                        updates.startLinkOffset = { value: 1, unit: 'months' }
-                    }
-                    return updates
+                    return { ...p, parentGroupId: groupId }
                 }
                 return p
             })
-
-            return recalculateGroupDates(updated, groupId)
         })
-    }, [setKeyPeriods, recalculateGroupDates])
+    }, [setKeyPeriods])
 
     const removeFromGroup = useCallback((periodId) => {
         setKeyPeriods(prev => {

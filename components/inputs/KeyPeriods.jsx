@@ -795,7 +795,7 @@ export default function KeyPeriods({
                                                                 value=""
                                                                 onChange={(e) => {
                                                                     if (e.target.value && onAddToGroup) {
-                                                                        onAddToGroup(period.id, parseInt(e.target.value), true)
+                                                                        onAddToGroup(period.id, parseInt(e.target.value))
                                                                     }
                                                                 }}
                                                                 className="bg-transparent border-0 text-[10px] text-slate-400 w-4 cursor-pointer"
