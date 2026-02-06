@@ -4614,7 +4614,7 @@
       "financialStatement": "funding"
     },
     {
-      "id": 9999,
+      "id": 229,
       "groupId": 36,
       "name": "Funding Window",
       "formula": "MAX(F1, F2 * SHIFT(F1, 1))",
@@ -6214,7 +6214,7 @@
       "id": 9007,
       "groupId": 51,
       "name": "GST Paid/Received: GST Amount",
-      "formula": "R112 * C1.15 / 100 * R9999",
+      "formula": "R112 * C1.15 / 100 * R229",
       "moduleId": "M3",
       "moduleOutputKey": "gst_amount",
       "type": "flow"
@@ -6341,7 +6341,7 @@
       "id": 9021,
       "groupId": 52,
       "name": "Construction Funding: Equity Drawdown",
-      "formula": "(R9024 - R9020) * R9999",
+      "formula": "(R9024 - R9020) * R229",
       "moduleId": "M4",
       "moduleOutputKey": "equity_drawdown",
       "type": "flow"
@@ -6350,7 +6350,7 @@
       "id": 9022,
       "groupId": 52,
       "name": "Construction Funding: IDC (Period)",
-      "formula": "(CUMSUM(R9020) - R9020) * R171 / 100 / T.MiY * R9999",
+      "formula": "(CUMSUM(R9020) - R9020) * R171 / 100 / T.MiY * R229",
       "moduleId": "M4",
       "moduleOutputKey": "idc",
       "type": "flow"
@@ -6940,7 +6940,7 @@
       "id": 9110,
       "groupId": 63,
       "name": "IDC+Comm Amort: Total Capitalised",
-      "formula": "CUMSUM(R9022) + CUMSUM(R146 * R9999) + CUMSUM(S3 * I2 * R9999) + CUMSUM(R9082 * R9999)",
+      "formula": "CUMSUM(R9022) + CUMSUM(R146 * R229) + CUMSUM(S3 * I2 * R229) + CUMSUM(R9082 * R229)",
       "moduleId": "M9",
       "moduleOutputKey": "total_capitalised",
       "type": "stock",
@@ -7242,7 +7242,7 @@
         "gearingCapPct": "C1.19",
         "interestRatePct": "R171",
         "drawdownMethod": "equity_first",
-        "constructionFlagRef": "R9999"
+        "constructionFlagRef": "R229"
       },
       "description": "Construction funding waterfall with IDC equity-funded",
       "category": "financing",

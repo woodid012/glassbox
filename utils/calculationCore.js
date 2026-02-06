@@ -109,10 +109,10 @@ export function buildUnifiedGraph(calculations, modules, mRefMapData) {
         })
     }
 
-    // Only add non-converted modules as nodes
+    // Only add iterative-solver modules as graph nodes (all others are fully converted to R9000+ calcs)
     if (modules) {
         modules.forEach((mod, idx) => {
-            if (mod.converted || mod.fullyConverted) return
+            if (mod.templateId !== 'iterative_debt_sizing') return
             const nodeId = `M${idx + 1}`
             graph.set(nodeId, {
                 type: 'module',
@@ -512,10 +512,8 @@ export function runCalculationPass(calculations, modules, referenceMap, timeline
             const template = MODULE_TEMPLATES[templateKey]
             if (!template) continue
 
-            // Skip disabled modules or unsolved iterative modules
-            const isDisabled = mod.enabled === false
-            const isIterative = templateKey === 'iterative_debt_sizing'
-            if (isDisabled || (isIterative && !mod.solvedAt)) {
+            // Skip disabled modules
+            if (mod.enabled === false) {
                 template.outputs.forEach((output, outputIdx) => {
                     const ref = `M${node.index + 1}.${outputIdx + 1}`
                     modOutputs[ref] = new Array(timeline.periods).fill(0)

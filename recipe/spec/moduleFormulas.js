@@ -183,7 +183,7 @@ function gstReceivable(inputs) {
  * 11 calcs including equity target using MAXVAL.
  */
 function constructionFunding(inputs) {
-  // R9999 is a well-known alias for constructionFlagRef in the model
+  // R229 is the Funding Window flag (constructionFlagRef in the model)
   const consFlagExpr = '$input.constructionFlagRef'
   return [
     {

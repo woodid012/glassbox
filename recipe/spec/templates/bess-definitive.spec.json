@@ -369,7 +369,7 @@
     { "id": 61, "name": "GST Receivable WC", "formula": "MAXVAL($M3.receivable_closing * F1) * F1", "group": "S&U Uses", "type": "stock" },
     { "id": 145, "name": "DSRF Facility Limit", "formula": "$M8.facility_limit", "group": "S&U Uses", "type": "stock" },
     { "id": 219, "name": "Funded Fees & Other Uses", "formula": "R173 + R147 + R62 + CUMSUM(R33) + $M8.total_dsrf_fees_cumulative", "group": "S&U Uses", "type": "stock" },
-    { "id": 9999, "name": "Funding Window", "formula": "MAX(F1, F2 * SHIFT(F1, 1))", "group": "S&U Uses", "type": "flag" },
+    { "id": 229, "name": "Funding Window", "formula": "MAX(F1, F2 * SHIFT(F1, 1))", "group": "S&U Uses", "type": "flag" },
     { "id": 64, "name": "Total Uses", "formula": "R60 + R63 + R219 + R61", "group": "S&U Uses", "type": "stock" },
 
     { "_comment": "=== S&U SOURCES ===" },
@@ -629,7 +629,7 @@
         "gearingCapPct": "{MaxGearing}",
         "interestRatePct": "R171",
         "drawdownMethod": "equity_first",
-        "constructionFlagRef": "R9999"
+        "constructionFlagRef": "R229"
       }
     },
     {
@@ -718,7 +718,7 @@
         {
           "key": "total_capitalised",
           "name": "Total Capitalised",
-          "formula": "CUMSUM($M4.idc) + CUMSUM(R146 * R9999) + CUMSUM(S3 * I2 * R9999) + CUMSUM($M8.total_dsrf_fees * R9999)",
+          "formula": "CUMSUM($M4.idc) + CUMSUM(R146 * R229) + CUMSUM(S3 * I2 * R229) + CUMSUM($M8.total_dsrf_fees * R229)",
           "type": "stock"
         }
       ]

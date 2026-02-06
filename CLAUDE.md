@@ -757,7 +757,7 @@ The mismatched component reveals which ledger/module has the bug.
 ### Step 5: Trace the root cause in the mismatched component
 
 Common causes:
-- **Ungated CUMSUMs**: A CUMSUM that should freeze after construction keeps accumulating during operations (e.g., `R9083` instead of `CUMSUM(R9082 * R9999)`)
+- **Ungated CUMSUMs**: A CUMSUM that should freeze after construction keeps accumulating during operations (e.g., `R9083` instead of `CUMSUM(R9082 * R229)`)
 - **Double-counting**: An item appears on BOTH the P&L (expense) and as a capitalised asset movement
 - **Missing flags**: A stock formula lacks F1/F2 gating, so values bleed across construction/operations boundary
 - **Client vs server divergence**: Client engine zeros out calcs with missing refs instead of substituting 0 (fixed in useUnifiedCalculation.js)

@@ -137,7 +137,7 @@
       "id": 9007,
       "groupId": 51,
       "name": "GST Paid/Received: GST Amount",
-      "formula": "R112 * C1.15 / 100 * R9999",
+      "formula": "R112 * C1.15 / 100 * R229",
       "type": "flow",
       "_moduleId": "M3",
       "_moduleOutputKey": "gst_amount"
@@ -263,7 +263,7 @@
       "id": 9021,
       "groupId": 52,
       "name": "Construction Funding: Equity Drawdown",
-      "formula": "(R9024 - R9020) * R9999",
+      "formula": "(R9024 - R9020) * R229",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "equity_drawdown"
@@ -272,7 +272,7 @@
       "id": 9022,
       "groupId": 52,
       "name": "Construction Funding: IDC (Period)",
-      "formula": "(CUMSUM(R9020) - R9020) * R171 / 100 / T.MiY * R9999",
+      "formula": "(CUMSUM(R9020) - R9020) * R171 / 100 / T.MiY * R229",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "idc"
@@ -291,7 +291,7 @@
       "id": 9024,
       "groupId": 52,
       "name": "Construction Funding: Period Cost",
-      "formula": "MAX(0, V1 + R9007 - R9010 + (R219 - SHIFT(R219, 1))) * R9999",
+      "formula": "MAX(0, V1 + R9007 - R9010 + (R219 - SHIFT(R219, 1))) * R229",
       "type": "flow",
       "_moduleId": "M4",
       "_moduleOutputKey": "period_cost"
@@ -846,7 +846,7 @@
       "id": 9110,
       "groupId": 63,
       "name": "IDC+Comm Amort: Total Capitalised",
-      "formula": "CUMSUM(R9022) + CUMSUM(R146 * R9999) + CUMSUM(S3 * I2 * R9999) + CUMSUM(R9082 * R9999)",
+      "formula": "CUMSUM(R9022) + CUMSUM(R146 * R229) + CUMSUM(S3 * I2 * R229) + CUMSUM(R9082 * R229)",
       "description": "Cumulative IDC + commitment fees + agency fees + DSRF fees during construction (constant after COD)",
       "type": "stock",
       "_moduleId": "M9",
@@ -1053,12 +1053,7 @@
         "debtPeriod": "Q",
         "tolerance": 0.1,
         "maxIterations": 50
-      },
-      "outputs": [
-        "sized_debt"
-      ],
-      "solvedAt": 1769461750580,
-      "partiallyConverted": true
+      }
     },
     {
       "id": 1769317033954,
@@ -1071,16 +1066,7 @@
         "onsetFlag": "F2",
         "lifeRef": "C1.24",
         "additionMode": "one_time"
-      },
-      "outputs": [],
-      "calcIds": [
-        9001,
-        9002,
-        9003,
-        9004,
-        9005
-      ],
-      "fullyConverted": true
+      }
     },
     {
       "id": 1769320996781,
@@ -1095,20 +1081,7 @@
         "receiptDelayMonths": "C1.31",
         "constructionFlagRef": "F1",
         "operationsFlagRef": "F2"
-      },
-      "outputs": [],
-      "calcIds": [
-        9006,
-        9007,
-        9008,
-        9009,
-        9010,
-        9011,
-        9012,
-        9013,
-        9014
-      ],
-      "fullyConverted": true
+      }
     },
     {
       "id": 1769323861808,
@@ -1126,24 +1099,8 @@
         "gearingCapPct": "C1.19",
         "interestRatePct": "R171",
         "drawdownMethod": "equity_first",
-        "constructionFlagRef": "R9999"
-      },
-      "outputs": [],
-      "solvedAt": null,
-      "calcIds": [
-        9015,
-        9016,
-        9017,
-        9018,
-        9019,
-        9020,
-        9021,
-        9022,
-        9023,
-        9024,
-        9099
-      ],
-      "fullyConverted": true
+        "constructionFlagRef": "R229"
+      }
     },
     {
       "id": 1769400000000,
@@ -1156,19 +1113,7 @@
         "opsFlagRef": "F2",
         "taxRatePct": "C1.11"
       },
-      "outputs": [],
-      "solvedAt": null,
-      "enabled": false,
-      "calcIds": [
-        9025,
-        9026,
-        9027,
-        9028,
-        9029,
-        9030,
-        9031
-      ],
-      "fullyConverted": true
+      "enabled": false
     },
     {
       "id": 1769500000000,
@@ -1183,16 +1128,7 @@
         "drawdownRef": "S2",
         "drawdownFlagRef": "F12",
         "releaseFlagRef": "F12.End"
-      },
-      "outputs": [],
-      "calcIds": [
-        9032,
-        9033,
-        9034,
-        9035,
-        9036
-      ],
-      "fullyConverted": true
+      }
     },
     {
       "id": 1769600000000,
@@ -1221,34 +1157,7 @@
         "dsraTargetRef": "",
         "quarterEndFlagRef": "T.QE"
       },
-      "outputs": [],
-      "enabled": true,
-      "calcIds": [
-        9037,
-        9038,
-        9039,
-        9040,
-        9041,
-        9042,
-        9043,
-        9044,
-        9045,
-        9046,
-        9047,
-        9048,
-        9049,
-        9050,
-        9051,
-        9052,
-        9053,
-        9054,
-        9055,
-        9056,
-        9057,
-        9058,
-        9059
-      ],
-      "fullyConverted": true
+      "enabled": true
     },
     {
       "id": 1769700000000,
@@ -1297,10 +1206,7 @@
           }
         ]
       },
-      "outputs": [],
-      "enabled": true,
-      "calcIds": [9079, 9080, 9081, 9082, 9083, 9084, 9085, 9086, 9087, 9088],
-      "fullyConverted": true
+      "enabled": true
     },
     {
       "id": 1769800000000,
@@ -1313,10 +1219,7 @@
         "onsetFlag": "F2",
         "lifeRef": "C1.59",
         "additionMode": "one_time"
-      },
-      "outputs": [],
-      "calcIds": [9110, 9111, 9112, 9113, 9114, 9115],
-      "fullyConverted": true
+      }
     },
     {
       "id": 1769800000001,
@@ -1329,10 +1232,7 @@
         "onsetFlag": "F2",
         "lifeRef": "C1.60",
         "additionMode": "one_time"
-      },
-      "outputs": [],
-      "calcIds": [9120, 9121, 9122, 9123, 9124, 9125],
-      "fullyConverted": true
+      }
     },
     {
       "id": 1769800000002,
@@ -1347,10 +1247,7 @@
         "additionMode": "periodic",
         "periodicAdditionRef": "S2 * I2 * F12",
         "activeFlag": "F12"
-      },
-      "outputs": [],
-      "calcIds": [9129, 9130, 9131, 9132, 9133, 9134, 9135],
-      "fullyConverted": true
+      }
     }
   ],
   "_mRefMap": {

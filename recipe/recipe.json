@@ -4724,7 +4724,7 @@
       "financialStatement": "funding"
     },
     {
-      "id": 9999,
+      "id": 229,
       "groupId": 36,
       "name": "Funding Window",
       "formula": "MAX(F1, F2 * SHIFT(F1, 1))",
@@ -6420,7 +6420,7 @@
       "id": 9007,
       "groupId": 51,
       "name": "GST Paid/Received: GST Amount",
-      "formula": "R112 * C1.15 / 100 * R9999",
+      "formula": "R112 * C1.15 / 100 * R229",
       "moduleId": "M3",
       "moduleOutputKey": "gst_amount",
       "type": "flow"
@@ -6547,7 +6547,7 @@
       "id": 9021,
       "groupId": 52,
       "name": "Construction Funding: Equity Drawdown",
-      "formula": "(R9024 - R9020) * R9999",
+      "formula": "(R9024 - R9020) * R229",
       "moduleId": "M4",
       "moduleOutputKey": "equity_drawdown",
       "type": "flow"
@@ -6556,7 +6556,7 @@
       "id": 9022,
       "groupId": 52,
       "name": "Construction Funding: IDC (Period)",
-      "formula": "(CUMSUM(R9020) - R9020) * R171 / 100 / T.MiY * R9999",
+      "formula": "(CUMSUM(R9020) - R9020) * R171 / 100 / T.MiY * R229",
       "moduleId": "M4",
       "moduleOutputKey": "idc",
       "type": "flow"
@@ -6575,7 +6575,7 @@
       "id": 9024,
       "groupId": 52,
       "name": "Construction Funding: Period Cost",
-      "formula": "MAX(0, V1 + R9007 - R9010 + (R219 - SHIFT(R219, 1))) * R9999",
+      "formula": "MAX(0, V1 + R9007 - R9010 + (R219 - SHIFT(R219, 1))) * R229",
       "moduleId": "M4",
       "moduleOutputKey": "period_cost",
       "type": "flow"
@@ -7187,7 +7187,7 @@
       "id": 9110,
       "groupId": 63,
       "name": "IDC+Comm Amort: Total Capitalised",
-      "formula": "CUMSUM(R9022) + CUMSUM(R146 * R9999) + CUMSUM(S3 * I2 * R9999) + CUMSUM(R9082 * R9999)",
+      "formula": "CUMSUM(R9022) + CUMSUM(R146 * R229) + CUMSUM(S3 * I2 * R229) + CUMSUM(R9082 * R229)",
       "moduleId": "M9",
       "moduleOutputKey": "total_capitalised",
       "type": "stock",
@@ -7417,12 +7417,7 @@
         "maxIterations": 50
       },
       "description": "Binary search to find optimal debt with DSCR-sculpted repayments",
-      "category": "financing",
-      "outputs": [
-        "sized_debt"
-      ],
-      "partiallyConverted": true,
-      "solvedAt": 1769461750580
+      "category": "financing"
     },
     {
       "id": 1769317033954,
@@ -7436,15 +7431,7 @@
         "additionMode": "one_time"
       },
       "description": "Straight-line depreciation of PP&E using CUMSUM pattern",
-      "category": "accounting",
-      "calcIds": [
-        9001,
-        9002,
-        9003,
-        9004,
-        9005
-      ],
-      "fullyConverted": true
+      "category": "accounting"
     },
     {
       "id": 1769320996781,
@@ -7460,19 +7447,7 @@
         "operationsFlagRef": "F2"
       },
       "description": "GST ledger with configurable receipt delay using CUMSUM pattern",
-      "category": "accounting",
-      "calcIds": [
-        9006,
-        9007,
-        9008,
-        9009,
-        9010,
-        9011,
-        9012,
-        9013,
-        9014
-      ],
-      "fullyConverted": true
+      "category": "accounting"
     },
     {
       "id": 1769323861808,
@@ -7489,24 +7464,10 @@
         "gearingCapPct": "C1.19",
         "interestRatePct": "R171",
         "drawdownMethod": "equity_first",
-        "constructionFlagRef": "R9999"
+        "constructionFlagRef": "R229"
       },
       "description": "Construction funding waterfall with IDC equity-funded",
-      "category": "financing",
-      "calcIds": [
-        9015,
-        9016,
-        9017,
-        9018,
-        9019,
-        9020,
-        9021,
-        9022,
-        9023,
-        9024,
-        9099
-      ],
-      "fullyConverted": true
+      "category": "financing"
     },
     {
       "id": 1769400000000,
@@ -7520,17 +7481,7 @@
       },
       "description": "Tax calculation with loss carry-forward using CUMSUM pattern",
       "category": "accounting",
-      "calcIds": [
-        9025,
-        9026,
-        9027,
-        9028,
-        9029,
-        9030,
-        9031
-      ],
-      "enabled": false,
-      "fullyConverted": true
+      "enabled": false
     },
     {
       "id": 1769500000000,
@@ -7546,15 +7497,7 @@
         "releaseFlagRef": "F12.End"
       },
       "description": "MRA funded at construction end, draws for maintenance, releases at maintenance end",
-      "category": "financing",
-      "calcIds": [
-        9032,
-        9033,
-        9034,
-        9035,
-        9036
-      ],
-      "fullyConverted": true
+      "category": "financing"
     },
     {
       "id": 1769600000000,
@@ -7584,33 +7527,7 @@
       },
       "description": "Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment",
       "category": "financing",
-      "calcIds": [
-        9037,
-        9038,
-        9039,
-        9040,
-        9041,
-        9042,
-        9043,
-        9044,
-        9045,
-        9046,
-        9047,
-        9048,
-        9049,
-        9050,
-        9051,
-        9052,
-        9053,
-        9054,
-        9055,
-        9056,
-        9057,
-        9058,
-        9059
-      ],
-      "enabled": true,
-      "fullyConverted": true
+      "enabled": true
     },
     {
       "id": 1769700000000,
@@ -7660,20 +7577,7 @@
       },
       "description": "Debt service reserve facility with refinancing fees and margin step-ups",
       "category": "financing",
-      "calcIds": [
-        9079,
-        9080,
-        9081,
-        9082,
-        9083,
-        9084,
-        9085,
-        9086,
-        9087,
-        9088
-      ],
-      "enabled": true,
-      "fullyConverted": true
+      "enabled": true
     },
     {
       "id": 1769800000000,
@@ -7687,16 +7591,7 @@
         "additionMode": "one_time"
       },
       "description": "Straight-line amortisation of capitalised IDC + commitment + agency + DSRF fees",
-      "category": "accounting",
-      "calcIds": [
-        9110,
-        9111,
-        9112,
-        9113,
-        9114,
-        9115
-      ],
-      "fullyConverted": true
+      "category": "accounting"
     },
     {
       "id": 1769800000001,
@@ -7710,16 +7605,7 @@
         "additionMode": "one_time"
       },
       "description": "Straight-line amortisation of capitalised upfront financing fees",
-      "category": "accounting",
-      "calcIds": [
-        9120,
-        9121,
-        9122,
-        9123,
-        9124,
-        9125
-      ],
-      "fullyConverted": true
+      "category": "accounting"
     },
     {
       "id": 1769800000002,
@@ -7735,17 +7621,7 @@
         "activeFlag": "F12"
       },
       "description": "Straight-line depreciation of periodic maintenance capex",
-      "category": "accounting",
-      "calcIds": [
-        9129,
-        9130,
-        9131,
-        9132,
-        9133,
-        9134,
-        9135
-      ],
-      "fullyConverted": true
+      "category": "accounting"
     }
   ],
   "mRefMap": {

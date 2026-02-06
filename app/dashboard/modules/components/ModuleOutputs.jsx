@@ -271,12 +271,15 @@ function resolveCalcRef(co, module, calculations) {
  */
 function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleOutputs, calculationResults, calculations, aggregateValues, isFullyConverted }) {
     const actualTemplate = MODULE_TEMPLATES[module.templateId]
-    if (!actualTemplate) return null
+    if (!actualTemplate && !isFullyConverted) return null
 
     const rows = []
 
-    // INPUT rows
-    actualTemplate.inputs.forEach((inputDef, inputIdx) => {
+    // INPUT rows — use actualTemplate inputs if available, otherwise show ref inputs from module.inputs
+    const inputDefs = actualTemplate?.inputs || Object.entries(module.inputs || {}).map(([key, val]) => ({
+        key, label: key.replace(/Ref$/, '').replace(/([A-Z])/g, ' $1').trim(), type: typeof val === 'string' && /^[A-Z]/.test(val) ? 'reference' : 'other'
+    }))
+    inputDefs.forEach((inputDef, inputIdx) => {
         if (inputDef.type !== 'reference') return
         const refValue = module.inputs[inputDef.key]
         if (!refValue) return
@@ -319,13 +322,27 @@ function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleO
     }
 
     if (isFullyConverted) {
-        // OUTPUT rows from convertedOutputs using calculationResults
-        (actualTemplate.convertedOutputs || []).forEach((co, coIdx) => {
-            const ref = resolveCalcRef(co, module, calculations)
-            if (!ref) return // skip outputs with no matching calc
-            const calc = (calculations || []).find(c => `R${c.id}` === ref)
+        // Build output list: prefer convertedOutputs from JS template, fall back to _moduleId calcs
+        const moduleId = `M${moduleIndex + 1}`
+        const outputEntries = actualTemplate?.convertedOutputs
+            ? actualTemplate.convertedOutputs.map(co => ({
+                ref: resolveCalcRef(co, module, calculations),
+                label: co.label,
+                key: co.key
+            }))
+            : (calculations || [])
+                .filter(c => c._moduleId === moduleId)
+                .map(c => ({
+                    ref: `R${c.id}`,
+                    label: c._moduleOutputKey || c.name,
+                    key: c._moduleOutputKey
+                }))
+
+        outputEntries.forEach((entry, coIdx) => {
+            if (!entry.ref) return
+            const calc = (calculations || []).find(c => `R${c.id}` === entry.ref)
             const calcType = calc?.type || 'flow'
-            const monthlyValues = calculationResults[ref] || []
+            const monthlyValues = calculationResults[entry.ref] || []
             const displayValues = aggregateValues(monthlyValues, calcType)
             const isStock = calcType === 'stock' || calcType === 'stock_start'
             const total = isStock
@@ -335,8 +352,8 @@ function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleO
             rows.push(
                 <tr key={`output-${coIdx}`} className="border-b border-slate-100 hover:bg-green-50/30">
                     <td className="py-1.5 px-3 text-xs w-[240px] min-w-[240px] sticky left-0 z-10 bg-white">
-                        <span className="text-blue-600 font-medium">{ref || co.calcRef || '?'}</span>
-                        <span className="text-slate-500 ml-2">{co.label}</span>
+                        <span className="text-blue-600 font-medium">{entry.ref}</span>
+                        <span className="text-slate-500 ml-2">{entry.label}</span>
                         <span className={`ml-1 text-[9px] px-1 py-0.5 rounded ${
                             isStock ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
                         }`}>
@@ -484,8 +501,8 @@ function TimeSeriesTable({ module, moduleIndex, displayPeriods, allRefs, moduleO
 function OutputToolbar({ module, template, inputsEditMode, showFormulas, showDiff, showSolverInfo, onToggleFormulas, onToggleDiff, onToggleSolverInfo }) {
     return (
         <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-slate-400">{template?.fullyConverted ? 'Results' : 'Preview'}</span>
-            {!template?.fullyConverted && template?.partiallyConverted && (
+            <span className="text-xs text-slate-400">{module.templateId !== 'iterative_debt_sizing' ? 'Results' : 'Preview'}</span>
+            {module.templateId === 'iterative_debt_sizing' && (
                 <button
                     onClick={() => onToggleSolverInfo(module.id)}
                     className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium transition-colors ${
@@ -541,7 +558,7 @@ function PartialModuleOutputs({
     onToggleFormulas, onToggleDiff, onToggleSolverInfo,
     aggregateValues
 }) {
-    if (!template || template.fullyConverted) return null
+    if (!template || module.templateId !== 'iterative_debt_sizing') return null
 
     const actualTemplate = MODULE_TEMPLATES[module.templateId]
 
@@ -574,8 +591,8 @@ function PartialModuleOutputs({
                 <DiffPanel module={module} actualTemplate={actualTemplate} calculations={calculations} />
             )}
 
-            {/* Time Series Preview for partial/solver modules */}
-            {displayPeriods.length > 0 && (module.templateId !== 'iterative_debt_sizing' || module.solvedAt) && (
+            {/* Time Series Preview for solver module */}
+            {displayPeriods.length > 0 && (
                 <div className="border-t border-slate-200 pt-3">
                     <TimeSeriesTable
                         module={module}
@@ -607,7 +624,7 @@ function FullyConvertedOutputs({
     onToggleFormulas, onToggleDiff,
     aggregateValues
 }) {
-    if (!template?.fullyConverted || displayPeriods.length === 0) return null
+    if (module.templateId === 'iterative_debt_sizing' || displayPeriods.length === 0) return null
 
     const actualTemplate = MODULE_TEMPLATES[module.templateId]
 
@@ -616,7 +633,7 @@ function FullyConvertedOutputs({
             <div className="flex items-center gap-2 mb-2">
                 <OutputToolbar
                     module={module}
-                    template={{ ...template, fullyConverted: true }}
+                    template={template}
                     inputsEditMode={inputsEditMode}
                     showFormulas={showFormulas}
                     showDiff={showDiff}
