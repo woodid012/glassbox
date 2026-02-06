@@ -1,0 +1,788 @@
+{
+  "_comment": "100 MW / 200 MWh BESS Definitive Model — full module expansion",
+  "_instructions": "This spec matches the complete working model. Compile with: node recipe/agent/index.js build recipe/spec/templates/bess-definitive.spec.json",
+
+  "project": {
+    "name": "100 MW / 200 MWh BESS (Definitive)",
+    "type": "BESS",
+    "currency": "AUD",
+    "financialYearEnd": 6
+  },
+
+  "timeline": {
+    "start": "Apr 2027",
+    "end": "Mar 2060"
+  },
+
+  "keyPeriods": [
+    {
+      "name": "Construction",
+      "flag": "F1",
+      "duration": "18 months",
+      "start": "timeline.start"
+    },
+    {
+      "name": "Total Operations",
+      "flag": "F2",
+      "duration": "300 months",
+      "start": "after F1",
+      "isGroup": true,
+      "children": ["F3", "F4", "F5"]
+    },
+    {
+      "name": "Normal Operations",
+      "flag": "F3",
+      "duration": "240 months",
+      "start": "after F1",
+      "parent": "F2"
+    },
+    {
+      "name": "Life Extension",
+      "flag": "F4",
+      "duration": "60 months",
+      "start": "after F3",
+      "parent": "F2"
+    },
+    {
+      "name": "Terminal Value",
+      "flag": "F5",
+      "duration": "1 months",
+      "start": "with F2",
+      "_comment": "Single period at end of ops for terminal value CF"
+    },
+    {
+      "name": "Offtake",
+      "flag": "F6",
+      "duration": "120 months",
+      "start": "after F1"
+    },
+    {
+      "name": "Merchant",
+      "flag": "F7",
+      "duration": "180 months",
+      "start": "after F6"
+    },
+    {
+      "name": "Ops Debt",
+      "flag": "F8",
+      "duration": "216 months",
+      "start": "after F1"
+    },
+    {
+      "name": "Maintenance",
+      "flag": "F12",
+      "id": 12,
+      "duration": "36 months",
+      "start": "after F3",
+      "_comment": "Oct 2048 - Sep 2051, quarterly maintenance capex"
+    },
+    {
+      "name": "Refi 1 (Y5)",
+      "flag": "F13",
+      "id": 13,
+      "duration": "1 months",
+      "start": "after F1",
+      "_comment": "Apr 2033 (60 months after F1 end)"
+    },
+    {
+      "name": "Refi 2 (Y10)",
+      "flag": "F14",
+      "id": 14,
+      "duration": "1 months",
+      "start": "after F1",
+      "_comment": "Apr 2038 (120 months after F1 end)"
+    },
+    {
+      "name": "Refi 3 (Y15)",
+      "flag": "F15",
+      "id": 15,
+      "duration": "1 months",
+      "start": "after F1",
+      "_comment": "Apr 2043 (180 months after F1 end)"
+    },
+    {
+      "name": "Refi 4 (Y20)",
+      "flag": "F16",
+      "id": 16,
+      "duration": "1 months",
+      "start": "after F1",
+      "_comment": "Apr 2048 (240 months after F1 end)"
+    }
+  ],
+
+  "indices": [
+    { "id": 2, "name": "CPI", "rate": 2.5, "startYear": 2026 }
+  ],
+
+  "constants": [
+    { "_comment": "=== TECHNICAL ===", "name": "CapacityMW", "value": 70, "unit": "MW" },
+    { "name": "StorageHours", "value": 3, "unit": "hrs" },
+    { "name": "EnergyStorageMWh", "value": 210, "unit": "MWh" },
+    { "name": "CyclesPerDay", "value": 1 },
+    { "name": "AnnualEnergyMWh", "value": 76650, "unit": "MWh" },
+
+    { "_comment": "=== REVENUE ===", "name": "TollingCost", "value": 21, "unit": "$/MW/hr" },
+
+    { "_comment": "=== TAX & FINANCIAL ===", "name": "TaxRate", "value": 30, "unit": "%" },
+    { "name": "WACC", "value": 8, "unit": "%" },
+    { "name": "ReceivableDays", "value": 30, "unit": "days" },
+    { "name": "PayableDays", "value": 30, "unit": "days" },
+    { "name": "GSTRate", "value": 10, "unit": "%" },
+    { "name": "DSRAMonthsCover", "value": 6, "unit": "months" },
+    { "name": "MRATarget", "value": 3.5, "unit": "$ M" },
+
+    { "_comment": "=== DEBT ===", "name": "MaxGearing", "value": 65, "unit": "%" },
+    { "_comment": "placeholder for ops interest (L2 curve used)", "name": "OpsInterestRate", "value": 5.35, "unit": "%" },
+    { "name": "Contingency", "value": 10, "unit": "%" },
+    { "name": "DepreciationLife", "value": 15, "unit": "years" },
+    { "name": "ContractedDSCRTarget", "value": 1.4 },
+    { "name": "UncontractedDSCRTarget", "value": 1.9 },
+    { "name": "DebtTenor", "value": 18, "unit": "years" },
+    { "name": "MinCashBalance", "value": 1.5, "unit": "$ M" },
+    { "name": "DividendWithholdingTax", "value": 0, "unit": "%" },
+    { "name": "TerminalValue", "value": 17.5, "unit": "$ M" },
+    { "name": "GSTReceiptDelay", "value": 1, "unit": "months" },
+    { "name": "DebtMarginConstruction", "value": 1.8, "unit": "%" },
+    { "name": "DebtMarginOperations", "value": 1.75, "unit": "%" },
+    { "name": "EstablishmentFee", "value": 1.35, "unit": "%" },
+    { "name": "UpfrontFees", "value": 2, "unit": "$ M" },
+    { "name": "CommitmentFee", "value": 40, "unit": "%" },
+    { "name": "AVerySmallNumber", "value": 0.000001 },
+
+    { "_comment": "=== MARKET EVENTS ===", "name": "MinorEventRevenue", "value": 73055, "unit": "$/MW" },
+    { "name": "MinorEventFrequency", "value": 3, "unit": "yrs" },
+    { "name": "MajorEventRevenue", "value": 255972, "unit": "$/MW" },
+    { "name": "MajorEventFrequency", "value": 4, "unit": "yrs" },
+
+    { "_comment": "=== LOCK-UP ===", "name": "LockupDSCRThreshold", "value": 1.15, "unit": "x" },
+    { "name": "LockupADSCRThreshold", "value": 1.15, "unit": "x" },
+    { "name": "LockupReleasePeriods", "value": 2, "unit": "qtrs" },
+
+    { "_comment": "=== DSRF ===", "name": "DSRFActive", "value": 1 },
+    { "name": "DSRFEstablishmentFee", "value": 1.35, "unit": "%" },
+    { "name": "DSRFCommitmentFee", "value": 40, "unit": "%" },
+    { "name": "DSRFBaseMargin", "value": 1.75, "unit": "%" },
+    { "name": "DSRFFacilityMonths", "value": 6, "unit": "months" },
+
+    { "_comment": "=== LIFE EXTENSION ===", "name": "LifeExtensionRevenueFactor", "value": 95, "unit": "%" },
+
+    { "_comment": "=== CASH ===", "name": "CashInterestRate", "value": 1, "unit": "%" },
+
+    { "_comment": "=== AMORTISATION LIVES ===", "name": "IDCCommAmortLife", "value": 15, "unit": "years" },
+    { "name": "UpfrontFeesAmortLife", "value": 15, "unit": "years" },
+    { "name": "MaintenanceDeprLife", "value": 5, "unit": "years" },
+
+    { "_comment": "=== REFINANCING ===", "name": "RefiFee", "value": 1, "unit": "%" },
+    { "name": "RefiMargin", "value": 1.7, "unit": "%" }
+  ],
+
+  "inputGroups": [
+    {
+      "id": 1, "name": "CAPEX", "mode": "values", "frequency": "M", "linkedPeriod": "F1"
+    },
+    {
+      "id": 2, "name": "OPEX", "mode": "series", "frequency": "Y", "linkedPeriod": "F2"
+    },
+    {
+      "id": 3, "name": "Market Prices", "mode": "lookup", "frequency": "Y",
+      "_comment": "Lookup group: L1 (Arb + FCAS curves)"
+    },
+    {
+      "id": 6, "name": "Interest Rates", "mode": "lookup", "frequency": "Q",
+      "_comment": "Lookup group: L2 (base rate curves)"
+    },
+    {
+      "id": 7, "name": "Performance Factors", "mode": "lookup", "frequency": "Y",
+      "_comment": "Lookup group: L3 (availability, degradation)"
+    },
+    {
+      "id": 8, "name": "Maintenance", "mode": "series", "frequency": "Q", "linkedPeriod": "F12"
+    },
+    {
+      "id": 101, "name": "Agency Fee", "mode": "series", "frequency": "M",
+      "_comment": "S3 agency fees during debt facilities"
+    }
+  ],
+
+  "inputs": [
+    { "_comment": "=== CAPEX (V1) ===",
+      "id": 1, "name": "EPC BESS", "group": "CAPEX", "value": 70, "unit": "$ M" },
+    { "id": 2, "name": "EPC BOP", "group": "CAPEX", "value": 15, "unit": "$ M" },
+    { "id": 3, "name": "Connection Cost", "group": "CAPEX", "value": 8, "unit": "$ M" },
+    { "id": 4, "name": "Contingency EPC", "group": "CAPEX", "value": 5, "unit": "$ M" },
+    { "id": 5, "name": "Demolition", "group": "CAPEX", "value": 0.5, "unit": "$ M" },
+    { "id": 6, "name": "Development Costs", "group": "CAPEX", "value": 3, "unit": "$ M" },
+    { "id": 7, "name": "Development Fee", "group": "CAPEX", "value": 2, "unit": "$ M" },
+    { "id": 8, "name": "Initial Entry Costs", "group": "CAPEX", "value": 0.25, "unit": "$ M" },
+    { "id": 9, "name": "Land Transaction", "group": "CAPEX", "value": 1, "unit": "$ M" },
+    { "id": 10, "name": "Other Construction", "group": "CAPEX", "value": 0.5, "unit": "$ M" },
+    { "id": 11, "name": "Construction Management", "group": "CAPEX", "value": 1.8, "unit": "$ M" },
+    { "id": 12, "name": "Construction Insurance", "group": "CAPEX", "value": 0.8, "unit": "$ M" },
+    { "id": 13, "name": "Land Lease Construction", "group": "CAPEX", "value": 0.5, "unit": "$ M" },
+
+    { "_comment": "=== OPEX (S1) ===",
+      "id": 14, "name": "OMCosts", "group": "OPEX", "value": 0.7, "unit": "$ M/yr" },
+    { "id": 15, "name": "LandLease", "group": "OPEX", "value": 0.33534, "unit": "$ M/yr" },
+    { "id": 16, "name": "ConnectionOpex", "group": "OPEX", "value": 0.05, "unit": "$ M/yr" },
+    { "id": 17, "name": "SPVCosts", "group": "OPEX", "value": 0.1, "unit": "$ M/yr" },
+    { "id": 18, "name": "AssetManagement", "group": "OPEX", "value": 0.15, "unit": "$ M/yr" },
+    { "id": 19, "name": "MaintenanceOM", "group": "OPEX", "value": 0.45, "unit": "$ M/yr" },
+    { "id": 20, "name": "InsuranceYrs12", "group": "OPEX", "value": 0.65, "unit": "$ M/yr" },
+    { "id": 21, "name": "InsuranceYrs3Plus", "group": "OPEX", "value": 0.65, "unit": "$ M/yr" },
+
+    { "_comment": "=== MAINTENANCE (S2) ===",
+      "id": 130, "name": "BaseMaintenance", "group": "Maintenance", "value": 0.29, "unit": "$ M/qtr",
+      "entryMode": "constant" },
+
+    { "_comment": "=== AGENCY FEE (S3) ===",
+      "id": 140, "name": "AgencyFee", "group": "Agency Fee", "value": 0, "unit": "$ M/yr" }
+  ],
+
+  "calculationGroups": [
+    { "_comment": "=== OPS TAB ===",
+      "id": 27, "name": "Technical", "tab": "Ops" },
+    { "id": 28, "name": "Revenue", "tab": "Ops" },
+    { "id": 29, "name": "Opex", "tab": "Ops" },
+    { "id": 33, "name": "Maintenance", "tab": "Ops" },
+
+    { "_comment": "=== IFS TAB ===",
+      "id": 4, "name": "Profitability", "tab": "IFS" },
+    { "id": 16, "name": "D&A", "tab": "IFS" },
+    { "id": 18, "name": "Working Capital", "tab": "IFS" },
+    { "id": 19, "name": "Tax", "tab": "IFS" },
+
+    { "_comment": "=== FUNDING TAB ===",
+      "id": 36, "name": "S&U Uses", "tab": "Funding" },
+    { "id": 37, "name": "S&U Sources", "tab": "Funding" },
+    { "id": 38, "name": "S&U Check", "tab": "Funding" },
+    { "id": 15, "name": "Operations Debt", "tab": "Funding" },
+    { "id": 24, "name": "Covenants", "tab": "Funding" },
+    { "id": 26, "name": "Equity IRR", "tab": "Funding" },
+    { "id": 25, "name": "Dividends", "tab": "Funding" },
+    { "id": 34, "name": "SC Repayment", "tab": "Funding" },
+    { "id": 35, "name": "Profit Tests", "tab": "Funding" },
+
+    { "_comment": "=== VALUATION TAB ===",
+      "id": 20, "name": "Free Cash Flow", "tab": "Valuation" },
+    { "id": 21, "name": "Discount Factors", "tab": "Valuation" },
+    { "id": 58, "name": "Valuation Metrics", "tab": "Valuation" },
+
+    { "_comment": "=== B/S TAB ===",
+      "id": 39, "name": "Assets", "tab": "BS" },
+    { "id": 40, "name": "Liabilities", "tab": "BS" },
+    { "id": 41, "name": "Equity", "tab": "BS" },
+    { "id": 42, "name": "BS Check", "tab": "BS" },
+
+    { "_comment": "=== CASHFLOW TAB ===",
+      "id": 30, "name": "Operating CF", "tab": "Cashflow" },
+    { "id": 31, "name": "Investing CF", "tab": "Cashflow" },
+    { "id": 32, "name": "Financing CF", "tab": "Cashflow" },
+    { "id": 13, "name": "Cash Position", "tab": "Cashflow" },
+
+    { "_comment": "=== DEBUG TAB ===",
+      "id": 60, "name": "CF Waterfall (Levered)", "tab": "Debug" },
+    { "id": 61, "name": "P&L", "tab": "Debug" }
+  ],
+
+  "calculations": [
+    { "_comment": "=== TECHNICAL ===" },
+    { "id": 119, "name": "Model Period", "formula": "CUMSUM(1)", "group": "Technical", "type": "stock" },
+    { "id": 120, "name": "Ops Period", "formula": "CUMSUM(F2)", "group": "Technical", "type": "stock" },
+    { "id": 3, "name": "Capex + Contingency", "formula": "V1 * (1 + {Contingency} / 100)", "group": "Technical", "type": "flow" },
+    { "id": 112, "name": "Capex to Apply GST", "formula": "V1 - V1.1 - V1.9", "group": "Technical", "type": "flow" },
+    { "id": 111, "name": "Monthly Decay Factor", "formula": "(1 - L3.5/100) ^ (T.DiM/T.DiY)", "group": "Technical", "type": "stock" },
+    { "id": 11, "name": "Degradation Index", "formula": "CUMPROD(1 - F2 + F2 * R111)", "group": "Technical", "type": "stock" },
+    { "id": 12, "name": "Operating Adjustment", "formula": "L3.1 / 100 * L3.2 / 100 * L3.3 / 100 * L3.4 / 100 * R11", "group": "Technical", "type": "stock" },
+    { "id": 171, "name": "All-in Interest Rate Construction", "formula": "L2.2 + {DebtMarginConstruction}", "group": "Technical", "type": "stock" },
+    { "id": 172, "name": "All-in Interest Rate Operations", "formula": "L2.2 + {DebtMarginOperations}", "group": "Technical", "type": "stock" },
+
+    { "_comment": "=== REVENUE ===" },
+    { "id": 4, "name": "Tolling Revenue", "formula": "{TollingCost} * {CapacityMW} * T.HiY / T.MiY / 10^6 * F6 * I2", "group": "Revenue", "type": "flow" },
+    { "id": 5, "name": "FCAS Revenue", "formula": "L1.2 * {CapacityMW} / T.MiY / 10^6 * F7 * I2", "group": "Revenue", "type": "flow" },
+    { "id": 6, "name": "Market Arbitrage Revenue", "formula": "L1.1 * {CapacityMW} / 10^6 / T.MiY * F7 * R12 * I2", "group": "Revenue", "type": "flow" },
+    { "id": 179, "name": "Minor Event Revenue", "formula": "{CapacityMW} * {MinorEventRevenue} / {MinorEventFrequency} / T.MiY / 10^6 * F7 * R12 * I2", "group": "Revenue", "type": "flow" },
+    { "id": 180, "name": "Major Event Revenue", "formula": "{CapacityMW} * {MajorEventRevenue} / {MajorEventFrequency} / T.MiY / 10^6 * F7 * R12 * I2", "group": "Revenue", "type": "flow" },
+    { "id": 181, "name": "Market Event Revenue", "formula": "R179 + R180", "group": "Revenue", "type": "flow" },
+    { "id": 7, "name": "Merchant Revenue", "formula": "(R5 + R6 + R181) * (1 - F4 + F4 * {LifeExtensionRevenueFactor} / 100)", "group": "Revenue", "type": "flow" },
+
+    { "_comment": "=== OPEX BREAKDOWN ===" },
+    { "id": 220, "name": "O&M MSA", "formula": "S1.14 * I2 * F2", "group": "Opex", "type": "flow" },
+    { "id": 221, "name": "Land Lease", "formula": "S1.15 * I2 * F2", "group": "Opex", "type": "flow" },
+    { "id": 222, "name": "Connection Opex", "formula": "S1.16 * I2 * F2", "group": "Opex", "type": "flow" },
+    { "id": 223, "name": "SPV Costs", "formula": "S1.17 * I2 * F2", "group": "Opex", "type": "flow" },
+    { "id": 224, "name": "Asset Management Fees", "formula": "S1.18 * I2 * F2", "group": "Opex", "type": "flow" },
+    { "id": 225, "name": "Maintenance Capex & O&M", "formula": "S1.19 * I2 * F2", "group": "Opex", "type": "flow" },
+    { "id": 226, "name": "Insurance (yrs 1-2)", "formula": "S1.20 * I2 * F2", "group": "Opex", "type": "flow" },
+    { "id": 227, "name": "Insurance (yrs 3+)", "formula": "S1.21 * I2 * F2", "group": "Opex", "type": "flow" },
+    { "id": 228, "name": "Total OPEX Breakdown", "formula": "R220 + R221 + R222 + R223 + R224 + R225 + R226 + R227", "group": "Opex", "type": "flow" },
+
+    { "_comment": "=== PROFITABILITY (P&L) ===" },
+    { "id": 8, "name": "Total Revenue", "formula": "R4 + R7", "group": "Profitability", "type": "flow" },
+    { "id": 9, "name": "Total OPEX", "formula": "-S1 * I2", "group": "Profitability", "type": "flow" },
+    { "id": 10, "name": "Gross Margin", "formula": "R8 + R9", "group": "Profitability", "type": "flow" },
+    { "id": 13, "name": "EBITDA", "formula": "R10", "group": "Profitability", "type": "flow" },
+    { "id": 14, "name": "P&L Depreciation", "formula": "-$M2.expense - $M9.expense - $M10.expense - $M11.expense", "group": "Profitability", "type": "flow" },
+    { "id": 15, "name": "EBIT", "formula": "R13 + R14", "group": "Profitability", "type": "flow" },
+    { "id": 16, "name": "Interest Expense", "formula": "-R71", "group": "Profitability", "type": "flow" },
+    { "id": 17, "name": "EBT", "formula": "R15 + R16 + R151 + R174 * F2 + R153 * F2", "group": "Profitability", "type": "flow" },
+    { "id": 18, "name": "Tax Expense", "formula": "-$M5.tax_payable", "group": "Profitability", "type": "flow" },
+    { "id": 19, "name": "NPAT", "formula": "R17 + R18", "group": "Profitability", "type": "flow" },
+    { "id": 142, "name": "Prior RE", "formula": "$M7.re_opening", "group": "Profitability", "type": "stock" },
+    { "id": 138, "name": "P&L Dividends Declared", "formula": "-$M7.dividend_paid", "group": "Profitability", "type": "flow" },
+    { "id": 143, "name": "Share Capital Returned", "formula": "-$M7.sc_repayment", "group": "Profitability", "type": "flow" },
+    { "id": 140, "name": "RE Movement", "formula": "$M7.re_movement", "group": "Profitability", "type": "flow" },
+    { "id": 141, "name": "RE Closing", "formula": "$M7.re_closing", "group": "Profitability", "type": "stock" },
+
+    { "_comment": "=== D&A (references module calcs) ===" },
+    { "id": 203, "name": "Total Capital Additions", "formula": "V1 * F1", "group": "D&A", "type": "flow" },
+    { "id": 80, "name": "D&A Opening Book Value", "formula": "$M2.opening", "group": "D&A", "type": "stock_start" },
+    { "id": 81, "name": "D&A Asset Addition", "formula": "$M2.addition", "group": "D&A", "type": "flow" },
+    { "id": 82, "name": "D&A Depreciation Expense", "formula": "$M2.expense", "group": "D&A", "type": "flow" },
+    { "id": 83, "name": "D&A Accumulated", "formula": "$M2.accumulated", "group": "D&A", "type": "stock" },
+    { "id": 84, "name": "D&A Closing Book Value", "formula": "$M2.closing", "group": "D&A", "type": "stock" },
+
+    { "_comment": "=== WORKING CAPITAL ===" },
+    { "id": 175, "name": "Tolling Quarterly Accrual", "formula": "R4 + SHIFT(R4,1)*(1-SHIFT(T.QE,1)) + SHIFT(R4,2)*(1-SHIFT(T.QE,2))*(1-SHIFT(T.QE,1))", "group": "Working Capital", "type": "stock" },
+    { "id": 176, "name": "Tolling Receivable", "formula": "R175 * (1 - T.QE)", "group": "Working Capital", "type": "stock" },
+    { "id": 177, "name": "Merchant Receivable", "formula": "R7 * {ReceivableDays} / 30", "group": "Working Capital", "type": "stock" },
+    { "id": 95, "name": "Receivables", "formula": "R176 + R177", "group": "Working Capital", "type": "stock" },
+    { "id": 96, "name": "Payables", "formula": "ABS(R9) * {PayableDays} / 30", "group": "Working Capital", "type": "stock" },
+    { "id": 97, "name": "Net Working Capital", "formula": "R95 - R96", "group": "Working Capital", "type": "stock" },
+    { "id": 98, "name": "Net WC Movement", "formula": "R97 - SHIFT(R97, 1)", "group": "Working Capital", "type": "flow" },
+
+    { "_comment": "=== TAX (references module calcs) ===" },
+    { "id": 100, "name": "Tax Taxable Income", "formula": "$M5.taxable_income", "group": "Tax", "type": "flow" },
+    { "id": 101, "name": "Loss Pool Opening", "formula": "$M5.losses_opening", "group": "Tax", "type": "stock_start" },
+    { "id": 102, "name": "Losses Utilised", "formula": "$M5.losses_utilised", "group": "Tax", "type": "flow" },
+    { "id": 105, "name": "Loss Pool Closing", "formula": "$M5.losses_closing", "group": "Tax", "type": "stock" },
+    { "id": 103, "name": "Tax Net Taxable Income", "formula": "$M5.net_taxable", "group": "Tax", "type": "flow" },
+    { "id": 104, "name": "Tax Payable", "formula": "$M5.tax_payable", "group": "Tax", "type": "flow" },
+
+    { "_comment": "=== S&U USES ===" },
+    { "id": 60, "name": "Capex + Contingency", "formula": "CUMSUM(R3 * F1)", "group": "S&U Uses", "type": "stock" },
+    { "id": 63, "name": "IDC", "formula": "$M4.cumulative_idc", "group": "S&U Uses", "type": "stock" },
+    { "id": 144, "name": "Upfront Fees", "formula": "(M1.1 * {EstablishmentFee} / 100 + {UpfrontFees}) * F1.Start", "group": "S&U Uses", "type": "flow" },
+    { "id": 146, "name": "Commitment Fees", "formula": "M1.1 * {DebtMarginOperations} / 100 * {CommitmentFee} / 100 / T.MiY * F1", "group": "S&U Uses", "type": "flow" },
+    { "id": 173, "name": "Financing Fees", "formula": "CUMSUM(R144 + R146)", "group": "S&U Uses", "type": "stock" },
+    { "id": 147, "name": "Agency Fees", "formula": "CUMSUM(S3 * I2 * F1)", "group": "S&U Uses", "type": "stock" },
+    { "id": 62, "name": "MRA Funding", "formula": "CUMSUM($M6.funding)", "group": "S&U Uses", "type": "stock" },
+    { "id": 61, "name": "GST Receivable WC", "formula": "MAXVAL($M3.receivable_closing * F1) * F1", "group": "S&U Uses", "type": "stock" },
+    { "id": 145, "name": "DSRF Facility Limit", "formula": "$M8.facility_limit", "group": "S&U Uses", "type": "stock" },
+    { "id": 219, "name": "Funded Fees & Other Uses", "formula": "R173 + R147 + R62 + CUMSUM(R33) + $M8.total_dsrf_fees_cumulative", "group": "S&U Uses", "type": "stock" },
+    { "id": 9999, "name": "Funding Window", "formula": "MAX(F1, F2 * SHIFT(F1, 1))", "group": "S&U Uses", "type": "flag" },
+    { "id": 64, "name": "Total Uses", "formula": "R60 + R63 + R219 + R61", "group": "S&U Uses", "type": "stock" },
+
+    { "_comment": "=== S&U SOURCES ===" },
+    { "id": 65, "name": "GST Received", "formula": "CUMSUM($M3.gst_received_construction)", "group": "S&U Sources", "type": "stock" },
+    { "id": 66, "name": "Senior Debt", "formula": "$M4.senior_debt", "group": "S&U Sources", "type": "stock" },
+    { "id": 67, "name": "Committed Equity", "formula": "R64 - R65 - R66", "group": "S&U Sources", "type": "stock" },
+    { "id": 68, "name": "Total Sources", "formula": "R65 + R66 + R67", "group": "S&U Sources", "type": "stock" },
+
+    { "_comment": "=== S&U CHECK ===" },
+    { "id": 69, "name": "Sources = Uses Check", "formula": "R68 - R64", "group": "S&U Check", "type": "stock" },
+
+    { "_comment": "=== OPERATIONS DEBT (refs module calcs) ===" },
+    { "id": 70, "name": "Debt Opening Balance", "formula": "$M1.opening_balance", "group": "Operations Debt", "type": "stock_start" },
+    { "id": 71, "name": "Debt Interest Paid", "formula": "$M1.interest_payment", "group": "Operations Debt", "type": "flow" },
+    { "id": 72, "name": "Debt Principal Repayment", "formula": "$M1.principal_payment", "group": "Operations Debt", "type": "flow" },
+    { "id": 73, "name": "Debt Service", "formula": "$M1.debt_service", "group": "Operations Debt", "type": "flow" },
+    { "id": 74, "name": "Debt Closing Balance", "formula": "$M1.closing_balance", "group": "Operations Debt", "type": "stock" },
+
+    { "_comment": "=== COVENANTS ===" },
+    { "id": 115, "name": "Contracted CFADS", "formula": "R13 * R4 / R8 * F2", "group": "Covenants", "type": "flow" },
+    { "id": 116, "name": "Merchant CFADS", "formula": "R13 * R7 / R8 * F2", "group": "Covenants", "type": "flow" },
+    { "id": 205, "name": "Total CFADS", "formula": "R115 + R116", "group": "Covenants", "type": "flow" },
+    { "id": 208, "name": "Contracted CFADS Post Capex", "formula": "R115", "group": "Covenants", "type": "flow" },
+    { "id": 209, "name": "Merchant CFADS Post Capex", "formula": "R116", "group": "Covenants", "type": "flow" },
+    { "id": 207, "name": "Total CFADS Post Capex", "formula": "R208 + R209", "group": "Covenants", "type": "flow" },
+    { "id": 118, "name": "DSCR", "formula": "$M1.period_dscr * F8", "group": "Covenants", "type": "stock" },
+    { "id": 215, "name": "Cumulative CFADS", "formula": "CUMSUM(R207 * F8)", "group": "Covenants", "type": "stock" },
+    { "id": 216, "name": "Cumulative Debt Service", "formula": "CUMSUM(R73 * F8)", "group": "Covenants", "type": "stock" },
+    { "id": 217, "name": "ADSCR Average", "formula": "R215 / MAX(R216, 0.0001) * F8", "group": "Covenants", "type": "stock" },
+    { "id": 218, "name": "LLCR", "formula": "(SUMPRODUCT(R207, R51) - SUMPRODUCT(R207 * (1 - F8), R51)) / MAX(R74, 0.0001)", "group": "Covenants", "type": "stock" },
+
+    { "_comment": "=== EQUITY IRR ===" },
+    { "id": 131, "name": "Contingent Equity", "formula": "0", "group": "Equity IRR", "type": "flow" },
+    { "id": 132, "name": "Equity Injections", "formula": "-R35", "group": "Equity IRR", "type": "flow" },
+    { "id": 133, "name": "Dividends", "formula": "$M7.dividend_paid", "group": "Equity IRR", "type": "flow" },
+    { "id": 134, "name": "Share Capital Repayment", "formula": "$M7.sc_repayment", "group": "Equity IRR", "type": "flow" },
+    { "id": 135, "name": "Investor Tax", "formula": "-(R133 + R134) * {DividendWithholdingTax} / 100", "group": "Equity IRR", "type": "flow" },
+    { "id": 136, "name": "Terminal Value", "formula": "{TerminalValue} * I2 * F5", "group": "Equity IRR", "type": "flow" },
+    { "id": 137, "name": "Net Cash Flow to Equity", "formula": "R131 + R132 + R133 + R134 + R135 + R136", "group": "Equity IRR", "type": "flow" },
+
+    { "_comment": "=== DIVIDENDS (refs module calcs) ===" },
+    { "id": 123, "name": "Cash Available", "formula": "$M7.cash_available", "group": "Dividends", "type": "stock" },
+
+    { "_comment": "=== SC REPAYMENT ===" },
+    { "id": 159, "name": "SC Cash Available", "formula": "$M7.sc_cash_available", "group": "SC Repayment", "type": "flow" },
+    { "id": 160, "name": "SC Repayment", "formula": "$M7.sc_repayment", "group": "SC Repayment", "type": "flow" },
+    { "id": 161, "name": "SC Cumulative Returned", "formula": "CUMSUM($M7.sc_repayment)", "group": "SC Repayment", "type": "stock" },
+
+    { "_comment": "=== PROFIT TESTS ===" },
+    { "id": 164, "name": "RE Opening Balance", "formula": "$M7.re_opening", "group": "Profit Tests", "type": "stock_start" },
+    { "id": 165, "name": "RE NPAT", "formula": "$M7.re_npat", "group": "Profit Tests", "type": "flow" },
+    { "id": 166, "name": "RE Test Result", "formula": "$M7.re_test", "group": "Profit Tests", "type": "stock" },
+    { "id": 168, "name": "NPAT Test Result", "formula": "$M7.npat_test", "group": "Profit Tests", "type": "stock" },
+
+    { "_comment": "=== OPERATING CF ===" },
+    { "id": 20, "name": "Operating CF EBITDA", "formula": "R13", "group": "Operating CF", "type": "flow" },
+    { "id": 21, "name": "Operating CF WC Movement", "formula": "-R98", "group": "Operating CF", "type": "flow" },
+    { "id": 22, "name": "Operating CF", "formula": "R20 + R21", "group": "Operating CF", "type": "flow" },
+
+    { "_comment": "=== INVESTING CF ===" },
+    { "id": 23, "name": "Capex", "formula": "-V1 * F1", "group": "Investing CF", "type": "flow" },
+    { "id": 24, "name": "GST Paid on Capex", "formula": "$M3.gst_paid", "group": "Investing CF", "type": "flow" },
+    { "id": 25, "name": "GST Received Operations", "formula": "$M3.gst_received_operations", "group": "Investing CF", "type": "flow" },
+    { "id": 26, "name": "MRA Contribution", "formula": "-$M6.funding", "group": "Investing CF", "type": "flow" },
+    { "id": 27, "name": "MRA Release", "formula": "$M6.release", "group": "Investing CF", "type": "flow" },
+    { "id": 149, "name": "MRA Drawdown Maintenance", "formula": "$M6.drawdown", "group": "Investing CF", "type": "flow" },
+    { "id": 250, "name": "Maintenance Capex", "formula": "-S2 * I2 * F12", "group": "Investing CF", "type": "flow" },
+    { "id": 202, "name": "GST Received Construction", "formula": "$M3.gst_received_construction", "group": "Investing CF", "type": "flow" },
+    { "id": 28, "name": "Investing CF", "formula": "R23 + R24 + R25 + R26 + R27 + R149 + R202 + R250", "group": "Investing CF", "type": "flow" },
+
+    { "_comment": "=== FINANCING CF ===" },
+    { "id": 174, "name": "Agency Fee", "formula": "-S3 * I2", "group": "Financing CF", "type": "flow" },
+    { "id": 29, "name": "Construction Debt Drawdown", "formula": "$M4.debt_drawdown", "group": "Financing CF", "type": "flow" },
+    { "id": 31, "name": "Principal Repayment", "formula": "-R72", "group": "Financing CF", "type": "flow" },
+    { "id": 32, "name": "Interest Paid", "formula": "-R71", "group": "Financing CF", "type": "flow" },
+    { "id": 178, "name": "Total Debt Service", "formula": "R31 + R32 + R174 + R153", "group": "Financing CF", "type": "flow" },
+    { "id": 33, "name": "DSRA Contribution", "formula": "0", "group": "Financing CF", "type": "flow" },
+    { "id": 34, "name": "DSRA Release", "formula": "0", "group": "Financing CF", "type": "flow" },
+    { "id": 151, "name": "Interest Income", "formula": "MAX(0, SHIFT(R42, 1)) * {CashInterestRate} / 100 / T.MiY * F2", "group": "Financing CF", "type": "flow" },
+    { "id": 152, "name": "DSRA Shortfall Contribution", "formula": "0", "group": "Financing CF", "type": "flow" },
+    { "id": 153, "name": "DSRF Fees", "formula": "-$M8.total_dsrf_fees", "group": "Financing CF", "type": "flow" },
+    { "id": 199, "name": "Upfront Fees Paid", "formula": "-R144", "group": "Financing CF", "type": "flow" },
+    { "id": 200, "name": "Commitment Fees Paid", "formula": "-R146", "group": "Financing CF", "type": "flow" },
+    { "id": 201, "name": "IDC Paid", "formula": "-$M4.idc", "group": "Financing CF", "type": "flow" },
+    { "id": 35, "name": "Construction Equity Injection", "formula": "$M4.equity_drawdown + $M4.idc", "group": "Financing CF", "type": "flow" },
+    { "id": 169, "name": "Financing CF ex-Dist", "formula": "R29 + R31 + R32 + R174 + R33 + R34 + R35 + R151 + R152 + R153 + R199 + R200 + R201", "group": "Financing CF", "type": "flow" },
+    { "id": 154, "name": "Share Capital Repayment", "formula": "-$M7.sc_repayment", "group": "Financing CF", "type": "flow" },
+    { "id": 155, "name": "Dividends Paid", "formula": "-$M7.dividend_paid", "group": "Financing CF", "type": "flow" },
+    { "id": 39, "name": "Financing CF", "formula": "R169 + R154 + R155", "group": "Financing CF", "type": "flow" },
+
+    { "_comment": "=== CASH POSITION ===" },
+    { "id": 170, "name": "Net CF ex-Dist", "formula": "R22 + R28 + R169", "group": "Cash Position", "type": "flow" },
+    { "id": 40, "name": "Net Cashflow", "formula": "R170 + R154 + R155", "group": "Cash Position", "type": "flow" },
+    { "id": 41, "name": "Cash Opening Balance", "formula": "CUMSUM(R40) - R40", "group": "Cash Position", "type": "stock_start" },
+    { "id": 42, "name": "Cash Closing Balance", "formula": "CUMSUM(R40)", "group": "Cash Position", "type": "stock" },
+
+    { "_comment": "=== FREE CASH FLOW ===" },
+    { "id": 43, "name": "FCF EBITDA", "formula": "R13", "group": "Free Cash Flow", "type": "flow" },
+    { "id": 44, "name": "Capex incl GST", "formula": "R23 + R24 - R25", "group": "Free Cash Flow", "type": "flow" },
+    { "id": 45, "name": "FCF WC Movement", "formula": "R21", "group": "Free Cash Flow", "type": "flow" },
+    { "id": 46, "name": "FCFF", "formula": "R43 + R44 + R45", "group": "Free Cash Flow", "type": "flow" },
+    { "id": 47, "name": "FCF Debt Service", "formula": "R31 + R32", "group": "Free Cash Flow", "type": "flow" },
+    { "id": 48, "name": "FCF Debt Drawdown", "formula": "R29", "group": "Free Cash Flow", "type": "flow" },
+    { "id": 49, "name": "FCFE", "formula": "R46 + R47 + R48", "group": "Free Cash Flow", "type": "flow" },
+
+    { "_comment": "=== DISCOUNT FACTORS ===" },
+    { "id": 50, "name": "Monthly Discount Rate", "formula": "(1 + {WACC} / 100) ^ (1/T.MiY) - 1", "group": "Discount Factors", "type": "stock" },
+    { "id": 51, "name": "Discount Factor", "formula": "CUMPROD(1 / (1 + R50))", "group": "Discount Factors", "type": "stock" },
+
+    { "_comment": "=== VALUATION METRICS ===" },
+    { "id": 210, "name": "NPV FCFF", "formula": "SUMPRODUCT(R46, R51)", "group": "Valuation Metrics", "type": "stock" },
+    { "id": 211, "name": "NPV FCFE", "formula": "SUMPRODUCT(R49, R51)", "group": "Valuation Metrics", "type": "stock" },
+    { "id": 212, "name": "Equity Cumulative CF", "formula": "CUMSUM(R137)", "group": "Valuation Metrics", "type": "stock" },
+    { "id": 213, "name": "Equity Payback Flag", "formula": "(R212 > 0) * (SHIFT(R212, 1) <= 0)", "group": "Valuation Metrics", "type": "stock" },
+    { "id": 214, "name": "Equity Payback Period", "formula": "R213 * CUMSUM(1)", "group": "Valuation Metrics", "type": "stock" },
+
+    { "_comment": "=== BALANCE SHEET: ASSETS ===" },
+    { "id": 182, "name": "Cash & Cash Equivalents", "formula": "R42", "group": "Assets", "type": "stock" },
+    { "id": 196, "name": "Construction WIP", "formula": "CUMSUM(V1 * F1) * F1", "group": "Assets", "type": "stock" },
+    { "id": 183, "name": "PP&E Net Book Value", "formula": "R84", "group": "Assets", "type": "stock" },
+    { "id": 184, "name": "Trade Receivables", "formula": "R95", "group": "Assets", "type": "stock" },
+    { "id": 185, "name": "GST Receivable", "formula": "$M3.receivable_closing", "group": "Assets", "type": "stock" },
+    { "id": 186, "name": "MRA Balance", "formula": "$M6.closing", "group": "Assets", "type": "stock" },
+    { "id": 230, "name": "IDC Commitment Agency Fees NBV", "formula": "$M9.total_capitalised * F1 + $M9.closing * F2", "group": "Assets", "type": "stock" },
+    { "id": 231, "name": "Upfront Fees NBV", "formula": "$M10.total_capitalised * F1 + $M10.closing * F2", "group": "Assets", "type": "stock" },
+    { "id": 232, "name": "Short Term Maintenance NBV", "formula": "$M11.closing", "group": "Assets", "type": "stock" },
+    { "id": 187, "name": "Total Assets", "formula": "R182 + R196 + R183 + R184 + R185 + R186 + R230 + R231 + R232", "group": "Assets", "type": "stock" },
+
+    { "_comment": "=== BALANCE SHEET: LIABILITIES ===" },
+    { "id": 198, "name": "Construction Debt", "formula": "$M4.senior_debt * F1", "group": "Liabilities", "type": "stock" },
+    { "id": 188, "name": "Operations Debt", "formula": "R74", "group": "Liabilities", "type": "stock" },
+    { "id": 189, "name": "Trade Payables", "formula": "R96", "group": "Liabilities", "type": "stock" },
+    { "id": 190, "name": "Total Liabilities", "formula": "R198 + R188 + R189", "group": "Liabilities", "type": "stock" },
+
+    { "_comment": "=== BALANCE SHEET: EQUITY ===" },
+    { "id": 191, "name": "Share Capital", "formula": "(CUMSUM($M4.equity_drawdown) + CUMSUM($M4.idc)) * F1 + $M7.sc_closing * F2", "group": "Equity", "type": "stock" },
+    { "id": 192, "name": "Retained Earnings", "formula": "R141", "group": "Equity", "type": "stock" },
+    { "id": 193, "name": "Total Equity", "formula": "R191 + R192", "group": "Equity", "type": "stock" },
+
+    { "_comment": "=== BS CHECK ===" },
+    { "id": 194, "name": "Total L + E", "formula": "R190 + R193", "group": "BS Check", "type": "stock" },
+    { "id": 195, "name": "Balance Check", "formula": "R187 - R194", "group": "BS Check", "type": "stock" },
+
+    { "_comment": "=== MAINTENANCE ===" },
+
+    { "_comment": "=== DEBUG: CF WATERFALL ===" },
+    { "id": 300, "name": "Contracted Revenue", "formula": "R4", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 301, "name": "Merchant Revenue", "formula": "R7", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 302, "name": "Total Revenue", "formula": "R8", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 303, "name": "OPEX", "formula": "R9", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 304, "name": "EBITDA", "formula": "R13", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 305, "name": "Working Capital Adj", "formula": "-R98", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 306, "name": "Operating Cash Flows", "formula": "R22", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 310, "name": "Total Capex", "formula": "-V1 * F1", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 313, "name": "IDC Senior Debt", "formula": "-$M4.idc", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 314, "name": "Upfront Fees Senior Debt", "formula": "-R144", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 315, "name": "Upfront Fees DSRF", "formula": "-$M8.establishment_fee * F1", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 316, "name": "Commitment Fees Senior Debt", "formula": "-R146", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 317, "name": "Commitment Fees DSRF", "formula": "-$M8.commitment_fee * F1", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 318, "name": "Agency Fee Construction", "formula": "-S3 * I2 * F1", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 319, "name": "MRA Initial Funding", "formula": "-$M6.funding", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 320, "name": "GST Paid", "formula": "R24", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 321, "name": "Total Construction Outflows", "formula": "R310 + R313 + R314 + R315 + R316 + R317 + R318 + R319 + R320", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 325, "name": "GST Received Funding", "formula": "$M3.gst_received_construction * F1", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 326, "name": "Committed Equity incl IDC", "formula": "$M4.equity_drawdown + $M4.idc", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 327, "name": "Senior Debt", "formula": "$M4.debt_drawdown", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 328, "name": "Total Funding", "formula": "R325 + R326 + R327", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 330, "name": "Cash Flow After Funding", "formula": "R306 + R321 + R328", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 331, "name": "Interest Income", "formula": "R151", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 332, "name": "GST Received Ops", "formula": "R25", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 333, "name": "Tax", "formula": "R18", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 335, "name": "MRA Release", "formula": "R27", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 336, "name": "Maintenance Capex", "formula": "-$M6.drawdown", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 340, "name": "Interest Expense", "formula": "R16", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 341, "name": "Principal Repayment", "formula": "R31", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 342, "name": "Agency Fee Ops", "formula": "R174 * F2", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 343, "name": "Total Debt Service", "formula": "R340 + R341 + R342", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 344, "name": "DSRF Fees", "formula": "R153", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 350, "name": "Dividends", "formula": "R155", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 351, "name": "Share Capital Repayment", "formula": "R154", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 352, "name": "Net Cash Flow", "formula": "R40", "group": "CF Waterfall (Levered)", "type": "flow" },
+    { "id": 353, "name": "Cash Balance cf", "formula": "R42", "group": "CF Waterfall (Levered)", "type": "stock" },
+
+    { "_comment": "=== DEBUG: P&L ===" },
+    { "id": 360, "name": "Revenue Accrued", "formula": "R8", "group": "P&L", "type": "flow" },
+    { "id": 361, "name": "OPEX Accrued", "formula": "R9", "group": "P&L", "type": "flow" },
+    { "id": 362, "name": "EBITDA", "formula": "R13", "group": "P&L", "type": "flow" },
+    { "id": 363, "name": "Depreciation", "formula": "R14", "group": "P&L", "type": "flow" },
+    { "id": 364, "name": "EBIT", "formula": "R15", "group": "P&L", "type": "flow" },
+    { "id": 365, "name": "Interest Income", "formula": "R151", "group": "P&L", "type": "flow" },
+    { "id": 366, "name": "Interest Expense", "formula": "R16", "group": "P&L", "type": "flow" },
+    { "id": 367, "name": "DSRF Fees", "formula": "R153", "group": "P&L", "type": "flow" },
+    { "id": 368, "name": "Agency Fee", "formula": "R174 * F2", "group": "P&L", "type": "flow" },
+    { "id": 369, "name": "EBT", "formula": "R17", "group": "P&L", "type": "flow" },
+    { "id": 370, "name": "Tax", "formula": "R18", "group": "P&L", "type": "flow" },
+    { "id": 371, "name": "NPAT", "formula": "R19", "group": "P&L", "type": "flow" }
+  ],
+
+  "modules": [
+    {
+      "_comment": "M1 - Iterative Debt Sizing",
+      "id": 1,
+      "name": "Operations Debt Schedule",
+      "template": "iterative_debt_sizing",
+      "tab": "Funding",
+      "inputs": {
+        "contractedCfadsRef": "R208",
+        "contractedDSCR": "{ContractedDSCRTarget}",
+        "merchantCfadsRef": "R209",
+        "merchantDSCR": "{UncontractedDSCRTarget}",
+        "debtFlagRef": "F8",
+        "totalFundingRef": "R60",
+        "maxGearingPct": "{MaxGearing}",
+        "interestRatePct": "R172",
+        "tenorYears": "{DebtTenor}"
+      }
+    },
+    {
+      "_comment": "M2 - PP&E Depreciation",
+      "id": 2,
+      "name": "Long Term PP&E D&A",
+      "template": "straight_line_amortisation",
+      "tab": "IFS",
+      "inputs": {
+        "capitalisedRef": "R203",
+        "onsetFlag": "F2",
+        "lifeRef": "{DepreciationLife}",
+        "additionMode": "one_time"
+      }
+    },
+    {
+      "_comment": "M3 - GST",
+      "id": 3,
+      "name": "GST Paid/Received",
+      "template": "gst_receivable",
+      "tab": "IFS",
+      "inputs": {
+        "gstBaseRef": "R112",
+        "activeFlagRef": "F1",
+        "gstRatePct": "{GSTRate}",
+        "receiptDelayMonths": "{GSTReceiptDelay}",
+        "constructionFlagRef": "F1",
+        "operationsFlagRef": "F2"
+      }
+    },
+    {
+      "_comment": "M4 - Construction Funding",
+      "id": 4,
+      "name": "Construction Funding",
+      "template": "construction_funding",
+      "tab": "Funding",
+      "inputs": {
+        "gstAmountRef": "$M3.gst_amount",
+        "gstReceivedRef": "$M3.gst_received",
+        "feesRef": "R219",
+        "sizedDebtRef": "M1.1",
+        "gearingCapPct": "{MaxGearing}",
+        "interestRatePct": "R171",
+        "drawdownMethod": "equity_first",
+        "constructionFlagRef": "R9999"
+      }
+    },
+    {
+      "_comment": "M5 - Tax (disabled for flow-through entity)",
+      "id": 5,
+      "name": "Tax & Tax Losses",
+      "template": "tax_losses",
+      "tab": "IFS",
+      "enabled": false,
+      "inputs": {
+        "taxableIncomeRef": "R17",
+        "opsFlagRef": "F2",
+        "taxRatePct": "{TaxRate}"
+      }
+    },
+    {
+      "_comment": "M6 - MRA",
+      "id": 6,
+      "name": "MRA (Maintenance Reserve)",
+      "template": "reserve_account",
+      "tab": "Funding",
+      "inputs": {
+        "fundingAmountRef": "{MRATarget}",
+        "fundingFlagRef": "F1.End",
+        "drawdownRef": "S2",
+        "indexRef": "I2",
+        "drawdownFlagRef": "F12",
+        "releaseFlagRef": "F12.End"
+      }
+    },
+    {
+      "_comment": "M7 - Distributions",
+      "id": 7,
+      "name": "Distributions",
+      "template": "distributions",
+      "tab": "Funding",
+      "inputs": {
+        "availableCashRef": "R170",
+        "npatRef": "R19",
+        "equityContributedRef": "$M4.equity",
+        "minCashReserve": "{MinCashBalance}",
+        "opsFlagRef": "F2",
+        "withholdingTaxPct": 0,
+        "constructionFlagRef": "F1",
+        "lockupReleasePeriods": "{LockupReleasePeriods}",
+        "dscrRef": "$M1.period_dscr",
+        "dscrThreshold": "{LockupDSCRThreshold}",
+        "debtServiceRef": "$M1.debt_service",
+        "quarterEndFlagRef": "T.QE"
+      }
+    },
+    {
+      "_comment": "M8 - DSRF",
+      "id": 8,
+      "name": "DSRF & Refi Fees",
+      "template": "dsrf",
+      "tab": "Funding",
+      "inputs": {
+        "debtServiceRef": "$M1.debt_service",
+        "operationsFlagRef": "F2",
+        "establishmentFeePctRef": "{DSRFEstablishmentFee}",
+        "commitmentFeePctOfMarginRef": "{DSRFCommitmentFee}",
+        "baseMarginPctRef": "{DSRFBaseMargin}",
+        "facilityMonthsRef": "{DSRFFacilityMonths}",
+        "refiFlagsExpr": "F13 + F14 + F15 + F16",
+        "refiFeePct": "{RefiFee}",
+        "refiMarginPct": "{RefiMargin}",
+        "contractedCfadsRef": "R208",
+        "merchantCfadsRef": "R209",
+        "debtFlagRef": "F8"
+      }
+    },
+    {
+      "_comment": "M9 - IDC + Fees Amortisation",
+      "id": 9,
+      "name": "IDC + Fees Amortisation",
+      "template": "straight_line_amortisation",
+      "tab": "IFS",
+      "inputs": {
+        "capitalisedRef": "$self.total_capitalised",
+        "onsetFlag": "F2",
+        "lifeRef": "{IDCCommAmortLife}",
+        "additionMode": "one_time"
+      },
+      "extraCalculations": [
+        {
+          "key": "total_capitalised",
+          "name": "Total Capitalised",
+          "formula": "CUMSUM($M4.idc) + CUMSUM(R146 * R9999) + CUMSUM(S3 * I2 * R9999) + CUMSUM($M8.total_dsrf_fees * R9999)",
+          "type": "stock"
+        }
+      ]
+    },
+    {
+      "_comment": "M10 - Upfront Fees Amortisation",
+      "id": 10,
+      "name": "Upfront Fees Amortisation",
+      "template": "straight_line_amortisation",
+      "tab": "IFS",
+      "inputs": {
+        "capitalisedRef": "$self.total_capitalised",
+        "onsetFlag": "F2",
+        "lifeRef": "{UpfrontFeesAmortLife}",
+        "additionMode": "one_time"
+      },
+      "extraCalculations": [
+        {
+          "key": "total_capitalised",
+          "name": "Total Capitalised",
+          "formula": "CUMSUM(R144 * F1)",
+          "type": "stock"
+        }
+      ]
+    },
+    {
+      "_comment": "M11 - Maintenance D&A",
+      "id": 11,
+      "name": "Maintenance D&A",
+      "template": "straight_line_amortisation",
+      "tab": "IFS",
+      "inputs": {
+        "capitalisedRef": "$self.total_capitalised",
+        "onsetFlag": "F2",
+        "lifeRef": "{MaintenanceDeprLife}",
+        "additionMode": "periodic",
+        "periodicAdditionRef": "S2 * I2 * F12",
+        "activeFlag": "F12"
+      },
+      "extraCalculations": [
+        {
+          "key": "total_capitalised",
+          "name": "Total Capitalised",
+          "formula": "CUMSUM(S2 * I2 * F12)",
+          "type": "stock"
+        }
+      ]
+    }
+  ],
+
+  "validation": {
+    "balanceSheet": {
+      "calcId": 195,
+      "tolerance": 0.01
+    },
+    "irr": {
+      "calcId": 137,
+      "min": 5,
+      "max": 30
+    },
+    "dscr": {
+      "calcId": 118,
+      "min": 1.15,
+      "period": "F8"
+    }
+  }
+}

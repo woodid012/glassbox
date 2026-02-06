@@ -62,7 +62,11 @@ export async function generateFromRecipe(recipe, dataDir, options = {}) {
   }
 
   // --- 4. Resolve Calculations ---
-  const calculations = resolveCalculations(recipe.calculations || [])
+  // Separate module-expanded calcs from regular calcs
+  const allCalcs = resolveCalculations(recipe.calculations || [])
+  const regularCalcs = allCalcs.filter(c => !c._moduleId)
+  const moduleExpandedCalcs = allCalcs.filter(c => !!c._moduleId)
+
   const calculationsGroups = resolveCalculationGroups(recipe.calculationGroups || [])
   const calculationsTabs = resolveTabs(recipe.tabs || [])
 
@@ -70,13 +74,21 @@ export async function generateFromRecipe(recipe, dataDir, options = {}) {
   const modelCalculations = {
     _description: 'Model structure - formulas and relationships only',
     calculationsGroups,
-    calculations,
+    calculations: regularCalcs,
     calculationsTabs
+  }
+
+  // Add constants reference if present
+  if (recipe._constantsReference) {
+    modelCalculations._constantsReference = recipe._constantsReference
   }
 
   // --- 6. Resolve Modules ---
   const moduleGroups = resolveModuleGroups(recipe.moduleGroups || [])
-  const moduleCalculations = resolveModuleCalculations(recipe.moduleCalculations || [])
+  // Use module-expanded calcs if available, otherwise fall back to legacy moduleCalculations
+  const moduleCalculations = moduleExpandedCalcs.length > 0
+    ? moduleExpandedCalcs
+    : resolveModuleCalculations(recipe.moduleCalculations || [])
   const modules = resolveModules(recipe.modules || [])
 
   // --- 7. Build model-modules.json ---
@@ -91,7 +103,7 @@ export async function generateFromRecipe(recipe, dataDir, options = {}) {
   if (dryRun) {
     console.log('DRY RUN - files not written')
     console.log(`  model-inputs.json: ${keyPeriods.length} key periods, ${inputGlassGroups.length} groups, ${inputGlass.length} inputs`)
-    console.log(`  model-calculations.json: ${calculations.length} calculations, ${calculationsGroups.length} groups, ${calculationsTabs.length} tabs`)
+    console.log(`  model-calculations.json: ${regularCalcs.length} calculations, ${calculationsGroups.length} groups, ${calculationsTabs.length} tabs`)
     console.log(`  model-modules.json: ${modules.length} modules, ${moduleCalculations.length} module calcs`)
     return { modelInputs, modelCalculations, modelModules }
   }
@@ -116,7 +128,7 @@ export async function generateFromRecipe(recipe, dataDir, options = {}) {
 
   console.log('Model files generated:')
   console.log(`  model-inputs.json: ${keyPeriods.length} key periods, ${inputGlassGroups.length} groups, ${inputGlass.length} inputs`)
-  console.log(`  model-calculations.json: ${calculations.length} calculations, ${calculationsGroups.length} groups, ${calculationsTabs.length} tabs`)
+  console.log(`  model-calculations.json: ${regularCalcs.length} calculations, ${calculationsGroups.length} groups, ${calculationsTabs.length} tabs`)
   console.log(`  model-modules.json: ${modules.length} modules, ${moduleCalculations.length} module calcs`)
 
   return { modelInputs, modelCalculations, modelModules }
