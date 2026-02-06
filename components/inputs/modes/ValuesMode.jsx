@@ -17,6 +17,7 @@ export default function ValuesMode({
     isCellSelected,
     handleCellSelect,
     handleCellShiftSelect,
+    handleMultiCellPaste,
     onAddInput,
     onUpdateInput,
     onRemoveInput,
@@ -140,6 +141,7 @@ export default function ValuesMode({
                                                 )
                                                 onUpdateInput(input.id, 'values', newValues)
                                             }}
+                                            onPasteMultiCell={(text) => handleMultiCellPaste(text, group.id, currentRowIndex, i)}
                                             className="text-[11px]"
                                         />
                                     </td>

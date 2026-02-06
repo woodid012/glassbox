@@ -7,7 +7,7 @@ function formatDisplayNumber(val) {
     // Preserve decimal places the user entered
     const str = String(val)
     const decimalIdx = str.indexOf('.')
-    const decimals = decimalIdx >= 0 ? str.length - decimalIdx - 1 : 0
+    const decimals = Math.min(decimalIdx >= 0 ? str.length - decimalIdx - 1 : 0, 20)
     return num.toLocaleString('en-US', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: Math.max(decimals, 2)
@@ -15,7 +15,7 @@ function formatDisplayNumber(val) {
 }
 
 // Editable cell that commits on blur or Enter
-const EditableCell = memo(function EditableCell({ value, onChange, type = 'text', className = '', isSelected, onSelect, onShiftSelect }) {
+const EditableCell = memo(function EditableCell({ value, onChange, type = 'text', className = '', isSelected, onSelect, onShiftSelect, onPasteMultiCell }) {
     const [localValue, setLocalValue] = useState(value ?? '')
     const [isFocused, setIsFocused] = useState(false)
     const inputRef = useRef(null)
@@ -56,6 +56,14 @@ const EditableCell = memo(function EditableCell({ value, onChange, type = 'text'
                     onSelect()
                 }
             }}
+            onPaste={(e) => {
+                if (!onPasteMultiCell) return
+                const text = (e.clipboardData || window.clipboardData)?.getData('text/plain')
+                if (text && (text.includes('\t') || text.includes('\n'))) {
+                    e.preventDefault()
+                    onPasteMultiCell(text)
+                }
+            }}
             onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                     e.target.blur()
@@ -73,7 +81,8 @@ const EditableCell = memo(function EditableCell({ value, onChange, type = 'text'
     return prev.value === next.value &&
            prev.isSelected === next.isSelected &&
            prev.className === next.className &&
-           prev.type === next.type
+           prev.type === next.type &&
+           prev.onPasteMultiCell === next.onPasteMultiCell
 })
 
 export default EditableCell

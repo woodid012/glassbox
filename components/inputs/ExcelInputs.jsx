@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 
 // Import shared components
 import GroupControls from './shared/GroupControls'
@@ -128,98 +128,108 @@ export default function ExcelInputs({
         navigator.clipboard?.writeText(tsv)
     }, [selection, groups, inputs, config])
 
-    const handlePaste = useCallback(async () => {
-        if (!selection) return
+    // Parse clipboard text (TSV from Excel) into rows of values
+    const parseClipboardText = useCallback((text) => {
+        if (!text || !text.trim()) return null
+        const rows = text.split('\n')
+            .map(row => row.split('\t').map(cell => {
+                const trimmed = cell.trim().replace(/,/g, '')
+                const parsed = parseFloat(trimmed)
+                return isNaN(parsed) ? trimmed : parsed
+            }))
+            .filter(row => row.length > 0 && row.some(cell => cell !== ''))
+        return rows.length > 0 ? rows : null
+    }, [])
 
-        const group = groups.find(g => g.id === selection.groupId)
+    // Handle Ctrl+C for copy
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selection) {
+                e.preventDefault()
+                handleCopy()
+            }
+        }
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [selection, handleCopy])
+
+    // Handle multi-cell paste from EditableCell's onPaste handler
+    const handleMultiCellPaste = useCallback((text, groupId, rowIndex, colIndex) => {
+        const rows = parseClipboardText(text)
+        if (!rows) return
+        // Set selection to the pasted cell (for visual highlight and subsequent copy)
+        setSelection({
+            groupId,
+            startRow: rowIndex,
+            startCol: colIndex,
+            endRow: rowIndex,
+            endCol: colIndex
+        })
+
+        const group = groups.find(g => g.id === groupId)
         if (!group) return
 
-        // Determine entry mode
         const isLookupMode = group.entryMode === 'lookup' || group.entryMode === 'lookup2'
         const isConstantMode = group.entryMode === 'constant'
         const periods = generatePeriods(group, config, keyPeriods)
 
-        // Get inputs in display order (grouped by subgroups)
-        const rawGroupInputs = inputs.filter(inp => inp.groupId === selection.groupId)
+        const rawGroupInputs = inputs.filter(inp => inp.groupId === groupId)
         const subgroupedInputs = groupInputsBySubgroup(rawGroupInputs, group)
-        // Flatten to get inputs in display order
-        const groupInputs = subgroupedInputs.flatMap(sg => sg.inputs)
+        const allInputs = subgroupedInputs.flatMap(sg => sg.inputs)
 
-        const startRow = Math.min(selection.startRow, selection.endRow)
-        const startCol = Math.min(selection.startCol, selection.endCol)
+        const startRow = rowIndex
+        const startCol = colIndex
 
-        // Try to read from system clipboard first
-        let pastedRows = null
-        try {
-            const pastedText = await navigator.clipboard.readText()
-            if (pastedText && pastedText.trim()) {
-                // Parse TSV: rows separated by newlines, columns by tabs
-                pastedRows = pastedText.split('\n')
-                    .map(row => row.split('\t').map(cell => {
-                        const trimmed = cell.trim().replace(/,/g, '')
-                        // Try to parse as number, otherwise keep as string
-                        const parsed = parseFloat(trimmed)
-                        return isNaN(parsed) ? trimmed : parsed
-                    }))
-                    .filter(row => row.length > 0 && row.some(cell => cell !== ''))
+        // For lookup mode, scope paste to the subgroup containing the clicked cell
+        let pasteInputs = allInputs
+        let pasteStartIdx = startRow
+        if (isLookupMode && subgroupedInputs.length > 1) {
+            let rowOffset = 0
+            for (const sg of subgroupedInputs) {
+                if (startRow < rowOffset + sg.inputs.length) {
+                    pasteInputs = sg.inputs
+                    pasteStartIdx = startRow - rowOffset
+                    break
+                }
+                rowOffset += sg.inputs.length
             }
-        } catch (err) {
-            // System clipboard unavailable, fall back to internal clipboard
-            console.log('System clipboard unavailable, using internal clipboard')
         }
 
-        // Fall back to internal clipboard if system clipboard didn't provide data
-        if (!pastedRows || pastedRows.length === 0) {
-            if (!clipboard) return
-            pastedRows = clipboard.rows
-        }
+        rows.forEach((rowData, rowOff) => {
+            const inputIndex = pasteStartIdx + rowOff
+            if (inputIndex >= pasteInputs.length) return
 
-        if (!pastedRows || pastedRows.length === 0) return
-
-        // Paste the data starting from selection
-        pastedRows.forEach((rowData, rowOffset) => {
-            const inputIndex = startRow + rowOffset
-            if (inputIndex >= groupInputs.length) return
-
-            const input = groupInputs[inputIndex]
+            const input = pasteInputs[inputIndex]
 
             if (isConstantMode) {
-                // Constant mode: columns are Label(-1), Total(0, read-only), Value(1)
                 rowData.forEach((val, colOffset) => {
-                    const colIndex = startCol + colOffset
-                    if (colIndex === -1) {
-                        // Paste to label column
+                    const ci = startCol + colOffset
+                    if (ci === -1) {
                         if (typeof val === 'string' && val.trim()) {
                             onUpdateInput(input.id, 'name', val)
                         }
-                    } else if (colIndex === 0) {
+                    } else if (ci === 0) {
                         // Total column is read-only, skip
-                    } else if (colIndex === 1) {
-                        // Value column - update input.value
+                    } else if (ci === 1) {
                         const numVal = typeof val === 'number' ? val : (parseFloat(val) || 0)
                         onUpdateInput(input.id, 'value', numVal)
                     }
-                    // Column 2 is Spread dropdown, skip
                 })
             } else {
-                // Values mode, Series mode, Lookup mode, or Lookup2 mode
                 let currentValues = input.values || {}
 
                 rowData.forEach((val, colOffset) => {
-                    const colIndex = startCol + colOffset
-                    if (colIndex === -1) {
-                        // Paste to label column - only paste strings
+                    const ci = startCol + colOffset
+                    if (ci === -1) {
                         if (typeof val === 'string' && val.trim()) {
                             onUpdateInput(input.id, 'name', val)
                         }
-                    } else if (colIndex >= 0 && colIndex < periods.length) {
-                        // Paste to value cell
+                    } else if (ci >= 0 && ci < periods.length) {
                         const numVal = typeof val === 'number' ? val : (parseFloat(val) || 0)
-                        // Use appropriate spread function based on entry mode
                         if (isLookupMode) {
-                            currentValues = spreadLookup2ValueToMonthly(currentValues, colIndex, numVal, group.frequency)
+                            currentValues = spreadLookup2ValueToMonthly(currentValues, ci, numVal, group.frequency)
                         } else {
-                            currentValues = spreadValueToMonthly(currentValues, colIndex, numVal, group.frequency, periods)
+                            currentValues = spreadValueToMonthly(currentValues, ci, numVal, group.frequency, periods)
                         }
                     }
                 })
@@ -229,24 +239,7 @@ export default function ExcelInputs({
                 }
             }
         })
-    }, [selection, clipboard, groups, inputs, onUpdateInput, config])
-
-    // Handle keyboard shortcuts for copy/paste
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selection) {
-                e.preventDefault()
-                handleCopy()
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'v' && selection) {
-                e.preventDefault()
-                handlePaste()
-            }
-        }
-
-        document.addEventListener('keydown', handleKeyDown)
-        return () => document.removeEventListener('keydown', handleKeyDown)
-    }, [selection, handleCopy, handlePaste])
+    }, [groups, inputs, config, keyPeriods, onUpdateInput, parseClipboardText])
 
     const toggleGroup = (groupId) => {
         const newCollapsed = new Set(collapsedGroups)
@@ -312,6 +305,7 @@ export default function ExcelInputs({
                     isCellSelected,
                     handleCellSelect,
                     handleCellShiftSelect,
+                    handleMultiCellPaste,
                     onUpdateGroup,
                     onAddInput,
                     onUpdateInput,

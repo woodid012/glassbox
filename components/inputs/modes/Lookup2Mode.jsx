@@ -17,6 +17,7 @@ export default function Lookup2Mode({
     isCellSelected,
     handleCellSelect,
     handleCellShiftSelect,
+    handleMultiCellPaste,
     onUpdateGroup,
     onAddInput,
     onUpdateInput,
@@ -50,6 +51,7 @@ export default function Lookup2Mode({
 
     // Expanded View
     let globalRowIndex = 0
+    const hasSubgroups = subgroupedInputs.some(sg => sg.id != null)
 
     return (
         <div className="overflow-x-auto">
@@ -88,6 +90,11 @@ export default function Lookup2Mode({
                         }
                         const selectedTotal = selectedValues.reduce((sum, v) => sum + (parseFloat(v) || 0), 0)
 
+                        // Formula ref for this subgroup's selected value
+                        const selectionRef = hasSubgroups
+                            ? `${groupRef}.${sgIndex + 1}`
+                            : groupRef
+
                         return (
                             <React.Fragment key={sg.id ?? 'root'}>
                                 {/* Subgroup header (only if has subgroup id) */}
@@ -113,7 +120,6 @@ export default function Lookup2Mode({
                                     </tr>
                                 )}
 
-                                {/* Ref badge for groups without subgroups - removed, now shown per-row */}
                                 {/* Option rows for this subgroup */}
                                 {sg.inputs.map((input, inputIdx) => {
                                     const rowIndex = globalRowIndex++
@@ -122,6 +128,9 @@ export default function Lookup2Mode({
                                     const isSelected = inputIdx === selectedIndex
 
                                     const showSelectedHighlight = group.showSelected !== false && isSelected
+
+                                    // Option ref: sequential within the group (L1.1, L1.2, L1.3, ...)
+                                    const optionRef = `${groupRef}.${rowIndex + 1}`
 
                                     return (
                                         <tr key={input.id} className={`border-b border-slate-100 hover:bg-blue-50/30 ${showSelectedHighlight ? 'bg-amber-50/30' : ''}`}>
@@ -135,8 +144,8 @@ export default function Lookup2Mode({
                                             </td>
                                             <td className={`py-0 px-1 w-[52px] min-w-[52px] max-w-[52px] sticky left-[32px] z-25 ${showSelectedHighlight ? 'bg-amber-50/30' : 'bg-white'}`}>
                                                 {groupRef && (
-                                                    <span className="text-[10px] px-1 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 select-all">
-                                                        {groupRef}.{sg.id ?? inputIdx + 1}
+                                                    <span className="text-[10px] px-1 py-0.5 rounded font-mono text-slate-400 bg-slate-50 select-all">
+                                                        {optionRef}
                                                     </span>
                                                 )}
                                             </td>
@@ -183,6 +192,7 @@ export default function Lookup2Mode({
                                                             )
                                                             onUpdateInput(input.id, 'values', newValues)
                                                         }}
+                                                        onPasteMultiCell={(text) => handleMultiCellPaste(text, group.id, rowIndex, i)}
                                                         className="text-[11px]"
                                                     />
                                                 </td>
@@ -204,14 +214,18 @@ export default function Lookup2Mode({
                                     </td>
                                 </tr>
 
-                                {/* Selection row - moved below options */}
+                                {/* Selection row - shows the formula ref (L1, L1.1, etc.) */}
                                 {group.showSelected !== false && (
                                     <tr className="bg-amber-50 border-t-2 border-amber-300 border-b-2 border-amber-300">
                                         <td className="py-0 px-1 w-[32px] min-w-[32px] max-w-[32px] sticky left-0 z-30 bg-amber-50"></td>
-                                        <td className="py-0 px-1 w-[52px] min-w-[52px] max-w-[52px] sticky left-[32px] z-25 bg-amber-50"></td>
+                                        <td className="py-0 px-1 w-[52px] min-w-[52px] max-w-[52px] sticky left-[32px] z-25 bg-amber-50">
+                                            <span className="text-[10px] px-1 py-0.5 rounded font-mono text-amber-700 bg-amber-100 font-bold select-all">
+                                                {selectionRef}
+                                            </span>
+                                        </td>
                                         <td className="py-1 px-2 w-[192px] min-w-[192px] max-w-[192px] sticky left-[84px] z-20 bg-amber-50">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs text-amber-700">Selection:</span>
+                                                <span className="text-xs text-amber-700">Selected:</span>
                                                 <select
                                                     value={selectedIndex}
                                                     onChange={(e) => {
