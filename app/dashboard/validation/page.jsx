@@ -231,12 +231,14 @@ function PeriodBrowser({ calculationResults, timeline, calculations }) {
                 <tr className="bg-slate-100">
                     <td className="px-2 py-1 text-[10px] font-bold text-slate-600 uppercase tracking-wider sticky left-0 bg-slate-100 z-10" colSpan={1}>{sectionLabel}</td>
                     <td className="px-1 py-1 text-[10px] font-mono text-slate-400 sticky left-[180px] bg-slate-100 z-10"></td>
+                    <td className="px-1 py-1 sticky left-[220px] bg-slate-100 z-10"></td>
                     {periodIndices.map(i => <td key={i} className="px-1 py-1"></td>)}
                 </tr>
                 {lines.map(line => {
                     const arr = calculationResults[line.ref] || []
                     const isCheck = line.check
                     const isBold = line.bold
+                    const sum = arr.reduce((s, v) => s + (v || 0), 0)
                     return (
                         <tr key={line.ref} className={`border-b border-slate-50 hover:bg-yellow-50/30 ${isBold ? 'bg-slate-50/70' : ''}`}>
                             <td className={`px-2 py-0.5 text-[11px] whitespace-nowrap sticky left-0 bg-white z-10 ${isBold ? 'font-semibold text-slate-900' : 'text-slate-600'}`} style={{ minWidth: 180 }}>
@@ -244,6 +246,11 @@ function PeriodBrowser({ calculationResults, timeline, calculations }) {
                             </td>
                             <td className="px-1 py-0.5 text-[10px] font-mono text-slate-400 sticky left-[180px] bg-white z-10" style={{ minWidth: 40 }}>
                                 {line.ref}
+                            </td>
+                            <td className={`px-1 py-0.5 text-right font-mono text-[10px] tabular-nums whitespace-nowrap sticky left-[220px] bg-slate-50 z-10 border-r border-slate-200 ${
+                                isCheck && Math.abs(sum) > 0.01 ? 'text-red-700 font-bold' : sum < -0.005 ? 'text-red-600' : Math.abs(sum) > 0.005 ? 'text-slate-700 font-semibold' : 'text-slate-300'
+                            }`} style={{ minWidth: 72 }}>
+                                {formatValue(sum, acctFmt)}
                             </td>
                             {periodIndices.map(i => {
                                 const v = arr[i] || 0
@@ -309,6 +316,7 @@ function PeriodBrowser({ calculationResults, timeline, calculations }) {
                         <tr className="border-b border-slate-200 bg-slate-50">
                             <th className="px-2 py-1.5 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider sticky left-0 bg-slate-50 z-10" style={{ minWidth: 180 }}>Line Item</th>
                             <th className="px-1 py-1.5 text-left text-[10px] font-semibold text-slate-400 sticky left-[180px] bg-slate-50 z-10" style={{ minWidth: 40 }}>Ref</th>
+                            <th className="px-1 py-1.5 text-right text-[10px] font-semibold text-slate-500 uppercase tracking-wider sticky left-[220px] bg-slate-50 z-10 border-r border-slate-200" style={{ minWidth: 72 }}>Sum</th>
                             {periodIndices.map(i => (
                                 <th key={i} className="px-1 py-1.5 text-right text-[10px] font-semibold text-slate-500 whitespace-nowrap" style={{ minWidth: 72 }}>
                                     {periodLabel(i)}

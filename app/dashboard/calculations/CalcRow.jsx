@@ -54,8 +54,8 @@ const CalcRow = memo(function CalcRow({
                 <div className="flex-1">
                     {/* Label row */}
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100">
-                            {calcRef}
+                        <span className="text-xs px-1.5 py-0.5 rounded font-medium text-rose-600 bg-rose-100" title={calcRef}>
+                            {calc.refName || calcRef}
                         </span>
                         {calc._moduleId && (
                             <span className="text-[10px] px-1 py-0.5 rounded font-medium text-orange-700 bg-orange-100">

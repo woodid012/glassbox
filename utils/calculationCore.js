@@ -93,15 +93,18 @@ export function rewriteMRefs(formula, mRefMapData) {
 /**
  * Build unified dependency graph of calculations AND modules.
  * For converted modules, M-refs in formulas are rewritten to R-refs.
+ * {Name} tokens are resolved before dependency extraction.
  * Converted module nodes are excluded from the graph.
  */
-export function buildUnifiedGraph(calculations, modules, mRefMapData) {
+export function buildUnifiedGraph(calculations, modules, mRefMapData, refNameMap) {
     const graph = new Map()
 
     if (calculations) {
         calculations.forEach(calc => {
             const nodeId = `R${calc.id}`
-            const rewrittenFormula = rewriteMRefs(calc.formula, mRefMapData)
+            let rewrittenFormula = rewriteMRefs(calc.formula, mRefMapData)
+            // Resolve {Name} tokens (e.g., {Ebitda} → R13) before extracting deps
+            if (refNameMap) rewrittenFormula = resolveRefNameTokens(rewrittenFormula, refNameMap)
             graph.set(nodeId, {
                 type: 'calc',
                 deps: new Set(extractDependencies(rewrittenFormula)),
@@ -375,8 +378,9 @@ export function runCalculationPass(calculations, modules, referenceMap, timeline
     const errors = {}
     const mRefMapData = mRefMap || {}
 
-    // Build unified dependency graph (with M-ref rewriting for converted modules)
-    const graph = buildUnifiedGraph(calculations, modules, mRefMapData)
+    // Build unified dependency graph (with M-ref rewriting and {Name} resolution)
+    const refNameMap = referenceMap._refNameMap
+    const graph = buildUnifiedGraph(calculations, modules, mRefMapData, refNameMap)
 
     if (graph.size === 0) {
         return { calculationResults: calcResults, moduleOutputs: modOutputs, calculationErrors: errors, sortedNodeMeta: [], clusterDebug: [], evalDebug: {} }

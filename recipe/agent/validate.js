@@ -152,7 +152,103 @@ export function validateRecipe(recipe, dataDir) {
   }
 
   results.formulaIntegrity = { passed: true }
+
+  // --- Financial Reasonableness Checks ---
+  results.reasonableness = runReasonablenessChecks(calculationResults, engineResults)
+
   return results
+}
+
+/**
+ * Run financial reasonableness checks on engine results.
+ * These are warnings/info - they don't fail the overall validation.
+ */
+function runReasonablenessChecks(calcResults, engineResults) {
+  const checks = []
+
+  // Revenue > 0 during operations
+  const r1 = calcResults['R1']
+  if (r1) {
+    const totalRevenue = r1.reduce((a, b) => a + (b || 0), 0)
+    checks.push({
+      name: 'Revenue positive during operations',
+      passed: totalRevenue > 0,
+      value: Math.round(totalRevenue * 100) / 100,
+      level: totalRevenue > 0 ? 'pass' : 'warning'
+    })
+  }
+
+  // No revenue during construction (R1 should be 0 when F1 is active)
+  const r10 = calcResults['R10'] || calcResults['R1']
+  if (r10) {
+    // Check first 18 periods (typical construction)
+    const constructionRevenue = r10.slice(0, 18).reduce((a, b) => a + Math.abs(b || 0), 0)
+    checks.push({
+      name: 'No revenue during construction',
+      passed: constructionRevenue < 0.01,
+      value: Math.round(constructionRevenue * 100) / 100,
+      level: constructionRevenue < 0.01 ? 'pass' : 'warning'
+    })
+  }
+
+  // Cash never deeply negative
+  const r182 = calcResults['R182']
+  if (r182) {
+    const minCash = Math.min(...r182)
+    checks.push({
+      name: 'Cash balance not deeply negative',
+      passed: minCash > -10,
+      value: Math.round(minCash * 100) / 100,
+      level: minCash > -10 ? 'pass' : 'warning'
+    })
+  }
+
+  // Debt fully repaid by maturity (R94 or closing balance should reach 0)
+  const debtClosing = calcResults['R94'] || calcResults['R9070']
+  if (debtClosing) {
+    const lastNonZero = [...debtClosing].reverse().findIndex(v => Math.abs(v) > 0.01)
+    const periodsFromEnd = lastNonZero >= 0 ? lastNonZero : debtClosing.length
+    const finalBalance = debtClosing[debtClosing.length - 1] || 0
+    checks.push({
+      name: 'Debt fully repaid',
+      passed: Math.abs(finalBalance) < 0.01,
+      value: Math.round(finalBalance * 100) / 100,
+      level: Math.abs(finalBalance) < 0.01 ? 'pass' : 'warning'
+    })
+  }
+
+  // Cost signs: OPEX should be negative
+  const opexRefs = ['R8', 'R9', 'R11', 'R12', 'R13']
+  for (const ref of opexRefs) {
+    const values = calcResults[ref]
+    if (!values) continue
+    const totalPositive = values.filter(v => v > 0.01).reduce((a, b) => a + b, 0)
+    if (totalPositive > 0.01) {
+      checks.push({
+        name: `${ref} cost sign (should be negative)`,
+        passed: false,
+        value: Math.round(totalPositive * 100) / 100,
+        level: 'warning'
+      })
+    }
+  }
+
+  // Project IRR plausibility (if R137 equity cashflows exist)
+  const equityCF = calcResults['R137'] || calcResults['R125']
+  if (equityCF) {
+    const irr = computeIRR(equityCF)
+    if (irr !== null) {
+      const inRange = irr >= 0.05 && irr <= 0.25
+      checks.push({
+        name: 'Equity IRR plausibility (5-25%)',
+        passed: inRange,
+        value: `${(irr * 100).toFixed(2)}%`,
+        level: inRange ? 'pass' : 'warning'
+      })
+    }
+  }
+
+  return checks
 }
 
 /**
@@ -215,5 +311,13 @@ export function printValidationResults(results) {
   for (const i of results.irr) {
     const irrPct = i.irr !== null ? (i.irr * 100).toFixed(2) + '%' : 'N/A'
     console.log(`  ${i.name}: ${i.passed ? 'PASS' : 'CHECK'} (IRR: ${irrPct}, range: ${i.expectedRange?.map(r => (r * 100).toFixed(1) + '%').join(' - ')})`)
+  }
+
+  if (results.reasonableness?.length > 0) {
+    console.log('\nReasonableness Checks:')
+    for (const r of results.reasonableness) {
+      const icon = r.passed ? 'PASS' : r.level === 'warning' ? 'WARN' : 'INFO'
+      console.log(`  ${r.name}: ${icon} (${r.value})`)
+    }
   }
 }

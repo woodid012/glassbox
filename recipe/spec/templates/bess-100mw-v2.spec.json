@@ -1,0 +1,432 @@
+{
+  "_comment": "100 MW / 200 MWh BESS - Using symbolic formula references",
+  "_instructions": "Formulas use {ConstantName} syntax which gets translated to C1.x refs",
+
+  "project": {
+    "name": "100 MW / 200 MWh BESS",
+    "type": "BESS",
+    "currency": "AUD",
+    "financialYearEnd": 6
+  },
+
+  "timeline": {
+    "start": "Apr 2027",
+    "end": "Mar 2057"
+  },
+
+  "keyPeriods": [
+    {
+      "name": "Construction",
+      "flag": "F1",
+      "duration": "18 months",
+      "start": "timeline.start"
+    },
+    {
+      "name": "Operations",
+      "flag": "F2",
+      "duration": "300 months",
+      "start": "after F1"
+    },
+    {
+      "name": "Tolling",
+      "flag": "F6",
+      "duration": "120 months",
+      "start": "after F1"
+    },
+    {
+      "name": "Merchant",
+      "flag": "F7",
+      "duration": "180 months",
+      "start": "after F6"
+    },
+    {
+      "name": "Debt",
+      "flag": "F8",
+      "duration": "180 months",
+      "start": "after F1"
+    }
+  ],
+
+  "indices": [
+    { "id": 2, "name": "CPI", "rate": 2.5, "startYear": 2026 }
+  ],
+
+  "constants": [
+    { "name": "PowerMW", "value": 100, "unit": "MW" },
+    { "name": "EnergyMWh", "value": 200, "unit": "MWh" },
+    { "name": "Duration", "value": 2, "unit": "hours" },
+    { "name": "BatteryCost", "value": 350, "unit": "$/kWh" },
+    { "name": "BOPCost", "value": 150, "unit": "$/kW" },
+    { "name": "GridCost", "value": 8, "unit": "$ M" },
+    { "name": "DevCost", "value": 5, "unit": "$ M" },
+    { "name": "TollingFee", "value": 85, "unit": "$/kW/yr" },
+    { "name": "FCASRate", "value": 25000, "unit": "$/MW/yr" },
+    { "name": "ArbRate", "value": 35000, "unit": "$/MW/yr" },
+    { "name": "OMRate", "value": 8, "unit": "$/kW/yr" },
+    { "name": "InsurancePct", "value": 0.5, "unit": "%" },
+    { "name": "LandLease", "value": 100, "unit": "$ k/yr" },
+    { "name": "Efficiency", "value": 87, "unit": "%" },
+    { "name": "Degradation", "value": 2.5, "unit": "%/yr" },
+    { "name": "Availability", "value": 97, "unit": "%" },
+    { "name": "DebtGearing", "value": 70, "unit": "%" },
+    { "name": "DebtRate", "value": 7.5, "unit": "%" },
+    { "name": "TargetDSCR", "value": 1.35, "unit": "x" },
+    { "name": "DSRFMonths", "value": 6, "unit": "months" },
+    { "name": "TaxRate", "value": 30, "unit": "%" },
+    { "name": "AssetLife", "value": 25, "unit": "years" }
+  ],
+
+  "inputGroups": [
+    { "id": 1, "name": "CAPEX", "mode": "values", "frequency": "M", "linkedPeriod": "F1" },
+    { "id": 2, "name": "OPEX", "mode": "series", "frequency": "M", "linkedPeriod": "F2" }
+  ],
+
+  "inputs": [
+    { "id": 1, "name": "BatteryCapex", "group": "CAPEX", "value": 70, "unit": "$ M" },
+    { "id": 2, "name": "BOPCapex", "group": "CAPEX", "value": 15, "unit": "$ M" },
+    { "id": 3, "name": "GridCapex", "group": "CAPEX", "value": 8, "unit": "$ M" },
+    { "id": 4, "name": "DevCapex", "group": "CAPEX", "value": 5, "unit": "$ M" },
+    { "id": 10, "name": "OMCosts", "group": "OPEX", "value": 0.8, "unit": "$ M/yr" },
+    { "id": 11, "name": "LandCosts", "group": "OPEX", "value": 0.1, "unit": "$ M/yr" }
+  ],
+
+  "calculationGroups": [
+    { "id": 1, "name": "Performance", "tab": "Revenue" },
+    { "id": 2, "name": "Revenue", "tab": "Revenue" },
+    { "id": 3, "name": "Costs", "tab": "P&L" },
+    { "id": 4, "name": "EBITDA", "tab": "P&L" },
+    { "id": 5, "name": "DA", "tab": "P&L" },
+    { "id": 6, "name": "Interest", "tab": "P&L" },
+    { "id": 7, "name": "Tax", "tab": "P&L" },
+    { "id": 8, "name": "NetIncome", "tab": "P&L" },
+    { "id": 10, "name": "OpCF", "tab": "Cash Flow" },
+    { "id": 11, "name": "InvCF", "tab": "Cash Flow" },
+    { "id": 12, "name": "FinCF", "tab": "Cash Flow" },
+    { "id": 20, "name": "Assets", "tab": "Balance Sheet" },
+    { "id": 21, "name": "Liabilities", "tab": "Balance Sheet" },
+    { "id": 22, "name": "Equity", "tab": "Balance Sheet" },
+    { "id": 30, "name": "Returns", "tab": "Returns" }
+  ],
+
+  "calculations": [
+    {
+      "id": 1,
+      "name": "EffectiveCapacity",
+      "formula": "{PowerMW} * {Availability} / 100 * MAX(0, 1 - {Degradation} / 100 * CUMSUM(F2) / T.MiY) * F2",
+      "group": "Performance",
+      "type": "flow"
+    },
+
+    {
+      "id": 4,
+      "name": "TollingRevenue",
+      "formula": "{PowerMW} * {TollingFee} / T.MiY / 10^6 * F6 * I2",
+      "group": "Revenue",
+      "type": "flow",
+      "sign": "positive"
+    },
+    {
+      "id": 5,
+      "name": "FCASRevenue",
+      "formula": "R1 * {FCASRate} / T.MiY / 10^6 * F7",
+      "group": "Revenue",
+      "type": "flow",
+      "sign": "positive"
+    },
+    {
+      "id": 6,
+      "name": "ArbRevenue",
+      "formula": "R1 * {ArbRate} / T.MiY / 10^6 * F7",
+      "group": "Revenue",
+      "type": "flow",
+      "sign": "positive"
+    },
+    {
+      "id": 10,
+      "name": "TotalRevenue",
+      "formula": "R4 + R5 + R6",
+      "group": "Revenue",
+      "type": "flow",
+      "sign": "positive"
+    },
+
+    {
+      "id": 11,
+      "name": "OMExpense",
+      "formula": "-{OMCosts} / T.MiY * F2 * I2",
+      "group": "Costs",
+      "type": "flow",
+      "sign": "negative"
+    },
+    {
+      "id": 12,
+      "name": "Insurance",
+      "formula": "-CUMSUM({BatteryCapex} + {BOPCapex} + {GridCapex} + {DevCapex}) * {InsurancePct} / 100 / T.MiY * F2",
+      "group": "Costs",
+      "type": "flow",
+      "sign": "negative"
+    },
+    {
+      "id": 13,
+      "name": "LandExpense",
+      "formula": "-{LandCosts} / T.MiY * F2 * I2",
+      "group": "Costs",
+      "type": "flow",
+      "sign": "negative"
+    },
+    {
+      "id": 15,
+      "name": "TotalOPEX",
+      "formula": "R11 + R12 + R13",
+      "group": "Costs",
+      "type": "flow",
+      "sign": "negative"
+    },
+
+    {
+      "id": 20,
+      "name": "EBITDA",
+      "formula": "R10 + R15",
+      "group": "EBITDA",
+      "type": "flow"
+    },
+
+    {
+      "id": 80,
+      "name": "DAOpening",
+      "formula": "MAX(0, (CUMSUM(R81) - R81) - CUMSUM({BatteryCapex} + {BOPCapex} + {GridCapex} + {DevCapex}) / {AssetLife} / T.MiY * (CUMSUM(F2) - F2))",
+      "group": "DA",
+      "type": "stock_start"
+    },
+    {
+      "id": 81,
+      "name": "DAAddition",
+      "formula": "CUMSUM({BatteryCapex} + {BOPCapex} + {GridCapex} + {DevCapex}) * F2.Start",
+      "group": "DA",
+      "type": "flow"
+    },
+    {
+      "id": 82,
+      "name": "DACharge",
+      "formula": "-MIN(R80 + R81, CUMSUM({BatteryCapex} + {BOPCapex} + {GridCapex} + {DevCapex}) / {AssetLife} / T.MiY) * F2",
+      "group": "DA",
+      "type": "flow",
+      "sign": "negative"
+    },
+    {
+      "id": 84,
+      "name": "DAClosing",
+      "formula": "MAX(0, CUMSUM(R81) - CUMSUM({BatteryCapex} + {BOPCapex} + {GridCapex} + {DevCapex}) / {AssetLife} / T.MiY * CUMSUM(F2))",
+      "group": "DA",
+      "type": "stock"
+    },
+
+    {
+      "id": 21,
+      "name": "EBIT",
+      "formula": "R20 + R82",
+      "group": "DA",
+      "type": "flow"
+    },
+
+    {
+      "id": 16,
+      "name": "InterestExpense",
+      "formula": "-M1.3",
+      "group": "Interest",
+      "type": "flow",
+      "sign": "negative"
+    },
+
+    {
+      "id": 17,
+      "name": "EBT",
+      "formula": "R21 + R16",
+      "group": "Tax",
+      "type": "flow"
+    },
+    {
+      "id": 18,
+      "name": "TaxExpense",
+      "formula": "-MAX(0, R17) * {TaxRate} / 100",
+      "group": "Tax",
+      "type": "flow",
+      "sign": "negative"
+    },
+
+    {
+      "id": 19,
+      "name": "NPAT",
+      "formula": "R17 + R18",
+      "group": "NetIncome",
+      "type": "flow"
+    },
+
+    {
+      "id": 40,
+      "name": "OperatingCF",
+      "formula": "R19 - R82",
+      "group": "OpCF",
+      "type": "flow"
+    },
+
+    {
+      "id": 41,
+      "name": "CAPEX",
+      "formula": "-({BatteryCapex} + {BOPCapex} + {GridCapex} + {DevCapex}) * F1",
+      "group": "InvCF",
+      "type": "flow",
+      "sign": "negative"
+    },
+
+    {
+      "id": 50,
+      "name": "DebtDrawdown",
+      "formula": "M1.2",
+      "group": "FinCF",
+      "type": "flow"
+    },
+    {
+      "id": 51,
+      "name": "DebtRepayment",
+      "formula": "-M1.4",
+      "group": "FinCF",
+      "type": "flow",
+      "sign": "negative"
+    },
+    {
+      "id": 52,
+      "name": "EquityInjection",
+      "formula": "R41 - R50",
+      "group": "FinCF",
+      "type": "flow"
+    },
+    {
+      "id": 53,
+      "name": "Dividends",
+      "formula": "-MAX(0, R40 + R16 + R51) * F2",
+      "group": "FinCF",
+      "type": "flow",
+      "sign": "negative"
+    },
+
+    {
+      "id": 60,
+      "name": "NetCashFlow",
+      "formula": "R40 + R41 + R50 + R51 + R52 + R53",
+      "group": "FinCF",
+      "type": "flow"
+    },
+    {
+      "id": 61,
+      "name": "CashBalance",
+      "formula": "CUMSUM(R60)",
+      "group": "FinCF",
+      "type": "stock"
+    },
+
+    {
+      "id": 182,
+      "name": "Cash",
+      "formula": "R61",
+      "group": "Assets",
+      "type": "stock"
+    },
+    {
+      "id": 183,
+      "name": "PPE",
+      "formula": "R84",
+      "group": "Assets",
+      "type": "stock"
+    },
+    {
+      "id": 185,
+      "name": "TotalAssets",
+      "formula": "R182 + R183",
+      "group": "Assets",
+      "type": "stock"
+    },
+
+    {
+      "id": 190,
+      "name": "DebtOutstanding",
+      "formula": "M1.5",
+      "group": "Liabilities",
+      "type": "stock"
+    },
+    {
+      "id": 191,
+      "name": "TotalLiabilities",
+      "formula": "R190",
+      "group": "Liabilities",
+      "type": "stock"
+    },
+
+    {
+      "id": 192,
+      "name": "ShareCapital",
+      "formula": "CUMSUM(R52)",
+      "group": "Equity",
+      "type": "stock"
+    },
+    {
+      "id": 193,
+      "name": "RetainedEarnings",
+      "formula": "CUMSUM(R19 + R53)",
+      "group": "Equity",
+      "type": "stock"
+    },
+    {
+      "id": 194,
+      "name": "TotalEquity",
+      "formula": "R192 + R193",
+      "group": "Equity",
+      "type": "stock"
+    },
+    {
+      "id": 195,
+      "name": "BalanceCheck",
+      "formula": "R185 - R191 - R194",
+      "group": "Equity",
+      "type": "stock"
+    },
+
+    {
+      "id": 125,
+      "name": "EquityCashFlows",
+      "formula": "R52 + R53",
+      "group": "Returns",
+      "type": "flow"
+    },
+    {
+      "id": 118,
+      "name": "DSCR",
+      "formula": "IF(M1.4 > 0, (R40 + R16) / (M1.4 + M1.3), 0)",
+      "group": "Returns",
+      "type": "ratio"
+    }
+  ],
+
+  "modules": [
+    {
+      "id": 1,
+      "name": "SeniorDebt",
+      "template": "iterative_debt_sizing",
+      "inputs": {
+        "cfadsRef": "R40",
+        "capexRef": "R41",
+        "gearingRef": "{DebtGearing}",
+        "interestRateRef": "{DebtRate}",
+        "targetDSCR": "{TargetDSCR}",
+        "debtPeriodFlag": "F8"
+      }
+    }
+  ],
+
+  "validation": {
+    "balanceSheetTolerance": 0.01,
+    "covenants": [
+      { "name": "Minimum DSCR", "ref": "R118", "rule": ">=", "threshold": 1.2 }
+    ]
+  }
+}

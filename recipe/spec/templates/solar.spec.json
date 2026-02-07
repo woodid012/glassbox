@@ -1,0 +1,527 @@
+{
+  "_comment": "Solar Farm Model Spec - A Claude-friendly template for project finance models",
+
+  "project": {
+    "name": "100 MW Solar Farm",
+    "type": "Solar",
+    "currency": "AUD",
+    "financialYearEnd": 6
+  },
+
+  "timeline": {
+    "start": "Apr 2027",
+    "end": "Mar 2057"
+  },
+
+  "keyPeriods": [
+    {
+      "name": "Construction",
+      "flag": "F1",
+      "duration": "12 months",
+      "start": "timeline.start"
+    },
+    {
+      "name": "Operations",
+      "flag": "F2",
+      "duration": "300 months",
+      "start": "after F1",
+      "isGroup": true,
+      "children": ["F3", "F4"]
+    },
+    {
+      "name": "PPA Period",
+      "flag": "F3",
+      "duration": "180 months",
+      "start": "after F1",
+      "parent": "F2"
+    },
+    {
+      "name": "Merchant Period",
+      "flag": "F4",
+      "duration": "120 months",
+      "start": "after F3",
+      "parent": "F2"
+    },
+    {
+      "name": "Debt Service Period",
+      "flag": "F8",
+      "duration": "216 months",
+      "start": "after F1"
+    }
+  ],
+
+  "indices": [
+    {
+      "id": 2,
+      "name": "CPI (2.5%)",
+      "rate": 2.5,
+      "startYear": 2026
+    }
+  ],
+
+  "constants": [
+    { "id": 101, "name": "Capacity (MW)", "value": 100, "unit": "MW" },
+    { "id": 102, "name": "Capacity Factor (%)", "value": 28, "unit": "%" },
+    { "id": 103, "name": "Degradation (%/yr)", "value": 0.5, "unit": "%" },
+    { "id": 104, "name": "Capex per MW ($M)", "value": 1.2, "unit": "$ M/MW" },
+    { "id": 105, "name": "O&M per MW ($k/yr)", "value": 15, "unit": "$ k/MW/yr" },
+    { "id": 106, "name": "PPA Price ($/MWh)", "value": 55, "unit": "$/MWh" },
+    { "id": 107, "name": "Merchant Price ($/MWh)", "value": 45, "unit": "$/MWh" },
+    { "id": 108, "name": "Debt Gearing (%)", "value": 70, "unit": "%" },
+    { "id": 109, "name": "Debt Interest (%)", "value": 6.5, "unit": "%" },
+    { "id": 110, "name": "Target DSCR", "value": 1.35, "unit": "x" },
+    { "id": 111, "name": "Tax Rate (%)", "value": 30, "unit": "%" },
+    { "id": 112, "name": "Asset Life (years)", "value": 25, "unit": "years" },
+    { "id": 113, "name": "Insurance (% of CAPEX)", "value": 0.5, "unit": "%" }
+  ],
+
+  "inputGroups": [
+    {
+      "id": 1,
+      "name": "CAPEX",
+      "mode": "values",
+      "frequency": "M",
+      "linkedPeriod": "F1"
+    },
+    {
+      "id": 2,
+      "name": "OPEX",
+      "mode": "series",
+      "frequency": "M",
+      "linkedPeriod": "F2"
+    }
+  ],
+
+  "inputs": [
+    {
+      "id": 1,
+      "name": "EPC Contract",
+      "group": "CAPEX",
+      "value": 120,
+      "unit": "$ M",
+      "_comment": "C1.1 * C1.4 = 100 MW * $1.2M/MW"
+    },
+    {
+      "id": 10,
+      "name": "O&M Costs",
+      "group": "OPEX",
+      "value": 1.5,
+      "unit": "$ M/yr",
+      "_comment": "C1.1 * C1.5 / 1000 = 100 MW * $15k/MW/yr"
+    }
+  ],
+
+  "calculationGroups": [
+    { "id": 1, "name": "Generation", "tab": "Revenue" },
+    { "id": 2, "name": "Revenue", "tab": "Revenue" },
+    { "id": 3, "name": "Operating Costs", "tab": "P&L" },
+    { "id": 4, "name": "EBITDA", "tab": "P&L" },
+    { "id": 5, "name": "D&A", "tab": "P&L" },
+    { "id": 6, "name": "Finance Costs", "tab": "P&L" },
+    { "id": 7, "name": "Tax", "tab": "P&L" },
+    { "id": 8, "name": "Net Income", "tab": "P&L" },
+    { "id": 10, "name": "Operating Cash Flow", "tab": "Cash Flow" },
+    { "id": 11, "name": "Investing Cash Flow", "tab": "Cash Flow" },
+    { "id": 12, "name": "Financing Cash Flow", "tab": "Cash Flow" },
+    { "id": 20, "name": "Assets", "tab": "Balance Sheet" },
+    { "id": 21, "name": "Liabilities", "tab": "Balance Sheet" },
+    { "id": 22, "name": "Equity", "tab": "Balance Sheet" },
+    { "id": 30, "name": "Debt Schedule", "tab": "Funding" },
+    { "id": 31, "name": "Equity Schedule", "tab": "Funding" },
+    { "id": 40, "name": "Returns", "tab": "Returns" }
+  ],
+
+  "calculations": [
+    {
+      "_comment": "=== GENERATION ===",
+      "id": 1,
+      "name": "Hours in Period",
+      "formula": "T.HiY / T.MiY",
+      "group": "Generation",
+      "type": "flow"
+    },
+    {
+      "id": 2,
+      "name": "Degradation Factor",
+      "formula": "MAX(0, 1 - C1.3 / 100 * (CUMSUM(F2) - 1) / T.MiY)",
+      "group": "Generation",
+      "type": "flow",
+      "_comment": "Starts at 1, reduces by 0.5%/yr"
+    },
+    {
+      "id": 3,
+      "name": "Generation (MWh)",
+      "formula": "C1.1 * 1000 * C1.2 / 100 * R1 * R2 * F2",
+      "group": "Generation",
+      "type": "flow",
+      "_comment": "Capacity * CF * hours * degradation"
+    },
+
+    {
+      "_comment": "=== REVENUE ===",
+      "id": 4,
+      "name": "PPA Revenue",
+      "formula": "R3 * C1.6 / 10^6 * F3",
+      "group": "Revenue",
+      "type": "flow",
+      "sign": "positive",
+      "financialStatement": "pnl"
+    },
+    {
+      "id": 5,
+      "name": "Merchant Revenue",
+      "formula": "R3 * C1.7 / 10^6 * F4",
+      "group": "Revenue",
+      "type": "flow",
+      "sign": "positive",
+      "financialStatement": "pnl"
+    },
+    {
+      "id": 10,
+      "name": "Total Revenue",
+      "formula": "R4 + R5",
+      "group": "Revenue",
+      "type": "flow",
+      "sign": "positive",
+      "financialStatement": "pnl"
+    },
+
+    {
+      "_comment": "=== OPERATING COSTS ===",
+      "id": 11,
+      "name": "O&M Expense",
+      "formula": "-S1.10 / T.MiY * F2 * I2",
+      "group": "Operating Costs",
+      "type": "flow",
+      "sign": "negative",
+      "financialStatement": "pnl",
+      "_comment": "Annual O&M spread monthly, escalated by CPI"
+    },
+    {
+      "id": 12,
+      "name": "Insurance",
+      "formula": "-CUMSUM(V1.1 * F1) * C1.13 / 100 / T.MiY * F2",
+      "group": "Operating Costs",
+      "type": "flow",
+      "sign": "negative",
+      "financialStatement": "pnl"
+    },
+    {
+      "id": 15,
+      "name": "Total OPEX",
+      "formula": "R11 + R12",
+      "group": "Operating Costs",
+      "type": "flow",
+      "sign": "negative",
+      "financialStatement": "pnl"
+    },
+
+    {
+      "_comment": "=== EBITDA ===",
+      "id": 13,
+      "name": "EBITDA",
+      "formula": "R10 + R15",
+      "group": "EBITDA",
+      "type": "flow",
+      "financialStatement": "pnl"
+    },
+
+    {
+      "_comment": "=== DEPRECIATION (Ledger Pattern) ===",
+      "id": 80,
+      "name": "D&A Opening",
+      "formula": "MAX(0, (CUMSUM(R81) - R81) - CUMSUM(V1.1 * F1) / C1.12 / T.MiY * (CUMSUM(F2) - F2))",
+      "group": "D&A",
+      "type": "stock_start"
+    },
+    {
+      "id": 81,
+      "name": "D&A Addition",
+      "formula": "CUMSUM(V1.1 * F1) * F2.Start",
+      "group": "D&A",
+      "type": "flow",
+      "_comment": "One-time at COD"
+    },
+    {
+      "id": 82,
+      "name": "D&A Charge",
+      "formula": "-MIN(R80 + R81, CUMSUM(V1.1 * F1) / C1.12 / T.MiY) * F2",
+      "group": "D&A",
+      "type": "flow",
+      "sign": "negative",
+      "financialStatement": "pnl"
+    },
+    {
+      "id": 83,
+      "name": "Accumulated D&A",
+      "formula": "CUMSUM(-R82)",
+      "group": "D&A",
+      "type": "stock"
+    },
+    {
+      "id": 84,
+      "name": "D&A Closing NBV",
+      "formula": "MAX(0, CUMSUM(R81) - CUMSUM(V1.1 * F1) / C1.12 / T.MiY * CUMSUM(F2))",
+      "group": "D&A",
+      "type": "stock"
+    },
+
+    {
+      "_comment": "=== EBIT ===",
+      "id": 14,
+      "name": "EBIT",
+      "formula": "R13 + R82",
+      "group": "D&A",
+      "type": "flow",
+      "financialStatement": "pnl"
+    },
+
+    {
+      "_comment": "=== FINANCE COSTS ===",
+      "id": 16,
+      "name": "Interest Expense",
+      "formula": "-M1.3",
+      "group": "Finance Costs",
+      "type": "flow",
+      "sign": "negative",
+      "financialStatement": "pnl",
+      "_comment": "From debt module"
+    },
+
+    {
+      "_comment": "=== TAX ===",
+      "id": 17,
+      "name": "EBT",
+      "formula": "R14 + R16",
+      "group": "Tax",
+      "type": "flow",
+      "financialStatement": "pnl"
+    },
+    {
+      "id": 18,
+      "name": "Tax Expense",
+      "formula": "-MAX(0, R17) * C1.11 / 100",
+      "group": "Tax",
+      "type": "flow",
+      "sign": "negative",
+      "financialStatement": "pnl",
+      "_comment": "Simple tax - no loss carry forward"
+    },
+
+    {
+      "_comment": "=== NET INCOME ===",
+      "id": 19,
+      "name": "NPAT",
+      "formula": "R17 + R18",
+      "group": "Net Income",
+      "type": "flow",
+      "financialStatement": "pnl"
+    },
+
+    {
+      "_comment": "=== OPERATING CASH FLOW ===",
+      "id": 40,
+      "name": "Cash from Operations",
+      "formula": "R19 - R82",
+      "group": "Operating Cash Flow",
+      "type": "flow",
+      "financialStatement": "cf",
+      "_comment": "NPAT + D&A (add back non-cash)"
+    },
+
+    {
+      "_comment": "=== INVESTING CASH FLOW ===",
+      "id": 41,
+      "name": "CAPEX",
+      "formula": "-V1.1 * F1",
+      "group": "Investing Cash Flow",
+      "type": "flow",
+      "sign": "negative",
+      "financialStatement": "cf"
+    },
+
+    {
+      "_comment": "=== FINANCING CASH FLOW ===",
+      "id": 50,
+      "name": "Debt Drawdown",
+      "formula": "M1.2",
+      "group": "Financing Cash Flow",
+      "type": "flow",
+      "financialStatement": "cf"
+    },
+    {
+      "id": 51,
+      "name": "Debt Repayment",
+      "formula": "-M1.4",
+      "group": "Financing Cash Flow",
+      "type": "flow",
+      "sign": "negative",
+      "financialStatement": "cf"
+    },
+    {
+      "id": 52,
+      "name": "Equity Injection",
+      "formula": "R41 - R50",
+      "group": "Financing Cash Flow",
+      "type": "flow",
+      "financialStatement": "cf",
+      "_comment": "CAPEX funded by equity (residual after debt)"
+    },
+    {
+      "id": 53,
+      "name": "Dividends",
+      "formula": "-MAX(0, R40 + R16 + R51) * F2",
+      "group": "Financing Cash Flow",
+      "type": "flow",
+      "sign": "negative",
+      "financialStatement": "cf",
+      "_comment": "Distribute operating CF after interest and principal"
+    },
+
+    {
+      "_comment": "=== NET CASH FLOW ===",
+      "id": 60,
+      "name": "Net Cash Flow",
+      "formula": "R40 + R41 + R50 + R51 + R52 + R53",
+      "group": "Financing Cash Flow",
+      "type": "flow",
+      "financialStatement": "cf"
+    },
+    {
+      "id": 61,
+      "name": "Cash Balance",
+      "formula": "CUMSUM(R60)",
+      "group": "Financing Cash Flow",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+
+    {
+      "_comment": "=== BALANCE SHEET - ASSETS ===",
+      "id": 182,
+      "name": "Cash",
+      "formula": "R61",
+      "group": "Assets",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+    {
+      "id": 183,
+      "name": "PP&E (Net)",
+      "formula": "R84",
+      "group": "Assets",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+    {
+      "id": 185,
+      "name": "Total Assets",
+      "formula": "R182 + R183",
+      "group": "Assets",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+
+    {
+      "_comment": "=== BALANCE SHEET - LIABILITIES ===",
+      "id": 190,
+      "name": "Debt Outstanding",
+      "formula": "M1.5",
+      "group": "Liabilities",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+    {
+      "id": 191,
+      "name": "Total Liabilities",
+      "formula": "R190",
+      "group": "Liabilities",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+
+    {
+      "_comment": "=== BALANCE SHEET - EQUITY ===",
+      "id": 192,
+      "name": "Share Capital",
+      "formula": "CUMSUM(R52)",
+      "group": "Equity",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+    {
+      "id": 193,
+      "name": "Retained Earnings",
+      "formula": "CUMSUM(R19 + R53)",
+      "group": "Equity",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+    {
+      "id": 194,
+      "name": "Total Equity",
+      "formula": "R192 + R193",
+      "group": "Equity",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+
+    {
+      "_comment": "=== BALANCE CHECK ===",
+      "id": 195,
+      "name": "Balance Check (should be 0)",
+      "formula": "R185 - R191 - R194",
+      "group": "Equity",
+      "type": "stock",
+      "financialStatement": "bs"
+    },
+
+    {
+      "_comment": "=== RETURNS ===",
+      "id": 125,
+      "name": "Equity Cash Flows",
+      "formula": "R52 + R53",
+      "group": "Returns",
+      "type": "flow",
+      "financialStatement": "returns",
+      "_comment": "Injection (negative) + Dividends (positive) for IRR calc"
+    },
+    {
+      "id": 118,
+      "name": "DSCR",
+      "formula": "IF(M1.4 > 0, (R40 + R16) / (M1.4 + M1.3), 0)",
+      "group": "Returns",
+      "type": "ratio",
+      "_comment": "CFADS / Debt Service"
+    }
+  ],
+
+  "modules": [
+    {
+      "id": 1,
+      "name": "Senior Debt",
+      "template": "iterative_debt_sizing",
+      "inputs": {
+        "cfadsRef": "R40",
+        "capexRef": "R41",
+        "gearingRef": "C1.8",
+        "interestRateRef": "C1.9",
+        "targetDSCR": "C1.10",
+        "debtPeriodFlag": "F8"
+      },
+      "_comment": "Debt sized to target DSCR with sculpted repayments"
+    }
+  ],
+
+  "validation": {
+    "balanceSheetTolerance": 0.01,
+    "covenants": [
+      {
+        "name": "Minimum DSCR",
+        "ref": "R118",
+        "rule": ">=",
+        "threshold": 1.2
+      }
+    ]
+  }
+}

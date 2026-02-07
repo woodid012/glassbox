@@ -130,17 +130,24 @@
     {
       "id": 9,
       "name": "Revenue Periods",
+      "periods": 300,
+      "linkedToPeriodId": null,
+      "linkOffset": {
+        "value": 0,
+        "unit": "days"
+      },
+      "linkToStart": true,
+      "linkToAll": false,
       "startYear": 2028,
       "startMonth": 10,
       "endYear": 2053,
       "endMonth": 9,
-      "periods": 300,
-      "startLinkedToPeriodId": null,
+      "startLinkedToPeriodId": "default",
       "startLinkToEnd": false,
-      "startLinkOffset": null,
-      "endLinkedToPeriodId": null,
-      "endLinkToEnd": true,
-      "endLinkOffset": null,
+      "startLinkOffset": {
+        "value": 0,
+        "unit": "months"
+      },
       "isGroup": true,
       "childIds": [
         6,
@@ -156,7 +163,7 @@
         "value": 0,
         "unit": "days"
       },
-      "linkToStart": true,
+      "linkToStart": false,
       "linkToAll": false,
       "startYear": 2028,
       "startMonth": 10,
@@ -196,11 +203,24 @@
     {
       "id": 10,
       "name": "Debt Facilities",
+      "periods": 234,
+      "linkedToPeriodId": null,
+      "linkOffset": {
+        "value": 0,
+        "unit": "days"
+      },
+      "linkToStart": true,
+      "linkToAll": false,
       "startYear": 2027,
       "startMonth": 4,
       "endYear": 2046,
       "endMonth": 9,
-      "periods": 234,
+      "startLinkedToPeriodId": "default",
+      "startLinkToEnd": false,
+      "startLinkOffset": {
+        "value": 0,
+        "unit": "months"
+      },
       "isGroup": true,
       "childIds": [
         11,
@@ -216,7 +236,7 @@
         "value": 0,
         "unit": "days"
       },
-      "linkToStart": true,
+      "linkToStart": false,
       "linkToAll": false,
       "startYear": 2027,
       "startMonth": 4,
@@ -233,7 +253,6 @@
     {
       "id": 8,
       "name": "Ops Debt",
-      "periodsFromRef": "C1.27",
       "periods": 216,
       "linkedToPeriodId": null,
       "linkOffset": {
@@ -252,6 +271,7 @@
         "value": 1,
         "unit": "months"
       },
+      "periodsFromRef": "C1.27",
       "parentGroupId": 10
     },
     {
@@ -263,13 +283,13 @@
         "value": 0,
         "unit": "days"
       },
-      "linkToStart": false,
+      "linkToStart": true,
       "linkToAll": false,
       "startYear": 2042,
       "startMonth": 10,
       "endYear": 2045,
       "endMonth": 9,
-      "startLinkedToPeriodId": null,
+      "startLinkedToPeriodId": "default",
       "startLinkToEnd": false,
       "startLinkOffset": {
         "value": 0,
@@ -280,37 +300,89 @@
       "id": 13,
       "name": "Refi 1 (Y5)",
       "periods": 1,
+      "linkedToPeriodId": null,
+      "linkOffset": {
+        "value": 0,
+        "unit": "days"
+      },
+      "linkToStart": true,
+      "linkToAll": false,
       "startYear": 2032,
       "startMonth": 4,
       "endYear": 2032,
-      "endMonth": 4
+      "endMonth": 4,
+      "startLinkedToPeriodId": "default",
+      "startLinkToEnd": false,
+      "startLinkOffset": {
+        "value": 0,
+        "unit": "months"
+      }
     },
     {
       "id": 14,
       "name": "Refi 2 (Y10)",
       "periods": 1,
+      "linkedToPeriodId": null,
+      "linkOffset": {
+        "value": 0,
+        "unit": "days"
+      },
+      "linkToStart": true,
+      "linkToAll": false,
       "startYear": 2037,
       "startMonth": 4,
       "endYear": 2037,
-      "endMonth": 4
+      "endMonth": 4,
+      "startLinkedToPeriodId": "default",
+      "startLinkToEnd": false,
+      "startLinkOffset": {
+        "value": 0,
+        "unit": "months"
+      }
     },
     {
       "id": 15,
       "name": "Refi 3 (Y15)",
       "periods": 1,
+      "linkedToPeriodId": null,
+      "linkOffset": {
+        "value": 0,
+        "unit": "days"
+      },
+      "linkToStart": true,
+      "linkToAll": false,
       "startYear": 2042,
       "startMonth": 4,
       "endYear": 2042,
-      "endMonth": 4
+      "endMonth": 4,
+      "startLinkedToPeriodId": "default",
+      "startLinkToEnd": false,
+      "startLinkOffset": {
+        "value": 0,
+        "unit": "months"
+      }
     },
     {
       "id": 16,
       "name": "Refi 4 (Y20)",
       "periods": 1,
+      "linkedToPeriodId": null,
+      "linkOffset": {
+        "value": 0,
+        "unit": "days"
+      },
+      "linkToStart": true,
+      "linkToAll": false,
       "startYear": 2047,
       "startMonth": 4,
       "endYear": 2047,
-      "endMonth": 4
+      "endMonth": 4,
+      "startLinkedToPeriodId": "default",
+      "startLinkToEnd": false,
+      "startLinkOffset": {
+        "value": 0,
+        "unit": "months"
+      }
     }
   ],
   "indices": [
@@ -328,15 +400,14 @@
       "id": 100,
       "refIndex": 1,
       "name": "Constants",
-      "periods": 396,
-      "linkedKeyPeriodId": null,
+      "periods": 0,
       "frequency": "Y",
       "groupType": "constant",
+      "entryMode": "constant",
       "startYear": 2027,
       "startMonth": 4,
       "endYear": 2053,
       "endMonth": 9,
-      "entryMode": "constant",
       "lookupStartYear": 2027,
       "lookupStartMonth": 4,
       "lookupEndYear": 2060,
@@ -380,10 +451,10 @@
       "id": 1,
       "refIndex": 1,
       "name": "CAPEX",
-      "periods": 18,
-      "linkedKeyPeriodId": "1",
+      "periods": 0,
       "frequency": "M",
       "groupType": "combined",
+      "linkedKeyPeriodId": "1",
       "startYear": 2027,
       "startMonth": 4,
       "endYear": 2028,
@@ -391,22 +462,21 @@
       "lookupStartYear": 2027,
       "lookupStartMonth": 4,
       "lookupEndYear": 2028,
-      "lookupEndMonth": 9,
-      "subgroups": []
+      "lookupEndMonth": 9
     },
     {
       "id": 2,
       "refIndex": 1,
       "name": "OPEX",
-      "periods": 300,
-      "linkedKeyPeriodId": "2",
+      "periods": 0,
       "frequency": "Y",
       "groupType": "combined",
+      "linkedKeyPeriodId": "2",
+      "entryMode": "series",
       "startYear": 2028,
       "startMonth": 10,
       "endYear": 2053,
       "endMonth": 9,
-      "entryMode": "series",
       "lookupStartYear": 2028,
       "lookupStartMonth": 10,
       "lookupEndYear": 2053,
@@ -416,15 +486,15 @@
       "id": 3,
       "refIndex": 1,
       "name": "Market Prices",
-      "periods": 396,
-      "linkedKeyPeriodId": "custom",
+      "periods": 0,
       "frequency": "Y",
       "groupType": "combined",
+      "linkedKeyPeriodId": "custom",
+      "entryMode": "lookup",
       "startYear": 2027,
       "startMonth": 4,
       "endYear": 2055,
       "endMonth": 12,
-      "entryMode": "lookup",
       "lookupStartYear": 2027,
       "lookupStartMonth": 4,
       "lookupEndYear": 2060,
@@ -453,15 +523,15 @@
       "id": 6,
       "refIndex": 2,
       "name": "Interest Rates",
-      "periods": 57,
-      "linkedKeyPeriodId": "custom",
+      "periods": 0,
       "frequency": "Q",
       "groupType": "combined",
+      "linkedKeyPeriodId": "custom",
+      "entryMode": "lookup",
       "startYear": 2026,
       "startMonth": 1,
       "endYear": 2030,
       "endMonth": 9,
-      "entryMode": "lookup",
       "lookupStartYear": 2026,
       "lookupStartMonth": 1,
       "lookupEndYear": 2060,
@@ -474,37 +544,37 @@
       "id": 7,
       "refIndex": 3,
       "name": "Performance Factors",
-      "periods": 300,
-      "linkedKeyPeriodId": "custom",
+      "periods": 0,
       "frequency": "Y",
       "groupType": "combined",
+      "linkedKeyPeriodId": "custom",
+      "entryMode": "lookup",
       "startYear": 2028,
       "startMonth": 10,
       "endYear": 2045,
       "endMonth": 12,
-      "entryMode": "lookup",
       "lookupStartYear": 2028,
       "lookupStartMonth": 10,
       "lookupEndYear": 2053,
       "lookupEndMonth": 9,
-      "showSelected": false,
       "selectedInputIds": {
         "root": 32
-      }
+      },
+      "showSelected": false
     },
     {
       "id": 8,
       "refIndex": 2,
       "name": "Maintenance",
-      "periods": 36,
-      "linkedKeyPeriodId": "12",
+      "periods": 0,
       "frequency": "Q",
       "groupType": "combined",
+      "linkedKeyPeriodId": "12",
+      "entryMode": "series",
       "startYear": 2042,
       "startMonth": 10,
       "endYear": 2045,
       "endMonth": 9,
-      "entryMode": "series",
       "lookupStartYear": 2042,
       "lookupStartMonth": 10,
       "lookupEndYear": 2045,
@@ -514,108 +584,97 @@
       "id": 101,
       "refIndex": 3,
       "name": "Agency Fee",
+      "periods": 0,
+      "frequency": "M",
+      "groupType": "combined",
+      "linkedKeyPeriodId": "10",
+      "entryMode": "series",
       "startYear": 2027,
       "startMonth": 4,
       "endYear": 2048,
       "endMonth": 9,
-      "periods": 258,
-      "linkedKeyPeriodId": "10",
-      "groupType": "combined",
       "lookupStartYear": 2027,
       "lookupStartMonth": 4,
       "lookupEndYear": 2048,
       "lookupEndMonth": 9,
-      "selectedInputIds": {},
-      "entryMode": "series"
+      "selectedInputIds": {}
     }
   ],
   "inputGlass": [
     {
       "id": 100,
       "groupId": 100,
+      "name": "Capacity (MW)",
       "subgroupId": 1,
       "inputId": "operations.capacity_mw",
-      "name": "Capacity (MW)",
       "mode": "constant",
       "value": 70,
-      "values": {},
       "formulas": {},
-      "unit": "MW",
-      "refName": "PowerMW"
+      "unit": "MW"
     },
     {
       "id": 101,
       "groupId": 100,
+      "name": "Storage Hours",
       "subgroupId": 1,
       "inputId": "operations.storage_hours",
-      "name": "Storage Hours",
       "mode": "constant",
       "value": 3,
-      "values": {},
       "formulas": {},
-      "unit": "hrs",
-      "refName": "StorageHours"
+      "unit": "hrs"
     },
     {
       "id": 102,
       "groupId": 100,
+      "name": "Energy Storage (MWh)",
       "subgroupId": 1,
       "inputId": "operations.energy_storage_mwh",
-      "name": "Energy Storage (MWh)",
       "mode": "constant",
       "value": 210,
-      "values": {},
       "formulas": {},
-      "unit": "MWh",
-      "refName": "StorageMWh"
+      "unit": "MWh"
     },
     {
       "id": 103,
       "groupId": 100,
+      "name": "Cycles Per Day",
       "subgroupId": 1,
       "inputId": "operations.cycles_per_day",
-      "name": "Cycles Per Day",
       "mode": "constant",
       "value": 1,
-      "values": {},
-      "formulas": {},
-      "unit": "",
-      "refName": "CyclesPerDay"
+      "formulas": {}
     },
     {
       "id": 104,
       "groupId": 100,
+      "name": "Annual Energy (MWh)",
       "subgroupId": 1,
       "inputId": "operations.annual_energy_mwh",
-      "name": "Annual Energy (MWh)",
       "mode": "constant",
       "value": 76650,
-      "values": {},
       "formulas": {},
       "unit": "MWh",
-      "spreadMethod": "lookup",
-      "refName": "AnnualMWh"
+      "spreadMethod": "lookup"
     },
     {
       "id": 1,
       "groupId": 1,
-      "inputId": "capex.epc_bess",
       "name": "EPC - BESS",
+      "inputId": "capex.epc_bess",
       "mode": "values",
       "values": {
         "0": 27.52,
         "17": 41.28
       },
       "formulas": {},
-      "total": 68.8,
       "unit": "$ M",
-      "refName": "EpcBess"
+      "total": 68.8
     },
     {
       "id": 2,
       "groupId": 1,
-      "inputId": "capex.epc_bop",
       "name": "EPC - BOP",
+      "inputId": "capex.epc_bop",
       "mode": "values",
       "values": {
         "0": 1.6667,
@@ -638,15 +697,14 @@
         "17": 1.6667
       },
       "formulas": {},
-      "total": 30,
       "unit": "$ M",
-      "refName": "EpcBop"
+      "total": 30
     },
     {
       "id": 3,
       "groupId": 1,
-      "inputId": "capex.connection",
       "name": "Connection Cost",
+      "inputId": "capex.connection",
       "mode": "values",
       "values": {
         "0": 0.2222,
@@ -669,15 +727,14 @@
         "17": 0.2222
       },
       "formulas": {},
-      "total": 4,
       "unit": "$ M",
-      "refName": "ConnectionCost"
+      "total": 4
     },
     {
       "id": 4,
       "groupId": 1,
-      "inputId": "capex.contingency_epc",
       "name": "Contingency (EPC)",
+      "inputId": "capex.contingency_epc",
       "mode": "values",
       "values": {
         "0": 0.5711,
@@ -700,100 +757,93 @@
         "17": 0.5711
       },
       "formulas": {},
-      "total": 10.280000000000001,
       "unit": "$ M",
-      "refName": "ContingencyEpc"
+      "total": 10.280000000000001
     },
     {
       "id": 5,
       "groupId": 1,
-      "inputId": "capex.demolition",
       "name": "Demolition",
+      "inputId": "capex.demolition",
       "mode": "values",
       "values": {
         "0": 1
       },
       "formulas": {},
-      "total": 1,
       "unit": "$ M",
-      "refName": "Demolition"
+      "total": 1
     },
     {
       "id": 6,
       "groupId": 1,
-      "inputId": "capex.devex",
       "name": "Development Costs to FC",
+      "inputId": "capex.devex",
       "mode": "values",
       "values": {
         "0": 4.0629
       },
       "formulas": {},
-      "total": 4.062895,
       "unit": "$ M",
-      "refName": "DevCostsToFC"
+      "total": 4.062895
     },
     {
       "id": 7,
       "groupId": 1,
-      "inputId": "capex.dev_fee",
       "name": "Development Fee",
+      "inputId": "capex.dev_fee",
       "mode": "values",
       "values": {
         "0": 7,
         "16": 0.7
       },
       "formulas": {},
-      "total": 7.7,
       "unit": "$ M",
-      "refName": "DevFee"
+      "total": 7.7
     },
     {
       "id": 8,
       "groupId": 1,
-      "inputId": "capex.initial_entry",
       "name": "Initial Entry Costs",
+      "inputId": "capex.initial_entry",
       "mode": "values",
       "values": {
         "0": 5.12
       },
       "formulas": {},
-      "total": 5.12,
       "unit": "$ M",
-      "refName": "InitialEntry"
+      "total": 5.12
     },
     {
       "id": 9,
       "groupId": 1,
-      "inputId": "capex.land_transaction",
       "name": "Land Transaction",
+      "inputId": "capex.land_transaction",
       "mode": "values",
       "values": {
         "0": 0.08
       },
       "formulas": {},
-      "total": 0.08,
       "unit": "$ M",
-      "refName": "LandTransaction"
+      "total": 0.08
     },
     {
       "id": 10,
       "groupId": 1,
-      "inputId": "capex.other_construction",
       "name": "Other Construction",
+      "inputId": "capex.other_construction",
       "mode": "values",
       "values": {
         "0": 4
       },
       "formulas": {},
-      "total": 4,
       "unit": "$ M",
-      "refName": "OtherConstruction"
+      "total": 4
     },
     {
       "id": 11,
       "groupId": 1,
-      "inputId": "capex.construction_mgmt",
       "name": "Construction Management",
+      "inputId": "capex.construction_mgmt",
       "mode": "values",
       "values": {
         "0": 0.0556,
@@ -816,134 +866,123 @@
         "17": 0.0556
       },
       "formulas": {},
-      "total": 1,
       "unit": "$ M",
-      "refName": "ConstructionMgmt"
+      "total": 1
     },
     {
       "id": 12,
       "groupId": 1,
-      "inputId": "capex.construction_insurance",
       "name": "Construction Insurance",
+      "inputId": "capex.construction_insurance",
       "mode": "values",
       "values": {
         "0": 1
       },
       "formulas": {},
-      "total": 1,
       "unit": "$ M",
-      "refName": "ConstructionInsurance"
+      "total": 1
     },
     {
       "id": 13,
       "groupId": 1,
-      "inputId": "capex.land_lease_construction",
       "name": "Land Lease (Construction)",
+      "inputId": "capex.land_lease_construction",
       "mode": "values",
       "values": {
         "0": 0.3353
       },
       "formulas": {},
-      "total": 0.33534,
       "unit": "$ M",
-      "refName": "LandLeaseConstr"
+      "total": 0.33534
     },
     {
       "id": 14,
       "groupId": 2,
-      "inputId": "opex.o&m_msa",
       "name": "O&M MSA",
+      "inputId": "opex.o&m_msa",
       "mode": "series",
       "value": 0.7,
       "timePeriod": "Y",
-      "escalation": "CPI",
-      "refName": "OmMsa"
+      "escalation": "CPI"
     },
     {
       "id": 15,
       "groupId": 2,
-      "inputId": "opex.land_lease",
       "name": "Land Lease",
+      "inputId": "opex.land_lease",
       "mode": "series",
       "value": 0.33534,
       "timePeriod": "Y",
-      "escalation": "CPI",
-      "refName": "LandLease"
+      "escalation": "CPI"
     },
     {
       "id": 16,
       "groupId": 2,
-      "inputId": "opex.connection_opex",
       "name": "Connection Opex",
+      "inputId": "opex.connection_opex",
       "mode": "series",
       "value": 0.05,
       "timePeriod": "Y",
-      "escalation": "CPI",
-      "refName": "ConnectionOpex"
+      "escalation": "CPI"
     },
     {
       "id": 17,
       "groupId": 2,
-      "inputId": "opex.spv_costs",
       "name": "SPV costs",
+      "inputId": "opex.spv_costs",
       "mode": "series",
       "value": 0.1,
       "timePeriod": "Y",
-      "escalation": "CPI",
-      "refName": "SpvCosts"
+      "escalation": "CPI"
     },
     {
       "id": 18,
       "groupId": 2,
-      "inputId": "opex.asset_management_fees",
       "name": "Asset management fees",
+      "inputId": "opex.asset_management_fees",
       "mode": "series",
       "value": 0.15,
       "timePeriod": "Y",
-      "escalation": "CPI",
-      "refName": "AssetMgmtFees"
+      "escalation": "CPI"
     },
     {
       "id": 19,
       "groupId": 2,
-      "inputId": "opex.maintenance_capex_and_additional_service_o&m_charges",
       "name": "Maintenance capex and additional service O&M charges",
+      "inputId": "opex.maintenance_capex_and_additional_service_o&m_charges",
       "mode": "series",
       "value": 0.45,
       "timePeriod": "Y",
-      "escalation": "CPI",
-      "refName": "MaintCapexOm"
+      "escalation": "CPI"
     },
     {
       "id": 20,
       "groupId": 2,
-      "inputId": "opex.insurance_yrs_1_2",
       "name": "Insurance (yrs 1-2)",
+      "inputId": "opex.insurance_yrs_1_2",
       "mode": "series",
       "value": 0.65,
       "timePeriod": "Y",
       "escalation": "CPI",
-      "seriesEndDate": "2030-10",
-      "refName": "InsuranceYr1to2"
+      "seriesEndDate": "2030-10"
     },
     {
       "id": 21,
       "groupId": 2,
-      "inputId": "opex.insurance_yrs_3+",
       "name": "Insurance (yrs 3+)",
+      "inputId": "opex.insurance_yrs_3+",
       "mode": "series",
       "value": 0.65,
       "timePeriod": "Y",
       "escalation": "CPI",
       "seriesStartDate": "2030-10",
-      "seriesEndDate": "range",
-      "refName": "InsuranceYr3Plus"
+      "seriesEndDate": "range"
     },
     {
       "id": 31,
       "groupId": 6,
-      "inputId": "rates.base_rate",
       "name": "Base Rate",
+      "inputId": "rates.base_rate",
       "mode": "values",
       "values": {
         "0": 4,
@@ -1005,14 +1044,13 @@
         "56": 3.53
       },
       "formulas": {},
-      "unit": "%",
-      "refName": "BaseRate"
+      "unit": "%"
     },
     {
       "id": 36,
       "groupId": 6,
-      "inputId": "rates.base_instruction_rate",
       "name": "Base Rate (Instruction)",
+      "inputId": "rates.base_instruction_rate",
       "mode": "values",
       "values": {
         "0": 3.6,
@@ -1119,14 +1157,13 @@
       },
       "formulas": {},
       "unit": "%",
-      "description": "Instruction rate: 3.6% during construction + ops yrs 1-4, 4.44% from yr 5+",
-      "refName": "BaseRateInstruction"
+      "description": "Instruction rate: 3.6% during construction + ops yrs 1-4, 4.44% from yr 5+"
     },
     {
       "id": 32,
       "groupId": 7,
-      "inputId": "perf.availability",
       "name": "Availability",
+      "inputId": "perf.availability",
       "mode": "values",
       "values": {
         "0": 100,
@@ -1275,14 +1312,13 @@
         "143": 100
       },
       "formulas": {},
-      "unit": "%",
-      "refName": "Availability"
+      "unit": "%"
     },
     {
       "id": 33,
       "groupId": 7,
-      "inputId": "perf.grid_availability",
       "name": "Grid Availability",
+      "inputId": "perf.grid_availability",
       "mode": "values",
       "values": {
         "0": 100,
@@ -1431,14 +1467,13 @@
         "143": 100
       },
       "formulas": {},
-      "unit": "%",
-      "refName": "GridAvailability"
+      "unit": "%"
     },
     {
       "id": 34,
       "groupId": 7,
-      "inputId": "perf.mlf",
       "name": "Marginal Loss Factor",
+      "inputId": "perf.mlf",
       "mode": "values",
       "values": {
         "0": 97.5,
@@ -1635,14 +1670,13 @@
         "191": 97.5
       },
       "formulas": {},
-      "unit": "%",
-      "refName": "Mlf"
+      "unit": "%"
     },
     {
       "id": 35,
       "groupId": 7,
-      "inputId": "perf.other_losses",
       "name": "Other Loss Factors",
+      "inputId": "perf.other_losses",
       "mode": "values",
       "values": {
         "0": 100,
@@ -1791,14 +1825,13 @@
         "143": 100
       },
       "formulas": {},
-      "unit": "%",
-      "refName": "OtherLossFactors"
+      "unit": "%"
     },
     {
       "id": 154,
       "groupId": 7,
-      "inputId": "perf.degradation",
       "name": "Degradation Rate",
+      "inputId": "perf.degradation",
       "mode": "values",
       "values": {
         "0": 5.4,
@@ -2043,15 +2076,14 @@
         "239": 1.65
       },
       "formulas": {},
-      "unit": "%",
-      "refName": "DegradationRate"
+      "unit": "%"
     },
     {
       "id": 105,
       "groupId": 3,
+      "name": "Region - VIC, Duration = 2h",
       "subgroupId": 1,
-      "name": "2 HR BESS ($/MW)",
-      "entryMode": "values",
+      "value": 0,
       "values": {
         "0": 146272,
         "1": 146272,
@@ -2425,19 +2457,14 @@
         "369": 158216.7,
         "370": 158216.7,
         "371": 158216.7
-      },
-      "formulas": {},
-      "value": 0,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "ArbBess2Hr"
+      }
     },
     {
       "id": 106,
       "groupId": 3,
+      "name": "Region - VIC, Duration = 3h",
       "subgroupId": 1,
-      "name": "3 HR BESS ($/MW)",
-      "entryMode": "values",
+      "value": 0,
       "values": {
         "0": 181409,
         "1": 181409,
@@ -2835,19 +2862,14 @@
         "393": 190651,
         "394": 190651,
         "395": 190651
-      },
-      "formulas": {},
-      "value": 0,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "ArbBess3Hr"
+      }
     },
     {
       "id": 107,
       "groupId": 3,
+      "name": "Region - VIC, Duration = 2h",
       "subgroupId": 2,
-      "name": "2 HR BESS ($/MW)",
-      "entryMode": "values",
+      "value": 0,
       "values": {
         "0": 16262,
         "1": 16262,
@@ -3221,19 +3243,14 @@
         "369": 16262,
         "370": 16262,
         "371": 16262
-      },
-      "formulas": {},
-      "value": 0,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "FcasBess2Hr"
+      }
     },
     {
       "id": 108,
       "groupId": 3,
+      "name": "Region - VIC, Duration = 3h",
       "subgroupId": 2,
-      "name": "3 HR BESS ($/MW)",
-      "entryMode": "values",
+      "value": 0,
       "values": {
         "0": 11583,
         "1": 11583,
@@ -3631,3032 +3648,376 @@
         "393": 21905,
         "394": 21905,
         "395": 21905
-      },
-      "formulas": {},
-      "value": 0,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "FcasBess3Hr"
+      }
     },
     {
       "id": 109,
       "groupId": 100,
-      "subgroupId": 2,
       "name": "Tolling Cost ($/MW/hr)",
-      "entryMode": "values",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 2,
       "value": 21,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
-      "refName": "TollingCost"
+      "spreadMethod": "lookup"
     },
     {
       "id": 110,
       "groupId": 100,
-      "subgroupId": 3,
       "name": "Tax Rate (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 3,
       "value": 30,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
-      "refName": "TaxRate"
+      "spreadMethod": "lookup"
     },
     {
       "id": 111,
       "groupId": 100,
-      "subgroupId": 7,
       "name": "WACC (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 7,
       "value": 8,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
-      "refName": "Wacc"
+      "spreadMethod": "lookup"
     },
     {
       "id": 112,
       "groupId": 100,
-      "subgroupId": 4,
       "name": "Receivable Days",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 4,
       "value": 30,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
-      "refName": "ReceivableDays"
+      "spreadMethod": "lookup"
     },
     {
       "id": 113,
       "groupId": 100,
-      "subgroupId": 4,
       "name": "Payable Days",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 4,
       "value": 30,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
-      "refName": "PayableDays"
+      "spreadMethod": "lookup"
     },
     {
       "id": 114,
       "groupId": 100,
-      "subgroupId": 3,
       "name": "GST Rate (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 3,
       "value": 10,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
-      "refName": "GstRate"
+      "spreadMethod": "lookup"
     },
     {
       "id": 115,
       "groupId": 100,
-      "subgroupId": 6,
       "name": "DSRA Months Cover",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 6,
       "value": 6,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
-      "refName": "DsraMonthsCover"
+      "spreadMethod": "lookup"
     },
     {
       "id": 116,
       "groupId": 100,
-      "subgroupId": 6,
       "name": "MRA Target ($)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 6,
       "value": 3.5,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
-      "refName": "MraTarget"
+      "spreadMethod": "lookup"
     },
     {
       "id": 118,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Max Gearing (%)",
-      "entryMode": "values",
-      "values": {},
-      "formulas": {},
-      "value": 65,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "MaxGearing"
+      "subgroupId": 5,
+      "value": 65
     },
     {
       "id": 120,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Operations Interest Rate (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 5.35,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "description": "Yrs 1-4: Base 3.6% + Margin 1.75% = 5.35%. Note: Steps to 6.19% from Yr 5 (see L6.36)",
-      "refName": "OpsInterestRate"
+      "description": "Yrs 1-4: Base 3.6% + Margin 1.75% = 5.35%. Note: Steps to 6.19% from Yr 5 (see L6.36)"
     },
     {
       "id": 122,
       "groupId": 100,
-      "subgroupId": 3,
       "name": "Contingency (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 10,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "ContingencyPct"
+      "subgroupId": 3,
+      "value": 10
     },
     {
       "id": 123,
       "groupId": 100,
-      "subgroupId": 3,
       "name": "Depreciation Life (Years)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 15,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "DeprLife"
+      "subgroupId": 3,
+      "value": 15
     },
     {
       "id": 124,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Contracted DSCR Target",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 1.4,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "ContractedDscr"
+      "subgroupId": 5,
+      "value": 1.4
     },
     {
       "id": 125,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Uncontracted DSCR Target",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 1.9,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "UncontractedDscr"
+      "subgroupId": 5,
+      "value": 1.9
     },
     {
       "id": 126,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Debt Tenor (Years)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 18,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "DebtTenor"
+      "subgroupId": 5,
+      "value": 18
     },
     {
       "id": 127,
       "groupId": 100,
-      "subgroupId": 6,
       "name": "Minimum Cash Balance ($M)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 1.5,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "MinCashBalance"
+      "subgroupId": 6,
+      "value": 1.5
     },
     {
       "id": 128,
       "groupId": 100,
-      "subgroupId": 7,
       "name": "Dividend Withholding Tax (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 0,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "DividendWht"
+      "subgroupId": 7,
+      "value": 0
     },
     {
       "id": 129,
       "groupId": 100,
-      "subgroupId": 7,
       "name": "Terminal Value ($M)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 7,
       "value": 17.5,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
       "unit": "$ M",
-      "description": "Fixed terminal value (indexed by CPI)",
-      "refName": "TerminalValue"
+      "description": "Fixed terminal value (indexed by CPI)"
     },
     {
       "id": 130,
       "groupId": 100,
-      "subgroupId": 3,
       "name": "GST Receipt Delay (Months)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 1,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "refName": "GstReceiptDelay"
+      "subgroupId": 3,
+      "value": 1
     },
     {
       "id": 131,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Debt Margin - Construction (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1.85,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "%",
-      "refName": "DebtMarginConstr"
+      "unit": "%"
     },
     {
       "id": 132,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Debt Margin - Operations (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1.75,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "%",
-      "refName": "DebtMarginOps"
+      "unit": "%"
     },
     {
       "id": 133,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Establishment Fee (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1.35,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
       "unit": "%",
-      "description": "One-time fee on facility limit at financial close",
-      "refName": "EstabFee"
+      "description": "One-time fee on facility limit at financial close"
     },
     {
       "id": 134,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Upfront Fees ($M)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 2,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
       "unit": "$ M",
-      "description": "Arrangement/legal fees at financial close",
-      "refName": "UpfrontFees"
+      "description": "Arrangement/legal fees at financial close"
     },
     {
       "id": 135,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Commitment Fee (% of Margin)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 40,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
       "unit": "%",
-      "description": "Fee on undrawn ops facility during construction (% of ops margin)",
-      "refName": "CommitmentFee"
+      "description": "Fee on undrawn ops facility during construction (% of ops margin)"
     },
     {
       "id": 140,
       "groupId": 100,
-      "subgroupId": 8,
       "name": "A Very Small Number",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 0.000001,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "",
+      "subgroupId": 8,
       "inputId": "epsilon",
-      "refName": "Epsilon"
+      "value": 0.000001
     },
     {
       "id": 142,
       "groupId": 100,
-      "subgroupId": 2,
       "name": "Minor Event Revenue ($/MW)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 2,
       "value": 77586,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "$/MW",
-      "refName": "MinorEventRev"
+      "unit": "$/MW"
     },
     {
       "id": 143,
       "groupId": 100,
-      "subgroupId": 2,
       "name": "Minor Event Frequency (Years)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 2,
       "value": 3,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "yrs",
-      "refName": "MinorEventFreq"
+      "unit": "yrs"
     },
     {
       "id": 144,
       "groupId": 100,
-      "subgroupId": 2,
       "name": "Major Event Revenue ($/MW)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 2,
       "value": 264302,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "$/MW",
-      "refName": "MajorEventRev"
+      "unit": "$/MW"
     },
     {
       "id": 145,
       "groupId": 100,
-      "subgroupId": 2,
       "name": "Major Event Frequency (Years)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 2,
       "value": 4,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "yrs",
-      "refName": "MajorEventFreq"
+      "unit": "yrs"
     },
     {
       "id": 146,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Lock-up DSCR Threshold",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1.15,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "x",
-      "refName": "LockupDscr"
+      "unit": "x"
     },
     {
       "id": 147,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Lock-up ADSCR Threshold",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1.15,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "x",
-      "refName": "LockupAdscr"
+      "unit": "x"
     },
     {
       "id": 148,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Lock-up Release Periods (Qtrs)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 2,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "qtrs",
-      "refName": "LockupReleasePeriods"
+      "unit": "qtrs"
     },
     {
       "id": 149,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "DSRF Active",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "",
-      "description": "1 = DSRF active, 0 = disabled",
-      "refName": "DsrfActive"
+      "description": "1 = DSRF active, 0 = disabled"
     },
     {
       "id": 150,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "DSRF Establishment Fee (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1.35,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
       "unit": "%",
-      "description": "One-time fee on facility limit at ops start",
-      "refName": "DsrfEstabFee"
+      "description": "One-time fee on facility limit at ops start"
     },
     {
       "id": 151,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "DSRF Commitment Fee (% of Margin)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 40,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
       "unit": "%",
-      "description": "Ongoing fee as percentage of effective margin",
-      "refName": "DsrfCommitmentFee"
+      "description": "Ongoing fee as percentage of effective margin"
     },
     {
       "id": 152,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "DSRF Base Margin (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1.75,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
       "unit": "%",
-      "description": "Base margin before first refinancing",
-      "refName": "DsrfBaseMargin"
+      "description": "Base margin before first refinancing"
     },
     {
       "id": 153,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "DSRF Facility Months of DS",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 6,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
       "unit": "months",
-      "description": "Number of months of debt service the facility covers",
-      "refName": "DsrfFacilityMonths"
+      "description": "Number of months of debt service the facility covers"
     },
     {
       "id": 155,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Life Extension Revenue Factor (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 95,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
       "unit": "%",
-      "description": "Revenue reduction factor applied to merchant revenues during life extension period",
-      "refName": "LifeExtRevFactor"
+      "description": "Revenue reduction factor applied to merchant revenues during life extension period"
     },
     {
       "id": 157,
       "groupId": 100,
-      "subgroupId": 7,
       "name": "Cash Interest Rate (% pa)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 7,
       "value": 1,
-      "valueFrequency": "Y",
-      "spreadMethod": "lookup",
       "unit": "%",
-      "refName": "CashInterestRate"
+      "spreadMethod": "lookup"
     },
     {
       "id": 158,
       "groupId": 100,
-      "subgroupId": 3,
       "name": "IDC+Comm Fees Amort Life (Yrs)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 3,
       "value": 15,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "years",
-      "refName": "IdcAmortLife"
+      "unit": "years"
     },
     {
       "id": 159,
       "groupId": 100,
-      "subgroupId": 3,
       "name": "Upfront Fees Amort Life (Yrs)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 3,
       "value": 15,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "years",
-      "refName": "UpfrontFeesAmortLife"
+      "unit": "years"
     },
     {
       "id": 160,
       "groupId": 100,
-      "subgroupId": 3,
       "name": "Maintenance Depr Life (Yrs)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 3,
       "value": 5,
-      "valueFrequency": "Y",
-      "spreadMethod": null,
-      "unit": "years",
-      "refName": "MaintDeprLife"
+      "unit": "years"
     },
     {
       "id": 161,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Refi Fee (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1,
-      "valueFrequency": "Y",
       "unit": "%",
-      "description": "One-time refinancing fee as % of facility limit",
-      "refName": "RefiFee"
+      "description": "One-time refinancing fee as % of facility limit"
     },
     {
       "id": 162,
       "groupId": 100,
-      "subgroupId": 5,
       "name": "Refi Margin (%)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
+      "subgroupId": 5,
       "value": 1.7,
-      "valueFrequency": "Y",
       "unit": "%",
-      "description": "Post-refinancing effective margin",
-      "refName": "RefiMargin"
-    },
-    {
-      "id": 163,
-      "groupId": 100,
-      "subgroupId": 1,
-      "name": "Max FCAS Enablement (MW)",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
-      "value": 80,
-      "valueFrequency": "Y",
-      "unit": "MW",
-      "refName": "MaxFcasEnablement"
+      "description": "Post-refinancing effective margin"
     },
     {
       "id": 156,
       "groupId": 8,
-      "subgroupId": null,
       "name": "Base Maintenance",
-      "entryMode": "constant",
-      "values": {},
-      "formulas": {},
       "value": 0.29,
-      "valueFrequency": "Q",
-      "spreadMethod": null,
-      "unit": "$ M",
-      "seriesFrequency": "Q",
-      "seriesPaymentMonth": "3",
-      "seriesAnnualValue": 1.1667,
-      "refName": "BaseMaint"
+      "unit": "$ M"
     },
     {
       "id": 141,
       "groupId": 101,
-      "subgroupId": null,
       "name": "Agency Fee",
-      "entryMode": "values",
-      "values": {},
-      "formulas": {},
       "value": 0,
-      "valueFrequency": "Y",
-      "spreadMethod": "spread",
-      "seriesAnnualValue": 0.09,
-      "seriesFrequency": "Y",
-      "seriesPaymentMonth": "4",
-      "refName": "AgencyFee"
+      "spreadMethod": "spread"
     }
-  ],
-  "inputType1": [],
-  "inputType1Groups": [],
-  "inputType2": [],
-  "inputType2Groups": [],
-  "groups": [
-    {
-      "id": "flags",
-      "name": "Flags",
-      "order": 0,
-      "isSpecial": true
-    },
-    {
-      "id": "indexation",
-      "name": "Indexation",
-      "order": 0.5,
-      "isSpecial": true
-    },
-    {
-      "id": 1,
-      "name": "Group 1",
-      "order": 1,
-      "isSpecial": false
-    }
-  ],
-  "inputs": [
-    {
-      "id": -1,
-      "groupId": "flags",
-      "name": "Timeline",
-      "category": "flag",
-      "defaultValue": 0,
-      "indexationRate": 0,
-      "linkedFlagId": null,
-      "values": {},
-      "startYear": 2024,
-      "startMonth": 1,
-      "endYear": 2028,
-      "endMonth": 12
-    },
-    {
-      "id": -2,
-      "groupId": "indexation",
-      "name": "Default Indexation",
-      "category": "indexation",
-      "defaultValue": 1,
-      "indexationRate": 0.025,
-      "indexationPeriod": "annual",
-      "linkedFlagId": null,
-      "values": {},
-      "startYear": 2024,
-      "startMonth": 1,
-      "endYear": 2028,
-      "endMonth": 12
-    },
-    {
-      "id": 1,
-      "groupId": 1,
-      "name": "Revenue Base",
-      "category": "value",
-      "type": "flow",
-      "defaultValue": 1000,
-      "indexationRate": 0,
-      "linkedFlagId": null,
-      "values": {},
-      "patternLength": null,
-      "patternInputId": null,
-      "startYear": 2024,
-      "startMonth": 1,
-      "endYear": 2028,
-      "endMonth": 12
-    },
-    {
-      "id": 2,
-      "groupId": 1,
-      "name": "Fixed Opex",
-      "category": "value",
-      "type": "flow",
-      "defaultValue": 50,
-      "indexationRate": 0,
-      "linkedFlagId": null,
-      "values": {},
-      "startYear": 2024,
-      "startMonth": 1,
-      "endYear": 2028,
-      "endMonth": 12
-    },
-    {
-      "id": 3,
-      "groupId": 1,
-      "name": "Market Price",
-      "category": "value",
-      "type": "stock",
-      "defaultValue": 85,
-      "indexationRate": 0,
-      "linkedFlagId": null,
-      "values": {},
-      "patternLength": null,
-      "patternInputId": null,
-      "startYear": 2024,
-      "startMonth": 1,
-      "endYear": 2028,
-      "endMonth": 12
-    }
-  ],
-  "metadata": {
-    "asset_name": "Generic BESS",
-    "import_date": "2026-01-15 22:09:28",
-    "source_file": "INPUTS.xlsx"
-  },
-  "funding": {
-    "total_capex": 147.52652758174466,
-    "equity": 0,
-    "senior_debt": 95.89224292813404,
-    "max_gearing": 0.65,
-    "dscr_target": 1.4
-  },
-  "operations": {
-    "capacity_mw": 70,
-    "storage_hours": 3,
-    "energy_storage_mwh": 210,
-    "cycles_per_day": 1,
-    "annual_energy_mwh": 76650
-  },
-  "timeline": {
-    "startDate": "2027-03-01",
-    "endDate": "2053-09-30",
-    "periods": 319,
-    "frequency": "monthly",
-    "index": [
-      {
-        "i": 0,
-        "date": "2027-03-01",
-        "year": 2027,
-        "month": 3,
-        "label": "Mar 27"
-      },
-      {
-        "i": 1,
-        "date": "2027-04-01",
-        "year": 2027,
-        "month": 4,
-        "label": "Apr 27"
-      },
-      {
-        "i": 2,
-        "date": "2027-05-01",
-        "year": 2027,
-        "month": 5,
-        "label": "May 27"
-      },
-      {
-        "i": 3,
-        "date": "2027-06-01",
-        "year": 2027,
-        "month": 6,
-        "label": "Jun 27"
-      },
-      {
-        "i": 4,
-        "date": "2027-07-01",
-        "year": 2027,
-        "month": 7,
-        "label": "Jul 27"
-      },
-      {
-        "i": 5,
-        "date": "2027-08-01",
-        "year": 2027,
-        "month": 8,
-        "label": "Aug 27"
-      },
-      {
-        "i": 6,
-        "date": "2027-09-01",
-        "year": 2027,
-        "month": 9,
-        "label": "Sep 27"
-      },
-      {
-        "i": 7,
-        "date": "2027-10-01",
-        "year": 2027,
-        "month": 10,
-        "label": "Oct 27"
-      },
-      {
-        "i": 8,
-        "date": "2027-11-01",
-        "year": 2027,
-        "month": 11,
-        "label": "Nov 27"
-      },
-      {
-        "i": 9,
-        "date": "2027-12-01",
-        "year": 2027,
-        "month": 12,
-        "label": "Dec 27"
-      },
-      {
-        "i": 10,
-        "date": "2028-01-01",
-        "year": 2028,
-        "month": 1,
-        "label": "Jan 28"
-      },
-      {
-        "i": 11,
-        "date": "2028-02-01",
-        "year": 2028,
-        "month": 2,
-        "label": "Feb 28"
-      },
-      {
-        "i": 12,
-        "date": "2028-03-01",
-        "year": 2028,
-        "month": 3,
-        "label": "Mar 28"
-      },
-      {
-        "i": 13,
-        "date": "2028-04-01",
-        "year": 2028,
-        "month": 4,
-        "label": "Apr 28"
-      },
-      {
-        "i": 14,
-        "date": "2028-05-01",
-        "year": 2028,
-        "month": 5,
-        "label": "May 28"
-      },
-      {
-        "i": 15,
-        "date": "2028-06-01",
-        "year": 2028,
-        "month": 6,
-        "label": "Jun 28"
-      },
-      {
-        "i": 16,
-        "date": "2028-07-01",
-        "year": 2028,
-        "month": 7,
-        "label": "Jul 28"
-      },
-      {
-        "i": 17,
-        "date": "2028-08-01",
-        "year": 2028,
-        "month": 8,
-        "label": "Aug 28"
-      },
-      {
-        "i": 18,
-        "date": "2028-09-01",
-        "year": 2028,
-        "month": 9,
-        "label": "Sep 28"
-      },
-      {
-        "i": 19,
-        "date": "2028-10-01",
-        "year": 2028,
-        "month": 10,
-        "label": "Oct 28"
-      },
-      {
-        "i": 20,
-        "date": "2028-11-01",
-        "year": 2028,
-        "month": 11,
-        "label": "Nov 28"
-      },
-      {
-        "i": 21,
-        "date": "2028-12-01",
-        "year": 2028,
-        "month": 12,
-        "label": "Dec 28"
-      },
-      {
-        "i": 22,
-        "date": "2029-01-01",
-        "year": 2029,
-        "month": 1,
-        "label": "Jan 29"
-      },
-      {
-        "i": 23,
-        "date": "2029-02-01",
-        "year": 2029,
-        "month": 2,
-        "label": "Feb 29"
-      },
-      {
-        "i": 24,
-        "date": "2029-03-01",
-        "year": 2029,
-        "month": 3,
-        "label": "Mar 29"
-      },
-      {
-        "i": 25,
-        "date": "2029-04-01",
-        "year": 2029,
-        "month": 4,
-        "label": "Apr 29"
-      },
-      {
-        "i": 26,
-        "date": "2029-05-01",
-        "year": 2029,
-        "month": 5,
-        "label": "May 29"
-      },
-      {
-        "i": 27,
-        "date": "2029-06-01",
-        "year": 2029,
-        "month": 6,
-        "label": "Jun 29"
-      },
-      {
-        "i": 28,
-        "date": "2029-07-01",
-        "year": 2029,
-        "month": 7,
-        "label": "Jul 29"
-      },
-      {
-        "i": 29,
-        "date": "2029-08-01",
-        "year": 2029,
-        "month": 8,
-        "label": "Aug 29"
-      },
-      {
-        "i": 30,
-        "date": "2029-09-01",
-        "year": 2029,
-        "month": 9,
-        "label": "Sep 29"
-      },
-      {
-        "i": 31,
-        "date": "2029-10-01",
-        "year": 2029,
-        "month": 10,
-        "label": "Oct 29"
-      },
-      {
-        "i": 32,
-        "date": "2029-11-01",
-        "year": 2029,
-        "month": 11,
-        "label": "Nov 29"
-      },
-      {
-        "i": 33,
-        "date": "2029-12-01",
-        "year": 2029,
-        "month": 12,
-        "label": "Dec 29"
-      },
-      {
-        "i": 34,
-        "date": "2030-01-01",
-        "year": 2030,
-        "month": 1,
-        "label": "Jan 30"
-      },
-      {
-        "i": 35,
-        "date": "2030-02-01",
-        "year": 2030,
-        "month": 2,
-        "label": "Feb 30"
-      },
-      {
-        "i": 36,
-        "date": "2030-03-01",
-        "year": 2030,
-        "month": 3,
-        "label": "Mar 30"
-      },
-      {
-        "i": 37,
-        "date": "2030-04-01",
-        "year": 2030,
-        "month": 4,
-        "label": "Apr 30"
-      },
-      {
-        "i": 38,
-        "date": "2030-05-01",
-        "year": 2030,
-        "month": 5,
-        "label": "May 30"
-      },
-      {
-        "i": 39,
-        "date": "2030-06-01",
-        "year": 2030,
-        "month": 6,
-        "label": "Jun 30"
-      },
-      {
-        "i": 40,
-        "date": "2030-07-01",
-        "year": 2030,
-        "month": 7,
-        "label": "Jul 30"
-      },
-      {
-        "i": 41,
-        "date": "2030-08-01",
-        "year": 2030,
-        "month": 8,
-        "label": "Aug 30"
-      },
-      {
-        "i": 42,
-        "date": "2030-09-01",
-        "year": 2030,
-        "month": 9,
-        "label": "Sep 30"
-      },
-      {
-        "i": 43,
-        "date": "2030-10-01",
-        "year": 2030,
-        "month": 10,
-        "label": "Oct 30"
-      },
-      {
-        "i": 44,
-        "date": "2030-11-01",
-        "year": 2030,
-        "month": 11,
-        "label": "Nov 30"
-      },
-      {
-        "i": 45,
-        "date": "2030-12-01",
-        "year": 2030,
-        "month": 12,
-        "label": "Dec 30"
-      },
-      {
-        "i": 46,
-        "date": "2031-01-01",
-        "year": 2031,
-        "month": 1,
-        "label": "Jan 31"
-      },
-      {
-        "i": 47,
-        "date": "2031-02-01",
-        "year": 2031,
-        "month": 2,
-        "label": "Feb 31"
-      },
-      {
-        "i": 48,
-        "date": "2031-03-01",
-        "year": 2031,
-        "month": 3,
-        "label": "Mar 31"
-      },
-      {
-        "i": 49,
-        "date": "2031-04-01",
-        "year": 2031,
-        "month": 4,
-        "label": "Apr 31"
-      },
-      {
-        "i": 50,
-        "date": "2031-05-01",
-        "year": 2031,
-        "month": 5,
-        "label": "May 31"
-      },
-      {
-        "i": 51,
-        "date": "2031-06-01",
-        "year": 2031,
-        "month": 6,
-        "label": "Jun 31"
-      },
-      {
-        "i": 52,
-        "date": "2031-07-01",
-        "year": 2031,
-        "month": 7,
-        "label": "Jul 31"
-      },
-      {
-        "i": 53,
-        "date": "2031-08-01",
-        "year": 2031,
-        "month": 8,
-        "label": "Aug 31"
-      },
-      {
-        "i": 54,
-        "date": "2031-09-01",
-        "year": 2031,
-        "month": 9,
-        "label": "Sep 31"
-      },
-      {
-        "i": 55,
-        "date": "2031-10-01",
-        "year": 2031,
-        "month": 10,
-        "label": "Oct 31"
-      },
-      {
-        "i": 56,
-        "date": "2031-11-01",
-        "year": 2031,
-        "month": 11,
-        "label": "Nov 31"
-      },
-      {
-        "i": 57,
-        "date": "2031-12-01",
-        "year": 2031,
-        "month": 12,
-        "label": "Dec 31"
-      },
-      {
-        "i": 58,
-        "date": "2032-01-01",
-        "year": 2032,
-        "month": 1,
-        "label": "Jan 32"
-      },
-      {
-        "i": 59,
-        "date": "2032-02-01",
-        "year": 2032,
-        "month": 2,
-        "label": "Feb 32"
-      },
-      {
-        "i": 60,
-        "date": "2032-03-01",
-        "year": 2032,
-        "month": 3,
-        "label": "Mar 32"
-      },
-      {
-        "i": 61,
-        "date": "2032-04-01",
-        "year": 2032,
-        "month": 4,
-        "label": "Apr 32"
-      },
-      {
-        "i": 62,
-        "date": "2032-05-01",
-        "year": 2032,
-        "month": 5,
-        "label": "May 32"
-      },
-      {
-        "i": 63,
-        "date": "2032-06-01",
-        "year": 2032,
-        "month": 6,
-        "label": "Jun 32"
-      },
-      {
-        "i": 64,
-        "date": "2032-07-01",
-        "year": 2032,
-        "month": 7,
-        "label": "Jul 32"
-      },
-      {
-        "i": 65,
-        "date": "2032-08-01",
-        "year": 2032,
-        "month": 8,
-        "label": "Aug 32"
-      },
-      {
-        "i": 66,
-        "date": "2032-09-01",
-        "year": 2032,
-        "month": 9,
-        "label": "Sep 32"
-      },
-      {
-        "i": 67,
-        "date": "2032-10-01",
-        "year": 2032,
-        "month": 10,
-        "label": "Oct 32"
-      },
-      {
-        "i": 68,
-        "date": "2032-11-01",
-        "year": 2032,
-        "month": 11,
-        "label": "Nov 32"
-      },
-      {
-        "i": 69,
-        "date": "2032-12-01",
-        "year": 2032,
-        "month": 12,
-        "label": "Dec 32"
-      },
-      {
-        "i": 70,
-        "date": "2033-01-01",
-        "year": 2033,
-        "month": 1,
-        "label": "Jan 33"
-      },
-      {
-        "i": 71,
-        "date": "2033-02-01",
-        "year": 2033,
-        "month": 2,
-        "label": "Feb 33"
-      },
-      {
-        "i": 72,
-        "date": "2033-03-01",
-        "year": 2033,
-        "month": 3,
-        "label": "Mar 33"
-      },
-      {
-        "i": 73,
-        "date": "2033-04-01",
-        "year": 2033,
-        "month": 4,
-        "label": "Apr 33"
-      },
-      {
-        "i": 74,
-        "date": "2033-05-01",
-        "year": 2033,
-        "month": 5,
-        "label": "May 33"
-      },
-      {
-        "i": 75,
-        "date": "2033-06-01",
-        "year": 2033,
-        "month": 6,
-        "label": "Jun 33"
-      },
-      {
-        "i": 76,
-        "date": "2033-07-01",
-        "year": 2033,
-        "month": 7,
-        "label": "Jul 33"
-      },
-      {
-        "i": 77,
-        "date": "2033-08-01",
-        "year": 2033,
-        "month": 8,
-        "label": "Aug 33"
-      },
-      {
-        "i": 78,
-        "date": "2033-09-01",
-        "year": 2033,
-        "month": 9,
-        "label": "Sep 33"
-      },
-      {
-        "i": 79,
-        "date": "2033-10-01",
-        "year": 2033,
-        "month": 10,
-        "label": "Oct 33"
-      },
-      {
-        "i": 80,
-        "date": "2033-11-01",
-        "year": 2033,
-        "month": 11,
-        "label": "Nov 33"
-      },
-      {
-        "i": 81,
-        "date": "2033-12-01",
-        "year": 2033,
-        "month": 12,
-        "label": "Dec 33"
-      },
-      {
-        "i": 82,
-        "date": "2034-01-01",
-        "year": 2034,
-        "month": 1,
-        "label": "Jan 34"
-      },
-      {
-        "i": 83,
-        "date": "2034-02-01",
-        "year": 2034,
-        "month": 2,
-        "label": "Feb 34"
-      },
-      {
-        "i": 84,
-        "date": "2034-03-01",
-        "year": 2034,
-        "month": 3,
-        "label": "Mar 34"
-      },
-      {
-        "i": 85,
-        "date": "2034-04-01",
-        "year": 2034,
-        "month": 4,
-        "label": "Apr 34"
-      },
-      {
-        "i": 86,
-        "date": "2034-05-01",
-        "year": 2034,
-        "month": 5,
-        "label": "May 34"
-      },
-      {
-        "i": 87,
-        "date": "2034-06-01",
-        "year": 2034,
-        "month": 6,
-        "label": "Jun 34"
-      },
-      {
-        "i": 88,
-        "date": "2034-07-01",
-        "year": 2034,
-        "month": 7,
-        "label": "Jul 34"
-      },
-      {
-        "i": 89,
-        "date": "2034-08-01",
-        "year": 2034,
-        "month": 8,
-        "label": "Aug 34"
-      },
-      {
-        "i": 90,
-        "date": "2034-09-01",
-        "year": 2034,
-        "month": 9,
-        "label": "Sep 34"
-      },
-      {
-        "i": 91,
-        "date": "2034-10-01",
-        "year": 2034,
-        "month": 10,
-        "label": "Oct 34"
-      },
-      {
-        "i": 92,
-        "date": "2034-11-01",
-        "year": 2034,
-        "month": 11,
-        "label": "Nov 34"
-      },
-      {
-        "i": 93,
-        "date": "2034-12-01",
-        "year": 2034,
-        "month": 12,
-        "label": "Dec 34"
-      },
-      {
-        "i": 94,
-        "date": "2035-01-01",
-        "year": 2035,
-        "month": 1,
-        "label": "Jan 35"
-      },
-      {
-        "i": 95,
-        "date": "2035-02-01",
-        "year": 2035,
-        "month": 2,
-        "label": "Feb 35"
-      },
-      {
-        "i": 96,
-        "date": "2035-03-01",
-        "year": 2035,
-        "month": 3,
-        "label": "Mar 35"
-      },
-      {
-        "i": 97,
-        "date": "2035-04-01",
-        "year": 2035,
-        "month": 4,
-        "label": "Apr 35"
-      },
-      {
-        "i": 98,
-        "date": "2035-05-01",
-        "year": 2035,
-        "month": 5,
-        "label": "May 35"
-      },
-      {
-        "i": 99,
-        "date": "2035-06-01",
-        "year": 2035,
-        "month": 6,
-        "label": "Jun 35"
-      },
-      {
-        "i": 100,
-        "date": "2035-07-01",
-        "year": 2035,
-        "month": 7,
-        "label": "Jul 35"
-      },
-      {
-        "i": 101,
-        "date": "2035-08-01",
-        "year": 2035,
-        "month": 8,
-        "label": "Aug 35"
-      },
-      {
-        "i": 102,
-        "date": "2035-09-01",
-        "year": 2035,
-        "month": 9,
-        "label": "Sep 35"
-      },
-      {
-        "i": 103,
-        "date": "2035-10-01",
-        "year": 2035,
-        "month": 10,
-        "label": "Oct 35"
-      },
-      {
-        "i": 104,
-        "date": "2035-11-01",
-        "year": 2035,
-        "month": 11,
-        "label": "Nov 35"
-      },
-      {
-        "i": 105,
-        "date": "2035-12-01",
-        "year": 2035,
-        "month": 12,
-        "label": "Dec 35"
-      },
-      {
-        "i": 106,
-        "date": "2036-01-01",
-        "year": 2036,
-        "month": 1,
-        "label": "Jan 36"
-      },
-      {
-        "i": 107,
-        "date": "2036-02-01",
-        "year": 2036,
-        "month": 2,
-        "label": "Feb 36"
-      },
-      {
-        "i": 108,
-        "date": "2036-03-01",
-        "year": 2036,
-        "month": 3,
-        "label": "Mar 36"
-      },
-      {
-        "i": 109,
-        "date": "2036-04-01",
-        "year": 2036,
-        "month": 4,
-        "label": "Apr 36"
-      },
-      {
-        "i": 110,
-        "date": "2036-05-01",
-        "year": 2036,
-        "month": 5,
-        "label": "May 36"
-      },
-      {
-        "i": 111,
-        "date": "2036-06-01",
-        "year": 2036,
-        "month": 6,
-        "label": "Jun 36"
-      },
-      {
-        "i": 112,
-        "date": "2036-07-01",
-        "year": 2036,
-        "month": 7,
-        "label": "Jul 36"
-      },
-      {
-        "i": 113,
-        "date": "2036-08-01",
-        "year": 2036,
-        "month": 8,
-        "label": "Aug 36"
-      },
-      {
-        "i": 114,
-        "date": "2036-09-01",
-        "year": 2036,
-        "month": 9,
-        "label": "Sep 36"
-      },
-      {
-        "i": 115,
-        "date": "2036-10-01",
-        "year": 2036,
-        "month": 10,
-        "label": "Oct 36"
-      },
-      {
-        "i": 116,
-        "date": "2036-11-01",
-        "year": 2036,
-        "month": 11,
-        "label": "Nov 36"
-      },
-      {
-        "i": 117,
-        "date": "2036-12-01",
-        "year": 2036,
-        "month": 12,
-        "label": "Dec 36"
-      },
-      {
-        "i": 118,
-        "date": "2037-01-01",
-        "year": 2037,
-        "month": 1,
-        "label": "Jan 37"
-      },
-      {
-        "i": 119,
-        "date": "2037-02-01",
-        "year": 2037,
-        "month": 2,
-        "label": "Feb 37"
-      },
-      {
-        "i": 120,
-        "date": "2037-03-01",
-        "year": 2037,
-        "month": 3,
-        "label": "Mar 37"
-      },
-      {
-        "i": 121,
-        "date": "2037-04-01",
-        "year": 2037,
-        "month": 4,
-        "label": "Apr 37"
-      },
-      {
-        "i": 122,
-        "date": "2037-05-01",
-        "year": 2037,
-        "month": 5,
-        "label": "May 37"
-      },
-      {
-        "i": 123,
-        "date": "2037-06-01",
-        "year": 2037,
-        "month": 6,
-        "label": "Jun 37"
-      },
-      {
-        "i": 124,
-        "date": "2037-07-01",
-        "year": 2037,
-        "month": 7,
-        "label": "Jul 37"
-      },
-      {
-        "i": 125,
-        "date": "2037-08-01",
-        "year": 2037,
-        "month": 8,
-        "label": "Aug 37"
-      },
-      {
-        "i": 126,
-        "date": "2037-09-01",
-        "year": 2037,
-        "month": 9,
-        "label": "Sep 37"
-      },
-      {
-        "i": 127,
-        "date": "2037-10-01",
-        "year": 2037,
-        "month": 10,
-        "label": "Oct 37"
-      },
-      {
-        "i": 128,
-        "date": "2037-11-01",
-        "year": 2037,
-        "month": 11,
-        "label": "Nov 37"
-      },
-      {
-        "i": 129,
-        "date": "2037-12-01",
-        "year": 2037,
-        "month": 12,
-        "label": "Dec 37"
-      },
-      {
-        "i": 130,
-        "date": "2038-01-01",
-        "year": 2038,
-        "month": 1,
-        "label": "Jan 38"
-      },
-      {
-        "i": 131,
-        "date": "2038-02-01",
-        "year": 2038,
-        "month": 2,
-        "label": "Feb 38"
-      },
-      {
-        "i": 132,
-        "date": "2038-03-01",
-        "year": 2038,
-        "month": 3,
-        "label": "Mar 38"
-      },
-      {
-        "i": 133,
-        "date": "2038-04-01",
-        "year": 2038,
-        "month": 4,
-        "label": "Apr 38"
-      },
-      {
-        "i": 134,
-        "date": "2038-05-01",
-        "year": 2038,
-        "month": 5,
-        "label": "May 38"
-      },
-      {
-        "i": 135,
-        "date": "2038-06-01",
-        "year": 2038,
-        "month": 6,
-        "label": "Jun 38"
-      },
-      {
-        "i": 136,
-        "date": "2038-07-01",
-        "year": 2038,
-        "month": 7,
-        "label": "Jul 38"
-      },
-      {
-        "i": 137,
-        "date": "2038-08-01",
-        "year": 2038,
-        "month": 8,
-        "label": "Aug 38"
-      },
-      {
-        "i": 138,
-        "date": "2038-09-01",
-        "year": 2038,
-        "month": 9,
-        "label": "Sep 38"
-      },
-      {
-        "i": 139,
-        "date": "2038-10-01",
-        "year": 2038,
-        "month": 10,
-        "label": "Oct 38"
-      },
-      {
-        "i": 140,
-        "date": "2038-11-01",
-        "year": 2038,
-        "month": 11,
-        "label": "Nov 38"
-      },
-      {
-        "i": 141,
-        "date": "2038-12-01",
-        "year": 2038,
-        "month": 12,
-        "label": "Dec 38"
-      },
-      {
-        "i": 142,
-        "date": "2039-01-01",
-        "year": 2039,
-        "month": 1,
-        "label": "Jan 39"
-      },
-      {
-        "i": 143,
-        "date": "2039-02-01",
-        "year": 2039,
-        "month": 2,
-        "label": "Feb 39"
-      },
-      {
-        "i": 144,
-        "date": "2039-03-01",
-        "year": 2039,
-        "month": 3,
-        "label": "Mar 39"
-      },
-      {
-        "i": 145,
-        "date": "2039-04-01",
-        "year": 2039,
-        "month": 4,
-        "label": "Apr 39"
-      },
-      {
-        "i": 146,
-        "date": "2039-05-01",
-        "year": 2039,
-        "month": 5,
-        "label": "May 39"
-      },
-      {
-        "i": 147,
-        "date": "2039-06-01",
-        "year": 2039,
-        "month": 6,
-        "label": "Jun 39"
-      },
-      {
-        "i": 148,
-        "date": "2039-07-01",
-        "year": 2039,
-        "month": 7,
-        "label": "Jul 39"
-      },
-      {
-        "i": 149,
-        "date": "2039-08-01",
-        "year": 2039,
-        "month": 8,
-        "label": "Aug 39"
-      },
-      {
-        "i": 150,
-        "date": "2039-09-01",
-        "year": 2039,
-        "month": 9,
-        "label": "Sep 39"
-      },
-      {
-        "i": 151,
-        "date": "2039-10-01",
-        "year": 2039,
-        "month": 10,
-        "label": "Oct 39"
-      },
-      {
-        "i": 152,
-        "date": "2039-11-01",
-        "year": 2039,
-        "month": 11,
-        "label": "Nov 39"
-      },
-      {
-        "i": 153,
-        "date": "2039-12-01",
-        "year": 2039,
-        "month": 12,
-        "label": "Dec 39"
-      },
-      {
-        "i": 154,
-        "date": "2040-01-01",
-        "year": 2040,
-        "month": 1,
-        "label": "Jan 40"
-      },
-      {
-        "i": 155,
-        "date": "2040-02-01",
-        "year": 2040,
-        "month": 2,
-        "label": "Feb 40"
-      },
-      {
-        "i": 156,
-        "date": "2040-03-01",
-        "year": 2040,
-        "month": 3,
-        "label": "Mar 40"
-      },
-      {
-        "i": 157,
-        "date": "2040-04-01",
-        "year": 2040,
-        "month": 4,
-        "label": "Apr 40"
-      },
-      {
-        "i": 158,
-        "date": "2040-05-01",
-        "year": 2040,
-        "month": 5,
-        "label": "May 40"
-      },
-      {
-        "i": 159,
-        "date": "2040-06-01",
-        "year": 2040,
-        "month": 6,
-        "label": "Jun 40"
-      },
-      {
-        "i": 160,
-        "date": "2040-07-01",
-        "year": 2040,
-        "month": 7,
-        "label": "Jul 40"
-      },
-      {
-        "i": 161,
-        "date": "2040-08-01",
-        "year": 2040,
-        "month": 8,
-        "label": "Aug 40"
-      },
-      {
-        "i": 162,
-        "date": "2040-09-01",
-        "year": 2040,
-        "month": 9,
-        "label": "Sep 40"
-      },
-      {
-        "i": 163,
-        "date": "2040-10-01",
-        "year": 2040,
-        "month": 10,
-        "label": "Oct 40"
-      },
-      {
-        "i": 164,
-        "date": "2040-11-01",
-        "year": 2040,
-        "month": 11,
-        "label": "Nov 40"
-      },
-      {
-        "i": 165,
-        "date": "2040-12-01",
-        "year": 2040,
-        "month": 12,
-        "label": "Dec 40"
-      },
-      {
-        "i": 166,
-        "date": "2041-01-01",
-        "year": 2041,
-        "month": 1,
-        "label": "Jan 41"
-      },
-      {
-        "i": 167,
-        "date": "2041-02-01",
-        "year": 2041,
-        "month": 2,
-        "label": "Feb 41"
-      },
-      {
-        "i": 168,
-        "date": "2041-03-01",
-        "year": 2041,
-        "month": 3,
-        "label": "Mar 41"
-      },
-      {
-        "i": 169,
-        "date": "2041-04-01",
-        "year": 2041,
-        "month": 4,
-        "label": "Apr 41"
-      },
-      {
-        "i": 170,
-        "date": "2041-05-01",
-        "year": 2041,
-        "month": 5,
-        "label": "May 41"
-      },
-      {
-        "i": 171,
-        "date": "2041-06-01",
-        "year": 2041,
-        "month": 6,
-        "label": "Jun 41"
-      },
-      {
-        "i": 172,
-        "date": "2041-07-01",
-        "year": 2041,
-        "month": 7,
-        "label": "Jul 41"
-      },
-      {
-        "i": 173,
-        "date": "2041-08-01",
-        "year": 2041,
-        "month": 8,
-        "label": "Aug 41"
-      },
-      {
-        "i": 174,
-        "date": "2041-09-01",
-        "year": 2041,
-        "month": 9,
-        "label": "Sep 41"
-      },
-      {
-        "i": 175,
-        "date": "2041-10-01",
-        "year": 2041,
-        "month": 10,
-        "label": "Oct 41"
-      },
-      {
-        "i": 176,
-        "date": "2041-11-01",
-        "year": 2041,
-        "month": 11,
-        "label": "Nov 41"
-      },
-      {
-        "i": 177,
-        "date": "2041-12-01",
-        "year": 2041,
-        "month": 12,
-        "label": "Dec 41"
-      },
-      {
-        "i": 178,
-        "date": "2042-01-01",
-        "year": 2042,
-        "month": 1,
-        "label": "Jan 42"
-      },
-      {
-        "i": 179,
-        "date": "2042-02-01",
-        "year": 2042,
-        "month": 2,
-        "label": "Feb 42"
-      },
-      {
-        "i": 180,
-        "date": "2042-03-01",
-        "year": 2042,
-        "month": 3,
-        "label": "Mar 42"
-      },
-      {
-        "i": 181,
-        "date": "2042-04-01",
-        "year": 2042,
-        "month": 4,
-        "label": "Apr 42"
-      },
-      {
-        "i": 182,
-        "date": "2042-05-01",
-        "year": 2042,
-        "month": 5,
-        "label": "May 42"
-      },
-      {
-        "i": 183,
-        "date": "2042-06-01",
-        "year": 2042,
-        "month": 6,
-        "label": "Jun 42"
-      },
-      {
-        "i": 184,
-        "date": "2042-07-01",
-        "year": 2042,
-        "month": 7,
-        "label": "Jul 42"
-      },
-      {
-        "i": 185,
-        "date": "2042-08-01",
-        "year": 2042,
-        "month": 8,
-        "label": "Aug 42"
-      },
-      {
-        "i": 186,
-        "date": "2042-09-01",
-        "year": 2042,
-        "month": 9,
-        "label": "Sep 42"
-      },
-      {
-        "i": 187,
-        "date": "2042-10-01",
-        "year": 2042,
-        "month": 10,
-        "label": "Oct 42"
-      },
-      {
-        "i": 188,
-        "date": "2042-11-01",
-        "year": 2042,
-        "month": 11,
-        "label": "Nov 42"
-      },
-      {
-        "i": 189,
-        "date": "2042-12-01",
-        "year": 2042,
-        "month": 12,
-        "label": "Dec 42"
-      },
-      {
-        "i": 190,
-        "date": "2043-01-01",
-        "year": 2043,
-        "month": 1,
-        "label": "Jan 43"
-      },
-      {
-        "i": 191,
-        "date": "2043-02-01",
-        "year": 2043,
-        "month": 2,
-        "label": "Feb 43"
-      },
-      {
-        "i": 192,
-        "date": "2043-03-01",
-        "year": 2043,
-        "month": 3,
-        "label": "Mar 43"
-      },
-      {
-        "i": 193,
-        "date": "2043-04-01",
-        "year": 2043,
-        "month": 4,
-        "label": "Apr 43"
-      },
-      {
-        "i": 194,
-        "date": "2043-05-01",
-        "year": 2043,
-        "month": 5,
-        "label": "May 43"
-      },
-      {
-        "i": 195,
-        "date": "2043-06-01",
-        "year": 2043,
-        "month": 6,
-        "label": "Jun 43"
-      },
-      {
-        "i": 196,
-        "date": "2043-07-01",
-        "year": 2043,
-        "month": 7,
-        "label": "Jul 43"
-      },
-      {
-        "i": 197,
-        "date": "2043-08-01",
-        "year": 2043,
-        "month": 8,
-        "label": "Aug 43"
-      },
-      {
-        "i": 198,
-        "date": "2043-09-01",
-        "year": 2043,
-        "month": 9,
-        "label": "Sep 43"
-      },
-      {
-        "i": 199,
-        "date": "2043-10-01",
-        "year": 2043,
-        "month": 10,
-        "label": "Oct 43"
-      },
-      {
-        "i": 200,
-        "date": "2043-11-01",
-        "year": 2043,
-        "month": 11,
-        "label": "Nov 43"
-      },
-      {
-        "i": 201,
-        "date": "2043-12-01",
-        "year": 2043,
-        "month": 12,
-        "label": "Dec 43"
-      },
-      {
-        "i": 202,
-        "date": "2044-01-01",
-        "year": 2044,
-        "month": 1,
-        "label": "Jan 44"
-      },
-      {
-        "i": 203,
-        "date": "2044-02-01",
-        "year": 2044,
-        "month": 2,
-        "label": "Feb 44"
-      },
-      {
-        "i": 204,
-        "date": "2044-03-01",
-        "year": 2044,
-        "month": 3,
-        "label": "Mar 44"
-      },
-      {
-        "i": 205,
-        "date": "2044-04-01",
-        "year": 2044,
-        "month": 4,
-        "label": "Apr 44"
-      },
-      {
-        "i": 206,
-        "date": "2044-05-01",
-        "year": 2044,
-        "month": 5,
-        "label": "May 44"
-      },
-      {
-        "i": 207,
-        "date": "2044-06-01",
-        "year": 2044,
-        "month": 6,
-        "label": "Jun 44"
-      },
-      {
-        "i": 208,
-        "date": "2044-07-01",
-        "year": 2044,
-        "month": 7,
-        "label": "Jul 44"
-      },
-      {
-        "i": 209,
-        "date": "2044-08-01",
-        "year": 2044,
-        "month": 8,
-        "label": "Aug 44"
-      },
-      {
-        "i": 210,
-        "date": "2044-09-01",
-        "year": 2044,
-        "month": 9,
-        "label": "Sep 44"
-      },
-      {
-        "i": 211,
-        "date": "2044-10-01",
-        "year": 2044,
-        "month": 10,
-        "label": "Oct 44"
-      },
-      {
-        "i": 212,
-        "date": "2044-11-01",
-        "year": 2044,
-        "month": 11,
-        "label": "Nov 44"
-      },
-      {
-        "i": 213,
-        "date": "2044-12-01",
-        "year": 2044,
-        "month": 12,
-        "label": "Dec 44"
-      },
-      {
-        "i": 214,
-        "date": "2045-01-01",
-        "year": 2045,
-        "month": 1,
-        "label": "Jan 45"
-      },
-      {
-        "i": 215,
-        "date": "2045-02-01",
-        "year": 2045,
-        "month": 2,
-        "label": "Feb 45"
-      },
-      {
-        "i": 216,
-        "date": "2045-03-01",
-        "year": 2045,
-        "month": 3,
-        "label": "Mar 45"
-      },
-      {
-        "i": 217,
-        "date": "2045-04-01",
-        "year": 2045,
-        "month": 4,
-        "label": "Apr 45"
-      },
-      {
-        "i": 218,
-        "date": "2045-05-01",
-        "year": 2045,
-        "month": 5,
-        "label": "May 45"
-      },
-      {
-        "i": 219,
-        "date": "2045-06-01",
-        "year": 2045,
-        "month": 6,
-        "label": "Jun 45"
-      },
-      {
-        "i": 220,
-        "date": "2045-07-01",
-        "year": 2045,
-        "month": 7,
-        "label": "Jul 45"
-      },
-      {
-        "i": 221,
-        "date": "2045-08-01",
-        "year": 2045,
-        "month": 8,
-        "label": "Aug 45"
-      },
-      {
-        "i": 222,
-        "date": "2045-09-01",
-        "year": 2045,
-        "month": 9,
-        "label": "Sep 45"
-      },
-      {
-        "i": 223,
-        "date": "2045-10-01",
-        "year": 2045,
-        "month": 10,
-        "label": "Oct 45"
-      },
-      {
-        "i": 224,
-        "date": "2045-11-01",
-        "year": 2045,
-        "month": 11,
-        "label": "Nov 45"
-      },
-      {
-        "i": 225,
-        "date": "2045-12-01",
-        "year": 2045,
-        "month": 12,
-        "label": "Dec 45"
-      },
-      {
-        "i": 226,
-        "date": "2046-01-01",
-        "year": 2046,
-        "month": 1,
-        "label": "Jan 46"
-      },
-      {
-        "i": 227,
-        "date": "2046-02-01",
-        "year": 2046,
-        "month": 2,
-        "label": "Feb 46"
-      },
-      {
-        "i": 228,
-        "date": "2046-03-01",
-        "year": 2046,
-        "month": 3,
-        "label": "Mar 46"
-      },
-      {
-        "i": 229,
-        "date": "2046-04-01",
-        "year": 2046,
-        "month": 4,
-        "label": "Apr 46"
-      },
-      {
-        "i": 230,
-        "date": "2046-05-01",
-        "year": 2046,
-        "month": 5,
-        "label": "May 46"
-      },
-      {
-        "i": 231,
-        "date": "2046-06-01",
-        "year": 2046,
-        "month": 6,
-        "label": "Jun 46"
-      },
-      {
-        "i": 232,
-        "date": "2046-07-01",
-        "year": 2046,
-        "month": 7,
-        "label": "Jul 46"
-      },
-      {
-        "i": 233,
-        "date": "2046-08-01",
-        "year": 2046,
-        "month": 8,
-        "label": "Aug 46"
-      },
-      {
-        "i": 234,
-        "date": "2046-09-01",
-        "year": 2046,
-        "month": 9,
-        "label": "Sep 46"
-      },
-      {
-        "i": 235,
-        "date": "2046-10-01",
-        "year": 2046,
-        "month": 10,
-        "label": "Oct 46"
-      },
-      {
-        "i": 236,
-        "date": "2046-11-01",
-        "year": 2046,
-        "month": 11,
-        "label": "Nov 46"
-      },
-      {
-        "i": 237,
-        "date": "2046-12-01",
-        "year": 2046,
-        "month": 12,
-        "label": "Dec 46"
-      },
-      {
-        "i": 238,
-        "date": "2047-01-01",
-        "year": 2047,
-        "month": 1,
-        "label": "Jan 47"
-      },
-      {
-        "i": 239,
-        "date": "2047-02-01",
-        "year": 2047,
-        "month": 2,
-        "label": "Feb 47"
-      },
-      {
-        "i": 240,
-        "date": "2047-03-01",
-        "year": 2047,
-        "month": 3,
-        "label": "Mar 47"
-      },
-      {
-        "i": 241,
-        "date": "2047-04-01",
-        "year": 2047,
-        "month": 4,
-        "label": "Apr 47"
-      },
-      {
-        "i": 242,
-        "date": "2047-05-01",
-        "year": 2047,
-        "month": 5,
-        "label": "May 47"
-      },
-      {
-        "i": 243,
-        "date": "2047-06-01",
-        "year": 2047,
-        "month": 6,
-        "label": "Jun 47"
-      },
-      {
-        "i": 244,
-        "date": "2047-07-01",
-        "year": 2047,
-        "month": 7,
-        "label": "Jul 47"
-      },
-      {
-        "i": 245,
-        "date": "2047-08-01",
-        "year": 2047,
-        "month": 8,
-        "label": "Aug 47"
-      },
-      {
-        "i": 246,
-        "date": "2047-09-01",
-        "year": 2047,
-        "month": 9,
-        "label": "Sep 47"
-      },
-      {
-        "i": 247,
-        "date": "2047-10-01",
-        "year": 2047,
-        "month": 10,
-        "label": "Oct 47"
-      },
-      {
-        "i": 248,
-        "date": "2047-11-01",
-        "year": 2047,
-        "month": 11,
-        "label": "Nov 47"
-      },
-      {
-        "i": 249,
-        "date": "2047-12-01",
-        "year": 2047,
-        "month": 12,
-        "label": "Dec 47"
-      },
-      {
-        "i": 250,
-        "date": "2048-01-01",
-        "year": 2048,
-        "month": 1,
-        "label": "Jan 48"
-      },
-      {
-        "i": 251,
-        "date": "2048-02-01",
-        "year": 2048,
-        "month": 2,
-        "label": "Feb 48"
-      },
-      {
-        "i": 252,
-        "date": "2048-03-01",
-        "year": 2048,
-        "month": 3,
-        "label": "Mar 48"
-      },
-      {
-        "i": 253,
-        "date": "2048-04-01",
-        "year": 2048,
-        "month": 4,
-        "label": "Apr 48"
-      },
-      {
-        "i": 254,
-        "date": "2048-05-01",
-        "year": 2048,
-        "month": 5,
-        "label": "May 48"
-      },
-      {
-        "i": 255,
-        "date": "2048-06-01",
-        "year": 2048,
-        "month": 6,
-        "label": "Jun 48"
-      },
-      {
-        "i": 256,
-        "date": "2048-07-01",
-        "year": 2048,
-        "month": 7,
-        "label": "Jul 48"
-      },
-      {
-        "i": 257,
-        "date": "2048-08-01",
-        "year": 2048,
-        "month": 8,
-        "label": "Aug 48"
-      },
-      {
-        "i": 258,
-        "date": "2048-09-01",
-        "year": 2048,
-        "month": 9,
-        "label": "Sep 48"
-      },
-      {
-        "i": 259,
-        "date": "2048-10-01",
-        "year": 2048,
-        "month": 10,
-        "label": "Oct 48"
-      },
-      {
-        "i": 260,
-        "date": "2048-11-01",
-        "year": 2048,
-        "month": 11,
-        "label": "Nov 48"
-      },
-      {
-        "i": 261,
-        "date": "2048-12-01",
-        "year": 2048,
-        "month": 12,
-        "label": "Dec 48"
-      },
-      {
-        "i": 262,
-        "date": "2049-01-01",
-        "year": 2049,
-        "month": 1,
-        "label": "Jan 49"
-      },
-      {
-        "i": 263,
-        "date": "2049-02-01",
-        "year": 2049,
-        "month": 2,
-        "label": "Feb 49"
-      },
-      {
-        "i": 264,
-        "date": "2049-03-01",
-        "year": 2049,
-        "month": 3,
-        "label": "Mar 49"
-      },
-      {
-        "i": 265,
-        "date": "2049-04-01",
-        "year": 2049,
-        "month": 4,
-        "label": "Apr 49"
-      },
-      {
-        "i": 266,
-        "date": "2049-05-01",
-        "year": 2049,
-        "month": 5,
-        "label": "May 49"
-      },
-      {
-        "i": 267,
-        "date": "2049-06-01",
-        "year": 2049,
-        "month": 6,
-        "label": "Jun 49"
-      },
-      {
-        "i": 268,
-        "date": "2049-07-01",
-        "year": 2049,
-        "month": 7,
-        "label": "Jul 49"
-      },
-      {
-        "i": 269,
-        "date": "2049-08-01",
-        "year": 2049,
-        "month": 8,
-        "label": "Aug 49"
-      },
-      {
-        "i": 270,
-        "date": "2049-09-01",
-        "year": 2049,
-        "month": 9,
-        "label": "Sep 49"
-      },
-      {
-        "i": 271,
-        "date": "2049-10-01",
-        "year": 2049,
-        "month": 10,
-        "label": "Oct 49"
-      },
-      {
-        "i": 272,
-        "date": "2049-11-01",
-        "year": 2049,
-        "month": 11,
-        "label": "Nov 49"
-      },
-      {
-        "i": 273,
-        "date": "2049-12-01",
-        "year": 2049,
-        "month": 12,
-        "label": "Dec 49"
-      },
-      {
-        "i": 274,
-        "date": "2050-01-01",
-        "year": 2050,
-        "month": 1,
-        "label": "Jan 50"
-      },
-      {
-        "i": 275,
-        "date": "2050-02-01",
-        "year": 2050,
-        "month": 2,
-        "label": "Feb 50"
-      },
-      {
-        "i": 276,
-        "date": "2050-03-01",
-        "year": 2050,
-        "month": 3,
-        "label": "Mar 50"
-      },
-      {
-        "i": 277,
-        "date": "2050-04-01",
-        "year": 2050,
-        "month": 4,
-        "label": "Apr 50"
-      },
-      {
-        "i": 278,
-        "date": "2050-05-01",
-        "year": 2050,
-        "month": 5,
-        "label": "May 50"
-      },
-      {
-        "i": 279,
-        "date": "2050-06-01",
-        "year": 2050,
-        "month": 6,
-        "label": "Jun 50"
-      },
-      {
-        "i": 280,
-        "date": "2050-07-01",
-        "year": 2050,
-        "month": 7,
-        "label": "Jul 50"
-      },
-      {
-        "i": 281,
-        "date": "2050-08-01",
-        "year": 2050,
-        "month": 8,
-        "label": "Aug 50"
-      },
-      {
-        "i": 282,
-        "date": "2050-09-01",
-        "year": 2050,
-        "month": 9,
-        "label": "Sep 50"
-      },
-      {
-        "i": 283,
-        "date": "2050-10-01",
-        "year": 2050,
-        "month": 10,
-        "label": "Oct 50"
-      },
-      {
-        "i": 284,
-        "date": "2050-11-01",
-        "year": 2050,
-        "month": 11,
-        "label": "Nov 50"
-      },
-      {
-        "i": 285,
-        "date": "2050-12-01",
-        "year": 2050,
-        "month": 12,
-        "label": "Dec 50"
-      },
-      {
-        "i": 286,
-        "date": "2051-01-01",
-        "year": 2051,
-        "month": 1,
-        "label": "Jan 51"
-      },
-      {
-        "i": 287,
-        "date": "2051-02-01",
-        "year": 2051,
-        "month": 2,
-        "label": "Feb 51"
-      },
-      {
-        "i": 288,
-        "date": "2051-03-01",
-        "year": 2051,
-        "month": 3,
-        "label": "Mar 51"
-      },
-      {
-        "i": 289,
-        "date": "2051-04-01",
-        "year": 2051,
-        "month": 4,
-        "label": "Apr 51"
-      },
-      {
-        "i": 290,
-        "date": "2051-05-01",
-        "year": 2051,
-        "month": 5,
-        "label": "May 51"
-      },
-      {
-        "i": 291,
-        "date": "2051-06-01",
-        "year": 2051,
-        "month": 6,
-        "label": "Jun 51"
-      },
-      {
-        "i": 292,
-        "date": "2051-07-01",
-        "year": 2051,
-        "month": 7,
-        "label": "Jul 51"
-      },
-      {
-        "i": 293,
-        "date": "2051-08-01",
-        "year": 2051,
-        "month": 8,
-        "label": "Aug 51"
-      },
-      {
-        "i": 294,
-        "date": "2051-09-01",
-        "year": 2051,
-        "month": 9,
-        "label": "Sep 51"
-      },
-      {
-        "i": 295,
-        "date": "2051-10-01",
-        "year": 2051,
-        "month": 10,
-        "label": "Oct 51"
-      },
-      {
-        "i": 296,
-        "date": "2051-11-01",
-        "year": 2051,
-        "month": 11,
-        "label": "Nov 51"
-      },
-      {
-        "i": 297,
-        "date": "2051-12-01",
-        "year": 2051,
-        "month": 12,
-        "label": "Dec 51"
-      },
-      {
-        "i": 298,
-        "date": "2052-01-01",
-        "year": 2052,
-        "month": 1,
-        "label": "Jan 52"
-      },
-      {
-        "i": 299,
-        "date": "2052-02-01",
-        "year": 2052,
-        "month": 2,
-        "label": "Feb 52"
-      },
-      {
-        "i": 300,
-        "date": "2052-03-01",
-        "year": 2052,
-        "month": 3,
-        "label": "Mar 52"
-      },
-      {
-        "i": 301,
-        "date": "2052-04-01",
-        "year": 2052,
-        "month": 4,
-        "label": "Apr 52"
-      },
-      {
-        "i": 302,
-        "date": "2052-05-01",
-        "year": 2052,
-        "month": 5,
-        "label": "May 52"
-      },
-      {
-        "i": 303,
-        "date": "2052-06-01",
-        "year": 2052,
-        "month": 6,
-        "label": "Jun 52"
-      },
-      {
-        "i": 304,
-        "date": "2052-07-01",
-        "year": 2052,
-        "month": 7,
-        "label": "Jul 52"
-      },
-      {
-        "i": 305,
-        "date": "2052-08-01",
-        "year": 2052,
-        "month": 8,
-        "label": "Aug 52"
-      },
-      {
-        "i": 306,
-        "date": "2052-09-01",
-        "year": 2052,
-        "month": 9,
-        "label": "Sep 52"
-      },
-      {
-        "i": 307,
-        "date": "2052-10-01",
-        "year": 2052,
-        "month": 10,
-        "label": "Oct 52"
-      },
-      {
-        "i": 308,
-        "date": "2052-11-01",
-        "year": 2052,
-        "month": 11,
-        "label": "Nov 52"
-      },
-      {
-        "i": 309,
-        "date": "2052-12-01",
-        "year": 2052,
-        "month": 12,
-        "label": "Dec 52"
-      },
-      {
-        "i": 310,
-        "date": "2053-01-01",
-        "year": 2053,
-        "month": 1,
-        "label": "Jan 53"
-      },
-      {
-        "i": 311,
-        "date": "2053-02-01",
-        "year": 2053,
-        "month": 2,
-        "label": "Feb 53"
-      },
-      {
-        "i": 312,
-        "date": "2053-03-01",
-        "year": 2053,
-        "month": 3,
-        "label": "Mar 53"
-      },
-      {
-        "i": 313,
-        "date": "2053-04-01",
-        "year": 2053,
-        "month": 4,
-        "label": "Apr 53"
-      },
-      {
-        "i": 314,
-        "date": "2053-05-01",
-        "year": 2053,
-        "month": 5,
-        "label": "May 53"
-      },
-      {
-        "i": 315,
-        "date": "2053-06-01",
-        "year": 2053,
-        "month": 6,
-        "label": "Jun 53"
-      },
-      {
-        "i": 316,
-        "date": "2053-07-01",
-        "year": 2053,
-        "month": 7,
-        "label": "Jul 53"
-      },
-      {
-        "i": 317,
-        "date": "2053-08-01",
-        "year": 2053,
-        "month": 8,
-        "label": "Aug 53"
-      },
-      {
-        "i": 318,
-        "date": "2053-09-01",
-        "year": 2053,
-        "month": 9,
-        "label": "Sep 53"
-      }
-    ]
-  }
+  ]
 }

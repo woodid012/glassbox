@@ -38,3 +38,7 @@ bs-*.md
 *-DIAGNOSIS.md
 *-ROOT-CAUSE.md
 nul
+
+# Generated files
+data/model-schema.json
+recipe/spec/extracted.spec.json

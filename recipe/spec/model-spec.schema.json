@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Glass Box Model Spec",
+  "description": "A simplified, Claude-friendly model specification that compiles to a full recipe",
+  "type": "object",
+  "required": ["project", "timeline", "keyPeriods", "constants", "calculations"],
+  "properties": {
+    "_comment": {
+      "type": "string",
+      "description": "Optional description of this model spec"
+    },
+    "project": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["BESS", "Solar", "Wind", "Hybrid", "Thermal", "Other"] },
+        "currency": { "type": "string", "default": "AUD" },
+        "financialYearEnd": { "type": "integer", "minimum": 1, "maximum": 12, "default": 6 }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{3} \\d{4}$",
+          "description": "Start date as 'Mon YYYY', e.g., 'Apr 2027'"
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{3} \\d{4}$",
+          "description": "End date as 'Mon YYYY', e.g., 'Mar 2060'"
+        }
+      }
+    },
+    "keyPeriods": {
+      "type": "array",
+      "description": "Time periods that generate F-flags (F1, F2, etc.)",
+      "items": {
+        "type": "object",
+        "required": ["name", "duration"],
+        "properties": {
+          "id": { "type": "integer", "description": "Optional explicit ID, auto-generated if omitted" },
+          "name": { "type": "string" },
+          "flag": { "type": "string", "pattern": "^F\\d+$", "description": "Optional explicit flag, auto-generated if omitted" },
+          "duration": {
+            "type": "string",
+            "description": "Duration as 'N months' or 'N years', e.g., '18 months', '25 years'"
+          },
+          "start": {
+            "type": "string",
+            "description": "When period starts: 'timeline.start', 'after F1', 'with F2', etc."
+          },
+          "parent": {
+            "type": "string",
+            "description": "Parent group flag for nested periods, e.g., 'F2'"
+          },
+          "isGroup": {
+            "type": "boolean",
+            "description": "If true, this period contains child periods"
+          },
+          "children": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Child period flags for group periods"
+          }
+        }
+      }
+    },
+    "indices": {
+      "type": "array",
+      "description": "Escalation indices (CPI, etc.) that generate I-refs",
+      "items": {
+        "type": "object",
+        "required": ["name", "rate"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "rate": { "type": "number", "description": "Annual rate as percentage, e.g., 2.5 for 2.5%" },
+          "startYear": { "type": "integer" }
+        }
+      }
+    },
+    "constants": {
+      "type": "array",
+      "description": "Model constants that generate C1.x refs",
+      "items": {
+        "type": "object",
+        "required": ["name", "value"],
+        "properties": {
+          "id": { "type": "integer", "description": "Optional, auto-generated starting at 101" },
+          "name": { "type": "string" },
+          "value": { "type": "number" },
+          "unit": { "type": "string" },
+          "_comment": { "type": "string" }
+        }
+      }
+    },
+    "inputGroups": {
+      "type": "array",
+      "description": "Groups for time-series inputs (CAPEX, OPEX, Lookups)",
+      "items": {
+        "type": "object",
+        "required": ["name", "mode"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "mode": { "type": "string", "enum": ["values", "series", "lookup"] },
+          "frequency": { "type": "string", "enum": ["M", "Q", "Y"], "default": "M" },
+          "linkedPeriod": { "type": "string", "description": "Key period flag to link to, e.g., 'F1'" },
+          "_comment": { "type": "string" }
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "description": "Individual input values",
+      "items": {
+        "type": "object",
+        "required": ["name", "group"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "group": { "type": "string", "description": "Group name (not ID) for readability" },
+          "value": { "type": "number" },
+          "values": {
+            "type": "object",
+            "description": "Sparse period values, e.g., { '0': 10, '3': 20 }"
+          },
+          "unit": { "type": "string" },
+          "entryMode": { "type": "string", "enum": ["constant", "values", "lookup"] },
+          "_comment": { "type": "string" }
+        }
+      }
+    },
+    "calculationGroups": {
+      "type": "array",
+      "description": "Groups that organize calculations into tabs",
+      "items": {
+        "type": "object",
+        "required": ["name", "tab"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "tab": { "type": "string", "description": "Tab name (auto-created if doesn't exist)" },
+          "_comment": { "type": "string" }
+        }
+      }
+    },
+    "calculations": {
+      "type": "array",
+      "description": "Individual calculations with formulas",
+      "items": {
+        "type": "object",
+        "required": ["name", "formula", "group"],
+        "properties": {
+          "id": { "type": "integer", "description": "R-ref ID, auto-generated if omitted" },
+          "name": { "type": "string" },
+          "formula": { "type": "string" },
+          "group": { "type": "string", "description": "Group name for readability" },
+          "type": {
+            "type": "string",
+            "enum": ["flow", "stock", "stock_start", "flag", "ratio"],
+            "default": "flow"
+          },
+          "sign": {
+            "type": "string",
+            "enum": ["positive", "negative", "neutral"],
+            "description": "Expected sign for validation"
+          },
+          "financialStatement": {
+            "type": "string",
+            "enum": ["pnl", "bs", "cf", "funding", "returns"],
+            "description": "Which financial statement this belongs to"
+          },
+          "_comment": { "type": "string" }
+        }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "description": "Complex calculation modules (debt sizing, reserves, etc.)",
+      "items": {
+        "type": "object",
+        "required": ["name", "template"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "template": {
+            "type": "string",
+            "enum": ["debt_manager", "depreciation", "iterative_debt_sizing", "dsrf", "tax", "working_capital", "mra", "equity_bridge"],
+            "description": "Module template to use"
+          },
+          "inputs": {
+            "type": "object",
+            "description": "Module input mappings, e.g., { principalRef: 'R94', rateRef: 'C1.15' }"
+          },
+          "enabled": { "type": "boolean", "default": true },
+          "_comment": { "type": "string" }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Validation rules for the model",
+      "properties": {
+        "balanceSheetTolerance": { "type": "number", "default": 0.01 },
+        "covenants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "ref": { "type": "string" },
+              "rule": { "type": "string", "enum": [">", ">=", "<", "<=", "=="] },
+              "threshold": { "type": "number" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

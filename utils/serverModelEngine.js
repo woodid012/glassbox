@@ -4,7 +4,7 @@
 
 import { runCalculationPass } from './calculationCore'
 import { getGroupRef } from './groupRefResolver'
-import { buildRefNameMap, registerRefNameAliases } from './refNameResolver'
+import { buildRefNameMap, buildCalcRefNameMap, registerRefNameAliases } from './refNameResolver'
 
 /**
  * Build timeline from model config
@@ -338,6 +338,13 @@ export function runServerModel(inputs, calculations, options = {}) {
     const config = inputs.config || {}
     const timeline = buildTimeline(config)
     const referenceMap = buildReferenceMap(inputs, timeline)
+
+    // Merge calc refNames into the refNameMap (e.g., "Ebitda" → "R13")
+    const calcRefNameMap = buildCalcRefNameMap(calculations.calculations)
+    const refNameMap = referenceMap._refNameMap
+    if (refNameMap) {
+        for (const [name, ref] of calcRefNameMap) refNameMap.set(name, ref)
+    }
 
     const result = runCalculationPass(
         calculations.calculations || [],

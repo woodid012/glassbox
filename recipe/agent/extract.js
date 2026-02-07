@@ -424,10 +424,175 @@ export async function extractRecipe(dataDir) {
 }
 
 /**
+ * Convert a recipe to spec format with symbolic refs.
+ * Replaces C1.X refs with {ConstantName} in formulas.
+ */
+export function recipeToSpec(recipe) {
+  const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  function fmtDate(year, month) {
+    return `${MONTH_NAMES[(month || 1) - 1]} ${year}`
+  }
+
+  // Build constant ref -> symbolic name map from inputs
+  const constRefToName = {}
+  const constants = (recipe.inputs || []).filter(i => i.groupId === 100)
+  for (const c of constants) {
+    if (c.ref) {
+      // Clean name for use as symbolic ref (remove spaces, special chars)
+      const symName = c.name.replace(/[^a-zA-Z0-9]/g, '')
+      constRefToName[c.ref] = symName
+    }
+  }
+
+  // Build input ref -> symbolic name map for non-constant inputs
+  const inputRefToName = {}
+  for (const inp of (recipe.inputs || [])) {
+    if (inp.groupId !== 100 && inp.ref) {
+      const symName = inp.name.replace(/[^a-zA-Z0-9]/g, '')
+      inputRefToName[inp.ref] = symName
+    }
+  }
+
+  // Replace constant refs in formula with {SymbolicName}
+  function symbolizeFormula(formula) {
+    if (!formula) return formula
+    let result = formula
+    // Sort by ref length (longest first) to avoid partial matches
+    const entries = Object.entries(constRefToName).sort((a, b) => b[0].length - a[0].length)
+    for (const [ref, name] of entries) {
+      // Replace whole-word occurrences of the ref
+      const escaped = ref.replace('.', '\\.')
+      result = result.replace(new RegExp(`\\b${escaped}\\b`, 'g'), `{${name}}`)
+    }
+    return result
+  }
+
+  const spec = {
+    project: recipe.project,
+
+    timeline: {
+      start: fmtDate(recipe.timeline.startYear, recipe.timeline.startMonth),
+      end: fmtDate(recipe.timeline.endYear, recipe.timeline.endMonth)
+    },
+
+    keyPeriods: recipe.keyPeriods
+      .filter(kp => !kp.parentGroupId) // Top-level only for spec simplicity
+      .map(kp => {
+        const entry = {
+          name: kp.name,
+          flag: kp.generates || `F${kp.id}`,
+          duration: `${kp.periods} months`
+        }
+        if (kp.startAnchor) {
+          if (kp.startAnchor === 'timeline.start') {
+            entry.start = 'timeline.start'
+          } else {
+            entry.start = `after ${kp.startAnchor.replace('.End', '').replace('.Start', '')}`
+          }
+        }
+        if (kp.isGroup && kp.childIds) {
+          entry.children = kp.childIds
+        }
+        return entry
+      }),
+
+    indices: (recipe.indices || []).map(idx => ({
+      id: idx.id,
+      name: idx.name,
+      rate: idx.rate,
+      startYear: idx.startYear
+    })),
+
+    constants: constants.map(c => {
+      const entry = {
+        name: c.name.replace(/[^a-zA-Z0-9]/g, ''),
+        value: c.value
+      }
+      if (c.unit) entry._comment = c.unit
+      return entry
+    }),
+
+    inputGroups: (recipe.inputGroups || [])
+      .filter(g => g.groupType !== 'constant')
+      .map(g => {
+        const entry = {
+          id: g.id,
+          name: g.name,
+          mode: g.mode
+        }
+        if (g.frequency) entry.frequency = g.frequency
+        if (g.linkedKeyPeriodId) entry.linkedPeriod = `F${g.linkedKeyPeriodId}`
+        return entry
+      }),
+
+    inputs: (recipe.inputs || [])
+      .filter(i => i.groupId !== 100)
+      .map(inp => {
+        const group = (recipe.inputGroups || []).find(g => g.id === inp.groupId)
+        const entry = {
+          id: inp.id,
+          name: inp.name,
+          group: group?.name || `Group${inp.groupId}`
+        }
+        if (inp.value !== undefined) entry.value = inp.value
+        if (inp.unit) entry.unit = inp.unit
+        return entry
+      }),
+
+    calculationGroups: (recipe.calculationGroups || []).map(g => {
+      const tab = (recipe.tabs || []).find(t => t.id === g.tabId)
+      return {
+        id: g.id,
+        name: g.name,
+        tab: tab?.name || `Tab${g.tabId}`
+      }
+    }),
+
+    calculations: (recipe.calculations || []).map(calc => {
+      const group = (recipe.calculationGroups || []).find(g => g.id === calc.groupId)
+      const entry = {
+        id: calc.id,
+        name: calc.name,
+        formula: symbolizeFormula(calc.formula),
+        group: group?.name || undefined,
+        type: calc.type
+      }
+      return entry
+    }),
+
+    modules: (recipe.modules || []).map(mod => ({
+      templateId: mod.templateId,
+      name: mod.name,
+      inputs: mod.inputs,
+      ...(mod.enabled === false ? { enabled: false } : {})
+    })),
+
+    validation: {
+      balanceSheetTolerance: 0.01
+    }
+  }
+
+  return spec
+}
+
+/**
  * CLI entry point
  */
-export async function runExtract(dataDir, outputPath) {
+export async function runExtract(dataDir, outputPath, options = {}) {
   const recipe = await extractRecipe(dataDir)
+
+  if (options.format === 'spec') {
+    const spec = recipeToSpec(recipe)
+    const json = JSON.stringify(spec, null, 2)
+    await fs.writeFile(outputPath, json, 'utf-8')
+    console.log(`Spec extracted to ${outputPath}`)
+    console.log(`  ${spec.keyPeriods.length} key periods`)
+    console.log(`  ${spec.constants.length} constants`)
+    console.log(`  ${spec.calculations.length} calculations`)
+    console.log(`  ${spec.modules.length} modules`)
+    return spec
+  }
+
   const json = JSON.stringify(recipe, null, 2)
   await fs.writeFile(outputPath, json, 'utf-8')
   console.log(`Recipe extracted to ${outputPath}`)

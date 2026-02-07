@@ -283,9 +283,9 @@
       "name": "Construction Funding: Total Uses (ex-IDC)",
       "formula": "CUMSUM(R9024)",
       "type": "stock",
+      "description": "Cumulative net period costs (GST-netted)",
       "_moduleId": "M4",
-      "_moduleOutputKey": "total_uses_ex_idc",
-      "description": "Cumulative net period costs (GST-netted)"
+      "_moduleOutputKey": "total_uses_ex_idc"
     },
     {
       "id": 9024,
@@ -680,9 +680,9 @@
       "name": "Principal Payment",
       "formula": "MIN(MAX(0, R9064 - R9066), R9063 / MAX(1, R9065)) * R9073 * F8",
       "type": "flow",
+      "description": "Level principal amortization (balance / remaining periods), capped at DSCR capacity",
       "_moduleId": "M1",
-      "_moduleOutputKey": "principal_payment",
-      "description": "Level principal amortization (balance / remaining periods), capped at DSCR capacity"
+      "_moduleOutputKey": "principal_payment"
     },
     {
       "id": 9068,
@@ -744,9 +744,9 @@
       "name": "DSRF: Recalc Trigger",
       "formula": "F2.Start + F13 + F14 + F15 + F16",
       "type": "flag",
+      "description": "1 at ops start and each refinancing date",
       "_moduleId": "M8",
-      "_moduleOutputKey": "recalc_trigger",
-      "description": "1 at ops start and each refinancing date"
+      "_moduleOutputKey": "recalc_trigger"
     },
     {
       "id": 9086,
@@ -754,9 +754,9 @@
       "name": "DSRF: Facility Limit",
       "formula": "PREVVAL(R9086) * (1 - R9079) + FWDSUM(ABS(R9068), C1.54) * R9079 * F2",
       "type": "stock",
+      "description": "Forward-looking sum of next N months DS, recalculated at ops start and refi dates",
       "_moduleId": "M8",
-      "_moduleOutputKey": "facility_limit",
-      "description": "Forward-looking sum of next N months DS, recalculated at ops start and refi dates"
+      "_moduleOutputKey": "facility_limit"
     },
     {
       "id": 9087,
@@ -764,9 +764,9 @@
       "name": "DSRF: Refi Fees",
       "formula": "R9086 * (F13 + F14 + F15 + F16) * C1.62 / 100",
       "type": "flow",
+      "description": "One-time refinancing fees at each refi date",
       "_moduleId": "M8",
-      "_moduleOutputKey": "refi_fees",
-      "description": "One-time refinancing fees at each refi date"
+      "_moduleOutputKey": "refi_fees"
     },
     {
       "id": 9088,
@@ -774,9 +774,9 @@
       "name": "DSRF: Effective Margin",
       "formula": "PREVVAL(R9088) * (1 - R9079) + (C1.53 * F2.Start + C1.63 * (F13 + F14 + F15 + F16)) * R9079 + C1.53 * (CUMSUM(1) == 1)",
       "type": "stock",
+      "description": "Margin steps from base to refi margin at each refi date",
       "_moduleId": "M8",
-      "_moduleOutputKey": "effective_margin",
-      "description": "Margin steps from base to refi margin at each refi date"
+      "_moduleOutputKey": "effective_margin"
     },
     {
       "id": 9080,
@@ -838,17 +838,17 @@
       "name": "Construction Funding: Equity Target (ex-IDC)",
       "formula": "MAXVAL(R9023) - M1.1",
       "type": "stock",
+      "description": "Equity target: total construction uses minus sized debt, so cons debt = ops debt",
       "_moduleId": "M4",
-      "_moduleOutputKey": "equity_target",
-      "description": "Equity target: total construction uses minus sized debt, so cons debt = ops debt"
+      "_moduleOutputKey": "equity_target"
     },
     {
       "id": 9110,
       "groupId": 63,
       "name": "IDC+Comm Amort: Total Capitalised",
       "formula": "CUMSUM(R9022) + CUMSUM(R146 * R229) + CUMSUM(S3 * I2 * R229) + CUMSUM(R9082 * R229)",
-      "description": "Cumulative IDC + commitment fees + agency fees + DSRF fees during construction (constant after COD)",
       "type": "stock",
+      "description": "Cumulative IDC + commitment fees + agency fees + DSRF fees during construction (constant after COD)",
       "_moduleId": "M9",
       "_moduleOutputKey": "total_capitalised"
     },
@@ -857,8 +857,8 @@
       "groupId": 63,
       "name": "IDC+Comm Amort: Addition",
       "formula": "R9110 * F2.Start",
-      "description": "One-time transfer at COD of total capitalised IDC + commitment fees",
       "type": "flow",
+      "description": "One-time transfer at COD of total capitalised IDC + commitment fees",
       "_moduleId": "M9",
       "_moduleOutputKey": "addition"
     },
@@ -867,8 +867,8 @@
       "groupId": 63,
       "name": "IDC+Comm Amort: Opening",
       "formula": "MAX(0, (CUMSUM(R9111) - R9111) - R9110 / C1.59 / T.MiY * (CUMSUM(F2) - F2))",
-      "description": "Prior period closing (CUMSUM pattern, no SHIFT)",
       "type": "stock_start",
+      "description": "Prior period closing (CUMSUM pattern, no SHIFT)",
       "_moduleId": "M9",
       "_moduleOutputKey": "opening"
     },
@@ -877,8 +877,8 @@
       "groupId": 63,
       "name": "IDC+Comm Amort: Amort Expense",
       "formula": "MIN(R9112 + R9111, R9110 / C1.59 / T.MiY) * F2",
-      "description": "Monthly straight-line amortisation over C1.59 years",
       "type": "flow",
+      "description": "Monthly straight-line amortisation over C1.59 years",
       "_moduleId": "M9",
       "_moduleOutputKey": "expense"
     },
@@ -887,8 +887,8 @@
       "groupId": 63,
       "name": "IDC+Comm Amort: Accumulated",
       "formula": "CUMSUM(R9113)",
-      "description": "Cumulative amortisation expense",
       "type": "stock",
+      "description": "Cumulative amortisation expense",
       "_moduleId": "M9",
       "_moduleOutputKey": "accumulated"
     },
@@ -897,8 +897,8 @@
       "groupId": 63,
       "name": "IDC+Comm Amort: Closing NBV",
       "formula": "MAX(0, CUMSUM(R9111) - R9110 / C1.59 / T.MiY * CUMSUM(F2))",
-      "description": "Net book value after amortisation",
       "type": "stock",
+      "description": "Net book value after amortisation",
       "_moduleId": "M9",
       "_moduleOutputKey": "closing"
     },
@@ -907,8 +907,8 @@
       "groupId": 64,
       "name": "Upfront Fees Amort: Total Capitalised",
       "formula": "CUMSUM(R144 * F1)",
-      "description": "Cumulative upfront fees during construction (constant after COD)",
       "type": "stock",
+      "description": "Cumulative upfront fees during construction (constant after COD)",
       "_moduleId": "M10",
       "_moduleOutputKey": "total_capitalised"
     },
@@ -917,8 +917,8 @@
       "groupId": 64,
       "name": "Upfront Fees Amort: Addition",
       "formula": "R9120 * F2.Start",
-      "description": "One-time transfer at COD of total capitalised upfront fees",
       "type": "flow",
+      "description": "One-time transfer at COD of total capitalised upfront fees",
       "_moduleId": "M10",
       "_moduleOutputKey": "addition"
     },
@@ -927,8 +927,8 @@
       "groupId": 64,
       "name": "Upfront Fees Amort: Opening",
       "formula": "MAX(0, (CUMSUM(R9121) - R9121) - R9120 / C1.60 / T.MiY * (CUMSUM(F2) - F2))",
-      "description": "Prior period closing (CUMSUM pattern, no SHIFT)",
       "type": "stock_start",
+      "description": "Prior period closing (CUMSUM pattern, no SHIFT)",
       "_moduleId": "M10",
       "_moduleOutputKey": "opening"
     },
@@ -937,8 +937,8 @@
       "groupId": 64,
       "name": "Upfront Fees Amort: Amort Expense",
       "formula": "MIN(R9122 + R9121, R9120 / C1.60 / T.MiY) * F2",
-      "description": "Monthly straight-line amortisation over C1.60 years",
       "type": "flow",
+      "description": "Monthly straight-line amortisation over C1.60 years",
       "_moduleId": "M10",
       "_moduleOutputKey": "expense"
     },
@@ -947,8 +947,8 @@
       "groupId": 64,
       "name": "Upfront Fees Amort: Accumulated",
       "formula": "CUMSUM(R9123)",
-      "description": "Cumulative amortisation expense",
       "type": "stock",
+      "description": "Cumulative amortisation expense",
       "_moduleId": "M10",
       "_moduleOutputKey": "accumulated"
     },
@@ -957,8 +957,8 @@
       "groupId": 64,
       "name": "Upfront Fees Amort: Closing NBV",
       "formula": "MAX(0, CUMSUM(R9121) - R9120 / C1.60 / T.MiY * CUMSUM(F2))",
-      "description": "Net book value after amortisation",
       "type": "stock",
+      "description": "Net book value after amortisation",
       "_moduleId": "M10",
       "_moduleOutputKey": "closing"
     },
@@ -967,8 +967,8 @@
       "groupId": 65,
       "name": "Short Term Maintenance: Ops Flag (post F12 onset)",
       "formula": "F2 * (CUMSUM(F12) > 0)",
-      "description": "1 during operations from F12 onset onwards, 0 before. Used to gate depreciation timing.",
       "type": "flag",
+      "description": "1 during operations from F12 onset onwards, 0 before. Used to gate depreciation timing.",
       "_moduleId": "M11",
       "_moduleOutputKey": "active_flag"
     },
@@ -977,8 +977,8 @@
       "groupId": 65,
       "name": "Short Term Maintenance: Total Capitalised",
       "formula": "CUMSUM(S2 * I2 * F12)",
-      "description": "Cumulative CPI-indexed maintenance capex during F12",
       "type": "stock",
+      "description": "Cumulative CPI-indexed maintenance capex during F12",
       "_moduleId": "M11",
       "_moduleOutputKey": "total_capitalised"
     },
@@ -987,8 +987,8 @@
       "groupId": 65,
       "name": "Short Term Maintenance: Addition",
       "formula": "S2 * I2 * F12",
-      "description": "Periodic maintenance capex addition (quarterly, CPI-indexed)",
       "type": "flow",
+      "description": "Periodic maintenance capex addition (quarterly, CPI-indexed)",
       "_moduleId": "M11",
       "_moduleOutputKey": "addition"
     },
@@ -997,8 +997,8 @@
       "groupId": 65,
       "name": "Short Term Maintenance: Opening",
       "formula": "MAX(0, (CUMSUM(R9131) - R9131) - (CUMSUM(R9131) - R9131) / C1.61 / T.MiY * (CUMSUM(R9129) - R9129))",
-      "description": "Prior period closing NBV (CUMSUM pattern, no circular deps)",
       "type": "stock_start",
+      "description": "Prior period closing NBV (CUMSUM pattern, no circular deps)",
       "_moduleId": "M11",
       "_moduleOutputKey": "opening"
     },
@@ -1007,8 +1007,8 @@
       "groupId": 65,
       "name": "Short Term Maintenance: Depreciation Expense",
       "formula": "R9132 + R9131 - R9135",
-      "description": "Depreciation = Opening + Addition - Closing (derived from stock identity, guarantees BS balance)",
       "type": "flow",
+      "description": "Depreciation = Opening + Addition - Closing (derived from stock identity, guarantees BS balance)",
       "_moduleId": "M11",
       "_moduleOutputKey": "expense"
     },
@@ -1017,8 +1017,8 @@
       "groupId": 65,
       "name": "Short Term Maintenance: Accumulated",
       "formula": "CUMSUM(R9133)",
-      "description": "Cumulative depreciation expense",
       "type": "stock",
+      "description": "Cumulative depreciation expense",
       "_moduleId": "M11",
       "_moduleOutputKey": "accumulated"
     },
@@ -1027,8 +1027,8 @@
       "groupId": 65,
       "name": "Short Term Maintenance: Closing NBV",
       "formula": "MAX(0, CUMSUM(R9131) - CUMSUM(R9131) / C1.61 / T.MiY * CUMSUM(R9129))",
-      "description": "Net book value after depreciation (depreciation starts at F12 onset)",
       "type": "stock",
+      "description": "Net book value after depreciation (depreciation starts at F12 onset)",
       "_moduleId": "M11",
       "_moduleOutputKey": "closing"
     }
@@ -1038,8 +1038,6 @@
       "id": 1769253473397,
       "templateId": "iterative_debt_sizing",
       "name": "Operation Debt",
-      "description": "Binary search to find optimal debt with DSCR-sculpted repayments",
-      "category": "financing",
       "inputs": {
         "contractedCfadsRef": "R208",
         "contractedDSCR": "C1.25",
@@ -1053,27 +1051,45 @@
         "debtPeriod": "Q",
         "tolerance": 0.1,
         "maxIterations": 50
-      }
+      },
+      "description": "Binary search to find optimal debt with DSCR-sculpted repayments",
+      "category": "financing",
+      "outputs": [
+        "sized_debt",
+        "opening_balance",
+        "interest_payment",
+        "principal_payment",
+        "debt_service",
+        "closing_balance",
+        "period_dscr",
+        "cumulative_principal"
+      ]
     },
     {
       "id": 1769317033954,
       "templateId": "straight_line_amortisation",
       "name": "PP&E Depreciation",
-      "description": "Straight-line depreciation of PP&E using CUMSUM pattern",
-      "category": "accounting",
       "inputs": {
         "capitalisedRef": "R203",
         "onsetFlag": "F2",
         "lifeRef": "C1.24",
         "additionMode": "one_time"
-      }
+      },
+      "description": "Straight-line depreciation of PP&E using CUMSUM pattern",
+      "category": "accounting",
+      "outputs": [
+        "total_capitalised",
+        "addition",
+        "opening",
+        "expense",
+        "accumulated",
+        "closing"
+      ]
     },
     {
       "id": 1769320996781,
       "templateId": "gst_receivable",
       "name": "GST Paid/Received",
-      "description": "GST ledger with configurable receipt delay using CUMSUM pattern",
-      "category": "accounting",
       "inputs": {
         "gstBaseRef": "R112",
         "activeFlagRef": "F1",
@@ -1081,14 +1097,23 @@
         "receiptDelayMonths": "C1.31",
         "constructionFlagRef": "F1",
         "operationsFlagRef": "F2"
-      }
+      },
+      "description": "GST ledger with configurable receipt delay using CUMSUM pattern",
+      "category": "accounting",
+      "outputs": [
+        "gst_base",
+        "gst_amount",
+        "gst_paid",
+        "receivable_opening",
+        "gst_received",
+        "receivable_closing",
+        "net_gst_cashflow"
+      ]
     },
     {
       "id": 1769323861808,
       "templateId": "construction_funding",
       "name": "Construction Funding",
-      "description": "Construction funding waterfall with IDC equity-funded",
-      "category": "financing",
       "inputs": {
         "constructionCostsRef": "R60",
         "gstPaidRef": "R61",
@@ -1100,27 +1125,47 @@
         "interestRatePct": "R171",
         "drawdownMethod": "equity_first",
         "constructionFlagRef": "R229"
-      }
+      },
+      "description": "Construction funding waterfall with IDC equity-funded",
+      "category": "financing",
+      "outputs": [
+        "total_uses_incl_idc",
+        "senior_debt",
+        "equity",
+        "gearing_pct",
+        "cumulative_idc",
+        "debt_drawdown",
+        "equity_drawdown",
+        "idc",
+        "total_uses_ex_idc"
+      ]
     },
     {
       "id": 1769400000000,
       "templateId": "tax_losses",
       "name": "Tax & Tax Losses",
-      "description": "Tax calculation with loss carry-forward using CUMSUM pattern",
-      "category": "accounting",
       "inputs": {
         "taxableIncomeRef": "R17",
         "opsFlagRef": "F2",
         "taxRatePct": "C1.11"
       },
+      "description": "Tax calculation with loss carry-forward using CUMSUM pattern",
+      "category": "accounting",
+      "outputs": [
+        "taxable_income_before_losses",
+        "losses_opening",
+        "losses_generated",
+        "losses_utilised",
+        "losses_closing",
+        "net_taxable_income",
+        "tax_payable"
+      ],
       "enabled": false
     },
     {
       "id": 1769500000000,
       "templateId": "reserve_account",
       "name": "MRA (Maintenance Reserve)",
-      "description": "MRA funded at construction end, draws for maintenance, releases at maintenance end",
-      "category": "financing",
       "inputs": {
         "accountName": "MRA",
         "fundingAmountRef": "C1.17",
@@ -1128,14 +1173,21 @@
         "drawdownRef": "S2",
         "drawdownFlagRef": "F12",
         "releaseFlagRef": "F12.End"
-      }
+      },
+      "description": "MRA funded at construction end, draws for maintenance, releases at maintenance end",
+      "category": "financing",
+      "outputs": [
+        "opening",
+        "funding",
+        "drawdown",
+        "release",
+        "closing"
+      ]
     },
     {
       "id": 1769600000000,
       "templateId": "distributions",
       "name": "Distributions",
-      "description": "Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment",
-      "category": "financing",
       "inputs": {
         "availableCashRef": "R170",
         "npatRef": "R19",
@@ -1157,14 +1209,37 @@
         "dsraTargetRef": "",
         "quarterEndFlagRef": "T.QE"
       },
+      "description": "Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment",
+      "category": "financing",
+      "outputs": [
+        "cash_available",
+        "re_opening",
+        "re_npat",
+        "re_test",
+        "npat_test",
+        "dividend_paid",
+        "re_movement",
+        "re_closing",
+        "sc_opening",
+        "sc_cash_available",
+        "sc_repayment",
+        "sc_closing",
+        "total_distributions",
+        "withholding_tax",
+        "net_to_equity",
+        "dscr_test",
+        "adscr_test",
+        "dsra_test",
+        "all_tests_pass",
+        "consec_pass_qtrs",
+        "lockup_active"
+      ],
       "enabled": true
     },
     {
       "id": 1769700000000,
       "templateId": "dsrf",
       "name": "DSRF & Refi Fees",
-      "description": "Debt service reserve facility with refinancing fees and margin step-ups",
-      "category": "financing",
       "inputs": {
         "dsrfActiveRef": "C1.50",
         "debtServiceRef": "R9068",
@@ -1206,624 +1281,8 @@
           }
         ]
       },
-      "enabled": true
-    },
-    {
-      "id": 1769800000000,
-      "templateId": "straight_line_amortisation",
-      "name": "IDC + Fees Amortisation",
-      "description": "Straight-line amortisation of capitalised IDC + commitment + agency + DSRF fees",
-      "category": "accounting",
-      "inputs": {
-        "capitalisedRef": "R9110",
-        "onsetFlag": "F2",
-        "lifeRef": "C1.59",
-        "additionMode": "one_time"
-      }
-    },
-    {
-      "id": 1769800000001,
-      "templateId": "straight_line_amortisation",
-      "name": "Upfront Fees Amortisation",
-      "description": "Straight-line amortisation of capitalised upfront financing fees",
-      "category": "accounting",
-      "inputs": {
-        "capitalisedRef": "R9120",
-        "onsetFlag": "F2",
-        "lifeRef": "C1.60",
-        "additionMode": "one_time"
-      }
-    },
-    {
-      "id": 1769800000002,
-      "templateId": "straight_line_amortisation",
-      "name": "Maintenance D&A",
-      "description": "Straight-line depreciation of periodic maintenance capex",
-      "category": "accounting",
-      "inputs": {
-        "capitalisedRef": "R9130",
-        "onsetFlag": "F2",
-        "lifeRef": "C1.61",
-        "additionMode": "periodic",
-        "periodicAdditionRef": "S2 * I2 * F12",
-        "activeFlag": "F12"
-      }
-    }
-  ],
-  "_mRefMap": {
-    "M1.2": "R9063",
-    "M1.3": "R9066",
-    "M1.4": "R9067",
-    "M1.5": "R9068",
-    "M1.6": "R9070",
-    "M1.7": "R9071",
-    "M1.8": "R9072"
-  },
-  "moduleTemplates": [
-    {
-      "id": "construction_funding",
-      "name": "Construction Funding",
-      "description": "Construction funding waterfall with IDC equity-funded",
-      "category": "financing",
-      "inputs": [
-        {
-          "key": "constructionCostsRef",
-          "label": "Construction Costs (cumulative)",
-          "type": "reference",
-          "default": "R60"
-        },
-        {
-          "key": "gstPaidRef",
-          "label": "GST Paid (cumulative)",
-          "type": "reference",
-          "default": "R61"
-        },
-        {
-          "key": "feesRef",
-          "label": "Fees/Other Uses (cumulative)",
-          "type": "reference",
-          "default": ""
-        },
-        {
-          "key": "sizedDebtRef",
-          "label": "Sized Debt (from Debt Module)",
-          "type": "reference",
-          "default": "M1.1"
-        },
-        {
-          "key": "gearingCapPct",
-          "label": "Gearing Cap (%)",
-          "type": "number",
-          "default": 65
-        },
-        {
-          "key": "interestRatePct",
-          "label": "IDC Interest Rate (%)",
-          "type": "number",
-          "default": 5
-        },
-        {
-          "key": "drawdownMethod",
-          "label": "Drawdown Method",
-          "type": "select",
-          "options": [
-            {
-              "value": "prorata",
-              "label": "Pro-rata"
-            },
-            {
-              "value": "equity_first",
-              "label": "Equity First"
-            }
-          ],
-          "default": "prorata"
-        },
-        {
-          "key": "constructionFlagRef",
-          "label": "Construction Flag",
-          "type": "reference",
-          "default": "F1"
-        }
-      ],
-      "outputs": [
-        "total_uses_incl_idc",
-        "senior_debt",
-        "equity",
-        "gearing_pct",
-        "cumulative_idc",
-        "debt_drawdown",
-        "equity_drawdown",
-        "idc",
-        "total_uses_ex_idc"
-      ]
-    },
-    {
-      "id": "reserve_account",
-      "name": "Reserve Account",
-      "description": "Reserve account (MRA/DSRA) with funding and drawdown using CUMSUM pattern",
-      "category": "financing",
-      "inputs": [
-        {
-          "key": "fundingAmountRef",
-          "label": "Funding Amount",
-          "type": "reference",
-          "default": ""
-        },
-        {
-          "key": "fundingFlagRef",
-          "label": "Funding Flag (e.g., F1.End)",
-          "type": "reference",
-          "default": "F1.End"
-        },
-        {
-          "key": "drawdownRef",
-          "label": "Drawdown Amount (optional)",
-          "type": "reference",
-          "default": ""
-        },
-        {
-          "key": "drawdownFlagRef",
-          "label": "Drawdown Flag (e.g., F2)",
-          "type": "reference",
-          "default": "F2"
-        },
-        {
-          "key": "releaseFlagRef",
-          "label": "Release Flag (e.g., F2.End)",
-          "type": "reference",
-          "default": "F2.End"
-        }
-      ],
-      "outputs": [
-        "opening",
-        "funding",
-        "drawdown",
-        "release",
-        "closing"
-      ]
-    },
-    {
-      "id": "gst_receivable",
-      "name": "GST Paid/Received",
-      "description": "GST ledger with configurable receipt delay using CUMSUM pattern",
-      "category": "accounting",
-      "inputs": [
-        {
-          "key": "gstBaseRef",
-          "label": "GST Base Amount (e.g., R112)",
-          "type": "reference",
-          "default": "R112"
-        },
-        {
-          "key": "activeFlagRef",
-          "label": "Active Period Flag",
-          "type": "reference",
-          "default": "F1"
-        },
-        {
-          "key": "gstRatePct",
-          "label": "GST Rate (%)",
-          "type": "number",
-          "default": 10
-        },
-        {
-          "key": "receiptDelayMonths",
-          "label": "Receipt Delay (months)",
-          "type": "number",
-          "default": 1
-        }
-      ],
-      "outputs": [
-        "gst_base",
-        "gst_amount",
-        "gst_paid",
-        "receivable_opening",
-        "gst_received",
-        "receivable_closing",
-        "net_gst_cashflow"
-      ]
-    },
-    {
-      "id": "tax_losses",
-      "name": "Tax & Tax Losses",
-      "description": "Tax calculation with loss carry-forward using CUMSUM pattern",
-      "category": "accounting",
-      "inputs": [
-        {
-          "key": "taxableIncomeRef",
-          "label": "Taxable Income Before Losses",
-          "type": "reference",
-          "default": ""
-        },
-        {
-          "key": "opsFlagRef",
-          "label": "Operations Flag",
-          "type": "reference",
-          "default": "F2"
-        },
-        {
-          "key": "taxRatePct",
-          "label": "Tax Rate (%)",
-          "type": "number",
-          "default": 30
-        }
-      ],
-      "outputs": [
-        "taxable_income_before_losses",
-        "losses_opening",
-        "losses_generated",
-        "losses_utilised",
-        "losses_closing",
-        "net_taxable_income",
-        "tax_payable"
-      ]
-    },
-    {
-      "id": "straight_line_amortisation",
-      "name": "Straight-Line Amortisation",
-      "description": "CUMSUM-based ledger pattern for depreciation/amortisation — supports one-time and periodic additions",
-      "category": "accounting",
-      "inputs": [
-        {
-          "key": "capitalisedRef",
-          "label": "Capitalised Cost Reference",
-          "type": "reference",
-          "default": ""
-        },
-        {
-          "key": "onsetFlag",
-          "label": "Onset Flag (e.g. F2)",
-          "type": "reference",
-          "default": "F2"
-        },
-        {
-          "key": "lifeRef",
-          "label": "Useful Life (years)",
-          "type": "number_or_ref",
-          "default": 15
-        },
-        {
-          "key": "additionMode",
-          "label": "Addition Mode",
-          "type": "select",
-          "options": [
-            {
-              "value": "one_time",
-              "label": "One-time at onset"
-            },
-            {
-              "value": "periodic",
-              "label": "Periodic additions"
-            }
-          ],
-          "default": "one_time"
-        },
-        {
-          "key": "periodicAdditionRef",
-          "label": "Periodic Addition Reference",
-          "type": "reference",
-          "default": ""
-        },
-        {
-          "key": "activeFlag",
-          "label": "Active Flag (periodic mode)",
-          "type": "reference",
-          "default": ""
-        }
-      ],
-      "outputs": [
-        "total_capitalised",
-        "addition",
-        "opening",
-        "expense",
-        "accumulated",
-        "closing"
-      ]
-    },
-    {
-      "id": "iterative_debt_sizing",
-      "name": "Iterative Debt Sizing (DSCR Sculpted)",
-      "description": "Binary search to find optimal debt with DSCR-sculpted repayments. Supports separate contracted/merchant DSCRs.",
-      "category": "financing",
-      "inputs": [
-        {
-          "key": "contractedCfadsRef",
-          "label": "Contracted CFADS",
-          "type": "reference",
-          "default": "R115"
-        },
-        {
-          "key": "contractedDSCR",
-          "label": "Contracted DSCR",
-          "type": "number_or_ref",
-          "default": "C1.25"
-        },
-        {
-          "key": "merchantCfadsRef",
-          "label": "Merchant CFADS",
-          "type": "reference",
-          "default": "R116"
-        },
-        {
-          "key": "merchantDSCR",
-          "label": "Merchant DSCR",
-          "type": "number_or_ref",
-          "default": "C1.26"
-        },
-        {
-          "key": "debtFlagRef",
-          "label": "Debt Service Flag",
-          "type": "reference",
-          "default": "F8"
-        },
-        {
-          "key": "totalFundingRef",
-          "label": "Total Capex (ex-IDC)",
-          "type": "reference",
-          "default": "R60"
-        },
-        {
-          "key": "maxGearingPct",
-          "label": "Max Gearing (%)",
-          "type": "number",
-          "default": 65
-        },
-        {
-          "key": "interestRatePct",
-          "label": "Interest Rate (%)",
-          "type": "number",
-          "default": 5
-        },
-        {
-          "key": "tenorYears",
-          "label": "Debt Tenor (years)",
-          "type": "number",
-          "default": 18
-        },
-        {
-          "key": "debtPeriod",
-          "label": "Debt Service Period",
-          "type": "select",
-          "options": [
-            {
-              "value": "M",
-              "label": "Monthly"
-            },
-            {
-              "value": "Q",
-              "label": "Quarterly"
-            },
-            {
-              "value": "Y",
-              "label": "Yearly"
-            }
-          ],
-          "default": "Q"
-        },
-        {
-          "key": "tolerance",
-          "label": "Tolerance ($M)",
-          "type": "number",
-          "default": 0.1
-        },
-        {
-          "key": "maxIterations",
-          "label": "Max Iterations",
-          "type": "number",
-          "default": 50
-        }
-      ],
-      "outputs": [
-        "sized_debt",
-        "opening_balance",
-        "interest_payment",
-        "principal_payment",
-        "debt_service",
-        "closing_balance",
-        "period_dscr",
-        "cumulative_principal"
-      ]
-    },
-    {
-      "id": "distributions",
-      "name": "Distributions",
-      "description": "Shareholder distributions waterfall with RE test, lock-up covenants, and share capital repayment",
-      "category": "financing",
-      "inputs": [
-        {
-          "key": "availableCashRef",
-          "label": "Available Cashflow (pre-dist)",
-          "type": "reference",
-          "default": "R170"
-        },
-        {
-          "key": "npatRef",
-          "label": "NPAT",
-          "type": "reference",
-          "default": "R19"
-        },
-        {
-          "key": "equityContributedRef",
-          "label": "Equity Contributed",
-          "type": "reference",
-          "default": "M4.4"
-        },
-        {
-          "key": "minCashReserve",
-          "label": "Minimum Cash Reserve",
-          "type": "number_or_ref",
-          "default": 0
-        },
-        {
-          "key": "opsFlagRef",
-          "label": "Operations Flag",
-          "type": "reference",
-          "default": "F2"
-        },
-        {
-          "key": "withholdingTaxPct",
-          "label": "Withholding Tax %",
-          "type": "number_or_ref",
-          "default": 0
-        },
-        {
-          "key": "lockupActive",
-          "label": "Lock-up Active",
-          "type": "boolean",
-          "default": true
-        },
-        {
-          "key": "lockupReleasePeriods",
-          "label": "Release After (Qtrs)",
-          "type": "number_or_ref",
-          "default": 2
-        },
-        {
-          "key": "dscrTestActive",
-          "label": "DSCR Test Active",
-          "type": "boolean",
-          "default": true
-        },
-        {
-          "key": "dscrRef",
-          "label": "DSCR (periodic)",
-          "type": "reference",
-          "default": "M1.7"
-        },
-        {
-          "key": "dscrThreshold",
-          "label": "DSCR Threshold",
-          "type": "number_or_ref",
-          "default": 1.15
-        },
-        {
-          "key": "adscrTestActive",
-          "label": "Historical ADSCR Test Active",
-          "type": "boolean",
-          "default": true
-        },
-        {
-          "key": "cfadsRef",
-          "label": "Total CFADS",
-          "type": "reference",
-          "default": "R205"
-        },
-        {
-          "key": "debtServiceRef",
-          "label": "Total Debt Service",
-          "type": "reference",
-          "default": "M1.5"
-        },
-        {
-          "key": "adscrThreshold",
-          "label": "ADSCR Threshold",
-          "type": "number_or_ref",
-          "default": 1.15
-        },
-        {
-          "key": "dsraTestActive",
-          "label": "DSRA Fully Funded Test",
-          "type": "boolean",
-          "default": false
-        },
-        {
-          "key": "dsraBalanceRef",
-          "label": "DSRA Balance",
-          "type": "reference",
-          "default": ""
-        },
-        {
-          "key": "dsraTargetRef",
-          "label": "DSRA Target",
-          "type": "reference",
-          "default": ""
-        },
-        {
-          "key": "quarterEndFlagRef",
-          "label": "Quarter End Flag",
-          "type": "reference",
-          "default": "T.QE"
-        }
-      ],
-      "outputs": [
-        "cash_available",
-        "re_opening",
-        "re_npat",
-        "re_test",
-        "npat_test",
-        "dividend_paid",
-        "re_movement",
-        "re_closing",
-        "sc_opening",
-        "sc_cash_available",
-        "sc_repayment",
-        "sc_closing",
-        "total_distributions",
-        "withholding_tax",
-        "net_to_equity",
-        "dscr_test",
-        "adscr_test",
-        "dsra_test",
-        "all_tests_pass",
-        "consec_pass_qtrs",
-        "lockup_active"
-      ]
-    },
-    {
-      "id": "dsrf",
-      "name": "DSRF & Refi Fees",
       "description": "Debt service reserve facility with refinancing fees and margin step-ups",
       "category": "financing",
-      "inputs": [
-        {
-          "key": "dsrfActiveRef",
-          "label": "DSRF Active",
-          "type": "reference",
-          "default": "C1.50"
-        },
-        {
-          "key": "debtServiceRef",
-          "label": "Total Debt Service",
-          "type": "reference",
-          "default": "R178"
-        },
-        {
-          "key": "operationsFlagRef",
-          "label": "Operations Flag",
-          "type": "reference",
-          "default": "F2"
-        },
-        {
-          "key": "establishmentFeePctRef",
-          "label": "Establishment Fee (%)",
-          "type": "number_or_ref",
-          "default": "C1.51"
-        },
-        {
-          "key": "commitmentFeePctOfMarginRef",
-          "label": "Commitment Fee (% of Margin)",
-          "type": "number_or_ref",
-          "default": "C1.52"
-        },
-        {
-          "key": "baseMarginPctRef",
-          "label": "Base Margin (%)",
-          "type": "number_or_ref",
-          "default": "C1.53"
-        },
-        {
-          "key": "facilityMonthsRef",
-          "label": "Facility Months of DS",
-          "type": "number_or_ref",
-          "default": "C1.54"
-        },
-        {
-          "key": "refinancingSchedule",
-          "label": "Refinancing Schedule",
-          "type": "array",
-          "default": []
-        }
-      ],
       "outputs": [
         "facility_limit",
         "establishment_fee",
@@ -1834,7 +1293,82 @@
         "total_dsrf_fees_cumulative",
         "ds_plus_dsrf",
         "adjusted_dscr"
+      ],
+      "enabled": true
+    },
+    {
+      "id": 1769800000000,
+      "templateId": "straight_line_amortisation",
+      "name": "IDC + Fees Amortisation",
+      "inputs": {
+        "capitalisedRef": "R9110",
+        "onsetFlag": "F2",
+        "lifeRef": "C1.59",
+        "additionMode": "one_time"
+      },
+      "description": "Straight-line amortisation of capitalised IDC + commitment + agency + DSRF fees",
+      "category": "accounting",
+      "outputs": [
+        "total_capitalised",
+        "addition",
+        "opening",
+        "expense",
+        "accumulated",
+        "closing"
+      ]
+    },
+    {
+      "id": 1769800000001,
+      "templateId": "straight_line_amortisation",
+      "name": "Upfront Fees Amortisation",
+      "inputs": {
+        "capitalisedRef": "R9120",
+        "onsetFlag": "F2",
+        "lifeRef": "C1.60",
+        "additionMode": "one_time"
+      },
+      "description": "Straight-line amortisation of capitalised upfront financing fees",
+      "category": "accounting",
+      "outputs": [
+        "total_capitalised",
+        "addition",
+        "opening",
+        "expense",
+        "accumulated",
+        "closing"
+      ]
+    },
+    {
+      "id": 1769800000002,
+      "templateId": "straight_line_amortisation",
+      "name": "Maintenance D&A",
+      "inputs": {
+        "capitalisedRef": "R9130",
+        "onsetFlag": "F2",
+        "lifeRef": "C1.61",
+        "additionMode": "periodic",
+        "periodicAdditionRef": "S2 * I2 * F12",
+        "activeFlag": "F12"
+      },
+      "description": "Straight-line depreciation of periodic maintenance capex",
+      "category": "accounting",
+      "outputs": [
+        "total_capitalised",
+        "addition",
+        "opening",
+        "expense",
+        "accumulated",
+        "closing"
       ]
     }
-  ]
+  ],
+  "_mRefMap": {
+    "M1.2": "R9063",
+    "M1.3": "R9066",
+    "M1.4": "R9067",
+    "M1.5": "R9068",
+    "M1.6": "R9070",
+    "M1.7": "R9071",
+    "M1.8": "R9072"
+  }
 }

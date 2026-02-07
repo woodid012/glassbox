@@ -69,6 +69,22 @@ export function resolveRefNameTokens(formula, refNameMap) {
 }
 
 /**
+ * Build a refName→R-ref mapping from calculations.
+ * Returns a Map like { "Ebitda" => "R13", "Npat" => "R19", ... }
+ *
+ * @param {Object[]} calculations - Array of calculation objects (with refName field)
+ * @returns {Map<string, string>} refName → R-ref string
+ */
+export function buildCalcRefNameMap(calculations) {
+    const map = new Map()
+    if (!calculations) return map
+    calculations.forEach(calc => {
+        if (calc.refName) map.set(calc.refName, `R${calc.id}`)
+    })
+    return map
+}
+
+/**
  * Generate a refName from an input display name.
  * PascalCase, strips special chars, handles duplicates.
  *

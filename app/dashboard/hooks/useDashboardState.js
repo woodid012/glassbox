@@ -10,6 +10,7 @@ import { MODULE_TEMPLATES } from '@/utils/modules'
 import { useReferenceMap } from './useReferenceMap'
 import { useUnifiedCalculation } from './useUnifiedCalculation'
 import { getGroupRef } from '@/utils/groupRefResolver'
+import { buildCalcRefNameMap } from '@/utils/refNameResolver'
 
 export function useDashboardState(viewMode) {
     // Single state object - all state in one place for easy save/load
@@ -317,12 +318,20 @@ export function useDashboardState(viewMode) {
         timeline
     })
 
-    // Attach refNameMap for {Name} token resolution in formulas
+    // Merge calc refNames (e.g., "Ebitda" → "R13") into the refNameMap
+    const calcRefNameMap = useMemo(() =>
+        buildCalcRefNameMap(calculations),
+        [calculations]
+    )
+
+    // Attach combined refNameMap for {Name} token resolution in formulas
     const referenceMap = useMemo(() => {
         const refs = { ...baseReferenceMap }
-        refs._refNameMap = refNameMap
+        const combined = new Map(refNameMap)
+        for (const [name, ref] of calcRefNameMap) combined.set(name, ref)
+        refs._refNameMap = combined
         return refs
-    }, [baseReferenceMap, refNameMap])
+    }, [baseReferenceMap, refNameMap, calcRefNameMap])
 
     // Unified Calculation Hook - evaluates all calculations and modules in a single pass
     // Uses topological sort to handle dependencies correctly (no more 3-pass architecture)
