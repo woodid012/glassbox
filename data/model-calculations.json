@@ -206,7 +206,7 @@
       "id": 5,
       "groupId": 28,
       "name": "FCAS Revenue",
-      "formula": "L1.2 * C1.1 / T.MiY / 10^6 * F7 * I2",
+      "formula": "L1.2 * MIN(C1.64, C1.1) / T.MiY / 10^6 * F7 * I2",
       "description": "Frequency control ancillary services",
       "type": "flow"
     },
