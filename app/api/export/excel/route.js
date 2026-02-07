@@ -697,7 +697,7 @@ export async function GET() {
     } catch (error) {
         console.error('Excel export error:', error)
         return NextResponse.json(
-            { error: 'Failed to generate Excel export', details: error.message, stack: error.stack },
+            { error: 'Failed to generate Excel export', details: error.message },
             { status: 500 }
         )
     }

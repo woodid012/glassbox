@@ -234,6 +234,7 @@ export async function GET() {
             oldModCount: Object.keys(oldResults.moduleOutputs).length
         })
     } catch (error) {
-        return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 })
+        console.error('compare-migration error:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }

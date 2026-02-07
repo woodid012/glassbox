@@ -13,10 +13,12 @@
  *   node recipe/agent/index.js roundtrip          Extract -> Generate -> Validate (via vitest)
  *   node recipe/agent/index.js compare            Compare engine output vs IFS Excel + export (via vitest)
  *   node recipe/agent/index.js build <spec>       Compile spec -> Generate model files (full pipeline)
+ *   node recipe/agent/index.js ai-build <spec>    Full pipeline with validation (compile -> generate -> validate -> lint)
+ *   node recipe/agent/index.js schema             Generate model schema for AI context
  */
 import path from 'path'
 import { promises as fs } from 'fs'
-import { execSync } from 'child_process'
+import { execSync, execFileSync } from 'child_process'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -103,7 +105,11 @@ async function main() {
 
     case 'extract': {
       const { runExtract } = await import('./extract.js')
-      await runExtract(DATA_DIR, RECIPE_PATH)
+      const format = flags.includes('--spec') ? 'spec' : 'recipe'
+      const extractOutput = format === 'spec'
+        ? path.resolve(SPEC_DIR, 'extracted.spec.json')
+        : RECIPE_PATH
+      await runExtract(DATA_DIR, extractOutput, { format })
       break
     }
 
@@ -171,6 +177,44 @@ async function main() {
       break
     }
 
+    case 'ai-build': {
+      // Full pipeline with validation: compile -> generate -> validate -> lint
+      const specArg = flags.find(f => !f.startsWith('--'))
+      if (!specArg) {
+        console.error('Usage: ai-build <spec-file>')
+        process.exit(1)
+      }
+      const specPath = path.isAbsolute(specArg)
+        ? specArg
+        : path.resolve(process.cwd(), specArg)
+
+      const aiBuildArgs = [path.resolve(__dirname, 'ai-build.js'), specPath]
+      if (flags.includes('--json')) aiBuildArgs.push('--json')
+      try {
+        execFileSync('node', aiBuildArgs, {
+          cwd: PROJECT_ROOT,
+          stdio: 'inherit'
+        })
+      } catch (e) {
+        process.exit(1)
+      }
+      break
+    }
+
+    case 'schema': {
+      // Generate model schema for AI context
+      console.log('Generating model schema...')
+      const { buildModelSchema } = await import('../../utils/modelSchemaBuilder.js')
+      const schema = await buildModelSchema(DATA_DIR)
+      const outputPath = path.join(DATA_DIR, 'model-schema.json')
+      await fs.writeFile(outputPath, JSON.stringify(schema, null, 2))
+      console.log(`Schema written to: ${outputPath}`)
+      console.log(`  Size: ${JSON.stringify(schema).length} bytes`)
+      console.log(`  Calcs: ${schema.calculations.length}, Modules: ${schema.modules.length}`)
+      console.log(`  Constants: ${schema.constants.length}, Inputs: ${schema.inputs.length}`)
+      break
+    }
+
     case 'compare': {
       console.log('Running Excel comparison via vitest...')
       try {
@@ -198,6 +242,8 @@ Commands:
   debug           Diagnose BS imbalances
   roundtrip       Extract -> Generate -> Validate -> Lint
   compare         Compare engine output vs IFS Excel + export
+  ai-build <spec> Full pipeline: compile -> generate -> validate -> lint
+  schema          Generate model schema for AI context
 
 Options:
   --dry-run       Preview without writing files

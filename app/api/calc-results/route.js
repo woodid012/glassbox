@@ -49,6 +49,7 @@ export async function GET() {
             arrays
         })
     } catch (err) {
-        return NextResponse.json({ error: err.message, stack: err.stack }, { status: 500 })
+        console.error('calc-results error:', err)
+        return NextResponse.json({ error: err.message }, { status: 500 })
     }
 }

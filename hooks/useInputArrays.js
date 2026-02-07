@@ -384,11 +384,15 @@ export function useInputArrays({
 
                         let indexationFactor
                         if (indexationPeriod === 'monthly') {
+                            // Compound monthly rate: consistent with server engine
+                            const monthlyRate = Math.pow(1 + rate, 1 / MONTHS_IN_YEAR) - 1
                             const monthsElapsed = periodTotal - inputStartTotal
-                            indexationFactor = Math.pow(1 + rate / MONTHS_IN_YEAR, monthsElapsed)
+                            indexationFactor = Math.pow(1 + monthlyRate, monthsElapsed)
                         } else {
-                            const yearsElapsed = periodYear - inputStartYear
-                            indexationFactor = Math.pow(1 + rate, yearsElapsed)
+                            // Annual stepwise: flat within each year, step at year boundary
+                            const monthsFromBase = periodTotal - inputStartTotal
+                            const wholeYears = Math.floor(monthsFromBase / MONTHS_IN_YEAR)
+                            indexationFactor = Math.pow(1 + rate, wholeYears)
                         }
                         arr[i] = indexationFactor
                     } else if (input.category === 'flag') {

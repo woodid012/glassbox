@@ -39,7 +39,14 @@ async function readJsonFile(filePath, defaultValue = null) {
 }
 
 async function writeJsonFile(filePath, data) {
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
+    const tmpFile = filePath + '.tmp.' + Date.now()
+    try {
+        await fs.writeFile(tmpFile, JSON.stringify(data, null, 2), 'utf-8')
+        await fs.rename(tmpFile, filePath)
+    } catch (error) {
+        try { await fs.unlink(tmpFile) } catch { /* ignore cleanup error */ }
+        throw error
+    }
 }
 
 // GET - Load state from 4 files (or fallback to legacy)
