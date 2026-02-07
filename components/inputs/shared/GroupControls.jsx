@@ -2,6 +2,116 @@ import React from 'react'
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react'
 import EditableCell from './EditableCell'
 
+// Generate period options for lookup start/end dropdowns based on frequency
+function buildLookupDateOptions(config, frequency) {
+    const modelStartYear = config.startYear || 2027
+    const modelStartMonth = config.startMonth || 1
+    const modelEndYear = config.endYear || 2060
+    const modelEndMonth = config.endMonth || 12
+    const options = []
+    const freq = frequency || 'Y'
+
+    if (freq === 'Y' || freq === 'FY') {
+        for (let y = modelStartYear; y <= modelEndYear; y++) {
+            options.push({ value: `${y}-1`, label: `${y}`, year: y, month: 1 })
+        }
+    } else if (freq === 'Q') {
+        for (let y = modelStartYear; y <= modelEndYear; y++) {
+            const startQ = (y === modelStartYear) ? Math.ceil(modelStartMonth / 3) : 1
+            const endQ = (y === modelEndYear) ? Math.ceil(modelEndMonth / 3) : 4
+            for (let q = startQ; q <= endQ; q++) {
+                const m = (q - 1) * 3 + 1
+                options.push({ value: `${y}-${m}`, label: `Q${q} ${y}`, year: y, month: m })
+            }
+        }
+    } else {
+        // Monthly
+        for (let y = modelStartYear; y <= modelEndYear; y++) {
+            const startM = (y === modelStartYear) ? modelStartMonth : 1
+            const endM = (y === modelEndYear) ? modelEndMonth : 12
+            for (let m = startM; m <= endM; m++) {
+                const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                options.push({ value: `${y}-${m}`, label: `${monthNames[m-1]} ${y}`, year: y, month: m })
+            }
+        }
+    }
+    return options
+}
+
+function LookupDateControls({ group, config, onUpdateGroup }) {
+    const freq = group.frequency || 'Y'
+    const options = buildLookupDateOptions(config, freq)
+
+    const startYear = group.startYear || config.startYear
+    const startMonth = group.startMonth || config.startMonth || 1
+    const endYear = group.endYear || config.endYear
+    const endMonth = group.endMonth || config.endMonth || 12
+
+    // Build dropdown values matching the option format
+    // For CY/FY, options use month=1; actual start/endMonth may differ
+    const startValue = (freq === 'Y' || freq === 'FY')
+        ? `${startYear}-1`
+        : (freq === 'Q')
+            ? `${startYear}-${Math.floor((startMonth - 1) / 3) * 3 + 1}`
+            : `${startYear}-${startMonth}`
+    const endValue = (freq === 'Y' || freq === 'FY')
+        ? `${endYear}-1`
+        : (freq === 'Q')
+            ? `${endYear}-${Math.floor((endMonth - 1) / 3) * 3 + 1}`
+            : `${endYear}-${endMonth}`
+
+    const handleStartChange = (value) => {
+        const [y, m] = value.split('-').map(Number)
+        // For CY, start at Jan; for Q, start at first month of quarter
+        const actualStartMonth = (freq === 'Y' || freq === 'FY') ? 1 : m
+        onUpdateGroup(group.id, 'startYear', y)
+        onUpdateGroup(group.id, 'startMonth', actualStartMonth)
+        const ey = group.endYear || config.endYear
+        const em = group.endMonth || config.endMonth || 12
+        const totalMonths = (ey - y) * 12 + (em - actualStartMonth) + 1
+        onUpdateGroup(group.id, 'periods', totalMonths)
+    }
+
+    const handleEndChange = (value) => {
+        const [y, m] = value.split('-').map(Number)
+        // For CY/FY, end at December of that year; for Q, end at last month of quarter
+        let actualEndMonth = m
+        if (freq === 'Y' || freq === 'FY') actualEndMonth = 12
+        else if (freq === 'Q') actualEndMonth = m + 2
+        onUpdateGroup(group.id, 'endYear', y)
+        onUpdateGroup(group.id, 'endMonth', actualEndMonth)
+        const sy = group.startYear || config.startYear
+        const sm = group.startMonth || config.startMonth || 1
+        const totalMonths = (y - sy) * 12 + (actualEndMonth - sm) + 1
+        onUpdateGroup(group.id, 'periods', totalMonths)
+    }
+
+    return (
+        <>
+            <span className="text-xs text-slate-500">Start:</span>
+            <select
+                value={startValue}
+                onChange={(e) => handleStartChange(e.target.value)}
+                className="text-xs bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-700"
+            >
+                {options.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+            </select>
+            <span className="text-xs text-slate-500">End:</span>
+            <select
+                value={endValue}
+                onChange={(e) => handleEndChange(e.target.value)}
+                className="text-xs bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-700"
+            >
+                {options.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+            </select>
+        </>
+    )
+}
+
 export default function GroupControls({
     group,
     periods,
@@ -13,7 +123,8 @@ export default function GroupControls({
     onRemoveGroup
 }) {
     const entryMode = group.entryMode || 'values'
-    const showRange = entryMode !== 'lookup' && entryMode !== 'label'
+    const showRange = entryMode !== 'lookup' && entryMode !== 'lookup2' && entryMode !== 'label'
+    const isLookup = entryMode === 'lookup' || entryMode === 'lookup2'
     const showInterval = entryMode === 'values' || entryMode === 'series' || entryMode === 'lookup' || entryMode === 'lookup2'
     const showSelected = entryMode === 'lookup' || entryMode === 'lookup2'
 
@@ -27,7 +138,7 @@ export default function GroupControls({
     })()
 
     // Period range summary
-    const periodSummary = periods.length > 0 && entryMode !== 'lookup' && entryMode !== 'lookup2'
+    const periodSummary = periods.length > 0 && entryMode !== 'label'
         ? `${String(periods[0].month).padStart(2, '0')}/${periods[0].year} - ${String(periods[periods.length - 1].month).padStart(2, '0')}/${periods[periods.length - 1].year} (${periods.length} periods)`
         : null
 
@@ -118,11 +229,7 @@ export default function GroupControls({
                     <select
                         value={entryMode}
                         onChange={(e) => {
-                            const newMode = e.target.value
-                            onUpdateGroup(group.id, 'entryMode', newMode)
-                            if (newMode === 'lookup') {
-                                onUpdateGroup(group.id, 'linkedKeyPeriodId', 'custom')
-                            }
+                            onUpdateGroup(group.id, 'entryMode', e.target.value)
                         }}
                         className="text-xs bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-700"
                     >
@@ -137,15 +244,29 @@ export default function GroupControls({
                             <span className="text-xs text-slate-500">Interval:</span>
                             <select
                                 value={group.frequency || 'M'}
-                                onChange={(e) => onUpdateGroup(group.id, 'frequency', e.target.value)}
+                                onChange={(e) => {
+                                    onUpdateGroup(group.id, 'frequency', e.target.value)
+                                    if (isLookup) {
+                                        // Recalculate periods when frequency changes
+                                        const sy = group.startYear || config.startYear
+                                        const sm = group.startMonth || config.startMonth || 1
+                                        const ey = group.endYear || config.endYear
+                                        const em = group.endMonth || config.endMonth || 12
+                                        const totalMonths = (ey - sy) * 12 + (em - sm) + 1
+                                        onUpdateGroup(group.id, 'periods', totalMonths)
+                                    }
+                                }}
                                 className="text-xs bg-white border border-slate-200 rounded px-2 py-0.5 text-slate-700"
                             >
                                 <option value="M">Monthly</option>
                                 <option value="Q">Quarterly</option>
-                                <option value="Y">Annual</option>
+                                <option value="Y">{isLookup ? 'CY' : 'Annual'}</option>
                                 <option value="FY">Fiscal Year</option>
                             </select>
                         </>
+                    )}
+                    {isLookup && (
+                        <LookupDateControls group={group} config={config} onUpdateGroup={onUpdateGroup} />
                     )}
                     {showSelected && (
                         <label className="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer">
