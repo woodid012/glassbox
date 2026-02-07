@@ -142,10 +142,10 @@ export default function Lookup2Mode({
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
                                             </td>
-                                            <td className={`py-0 px-1 w-[52px] min-w-[52px] max-w-[52px] sticky left-[32px] z-25 ${showSelectedHighlight ? 'bg-amber-50/30' : 'bg-white'}`}>
+                                            <td className={`py-0 px-1 w-[52px] min-w-[52px] max-w-[52px] sticky left-[32px] z-25 ${showSelectedHighlight ? 'bg-amber-50/30' : 'bg-white'}`} title={optionRef}>
                                                 {groupRef && (
-                                                    <span className="text-[10px] px-1 py-0.5 rounded font-mono text-slate-400 bg-slate-50 select-all">
-                                                        {optionRef}
+                                                    <span className="text-[10px] px-1 py-0.5 rounded font-mono text-slate-400 bg-slate-50 select-all truncate block">
+                                                        {input.refName || optionRef}
                                                     </span>
                                                 )}
                                             </td>

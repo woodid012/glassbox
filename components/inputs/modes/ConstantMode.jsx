@@ -60,8 +60,8 @@ export default function ConstantMode({
                                         <Trash2 className="w-3 h-3" />
                                     </button>
                                     {ref && (
-                                        <span className="text-[10px] px-1 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 flex-shrink-0 select-all">
-                                            {ref}
+                                        <span className="text-[10px] px-1 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 flex-shrink-0 select-all" title={ref}>
+                                            {input.refName || ref}
                                         </span>
                                     )}
                                     <div className="flex-1 min-w-0">

@@ -362,6 +362,35 @@ Input references are also ID-based:
 
 **Important:** Constants use an offset of 99 because their IDs start at 100. Other inputs use their ID directly.
 
+### Named References (refName)
+
+Each input has a `refName` field — a stable, human-readable alias for its standard ref:
+
+```
+Standard ref:  S1.14              ← still works (backward compat)
+Named ref:     {OmMsa}            ← also works in formulas
+Display:       OmMsa              ← shown in UI Ref column
+```
+
+**How it works:**
+- Every input in `model-inputs.json` has a `refName` field (e.g., `"refName": "OmMsa"`)
+- The engine registers both `S1.14` and `OmMsa` pointing to the same time-series array
+- Formulas can use `{OmMsa}` syntax — resolved to `S1.14` before evaluation
+- Old `S1.14` refs keep working — no migration needed
+- Both can be mixed in the same formula: `{OmMsa} * I2 + S1.15 * F2`
+
+**Rules:**
+- `refName` is auto-generated from `name` when an input is created (PascalCase, special chars stripped)
+- Renaming the display name does NOT change `refName`
+- `refName` is like a variable name — set once, stable
+- Must be unique across all inputs
+
+**Key files:**
+- `utils/refNameResolver.js` — `buildRefNameMap()`, `resolveRefNameTokens()`, `generateRefName()`
+- `utils/serverModelEngine.js` — registers aliases in server ref map
+- `app/dashboard/hooks/useReferenceMap.js` — registers aliases in client ref map
+- `utils/calculationCore.js` — resolves `{Name}` tokens in `evaluateSingleCalc()`
+
 **When adding new calculations:**
 1. Choose a unique ID that doesn't conflict with existing IDs
 2. Use that ID in formulas (e.g., `R60 + R61`)
@@ -715,6 +744,8 @@ Key formatting functions:
 - **Bank guarantee facilities:** Not yet modelled. Infrastructure projects typically require performance bonds, environmental bonds, and other bank guarantees with annual fees (typically 1-2% of face value). These are separate from the DSRF and should be added as a new module or input group with their own fee structure and BS treatment.
 
 - **Python export: ON HOLD** — `utils/pythonGenerator.js` is frozen. Do not modify or extend.
+
+- **Excel scraper: CLI-ONLY for now** — The Excel scraper (`C:/Projects/excel_scraper`) is a separate CLI tool, NOT integrated into the Glassbox GUI. Do not build API routes or UI pages that spawn the Python scraper from the Next.js app. The workflow is: run the scraper manually from the command line, review the output, then pass results into Glassbox (e.g., via `model-inputs.json` updates). GUI integration is a future goal once the CLI process is proven end-to-end.
 
 - **Module definitions as data file:** Move module template definitions (name, description, input schema, output-to-calc mappings) from JS files (`utils/modules/*.js`) into a JSON data file (`data/model-modules.json`), consistent with `model-inputs.json` and `model-calculations.json`. Only solver functions (M1 binary search, M8 forward-looking sums) remain as JS. The Modules page becomes a template launcher that reads from this data file, creates calc groups, and links inputs — no JS module execution for fully converted modules.
 

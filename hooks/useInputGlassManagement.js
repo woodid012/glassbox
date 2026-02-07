@@ -3,6 +3,7 @@
  * Handles CRUD operations for Input Glass groups, inputs, and subgroups
  */
 import { useCallback } from 'react'
+import { generateRefName } from '@/utils/refNameResolver'
 
 export function useInputGlassManagement({
     config,
@@ -89,11 +90,15 @@ export function useInputGlassManagement({
         const newId = inputGlass.length > 0
             ? Math.max(...inputGlass.map(s => s.id), 0) + 1
             : 1
+        const name = `Input ${newId}`
+        const existingNames = new Set(inputGlass.map(i => i.refName).filter(Boolean))
+        const refName = generateRefName(name, existingNames)
         setInputGlass([...inputGlass, {
             id: newId,
             groupId: groupId,
             subgroupId: subgroupId,
-            name: `Input ${newId}`,
+            name,
+            refName,
             entryMode: 'values',
             values: {},
             formulas: {},

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { getGroupRef } from '@/utils/groupRefResolver'
+import { buildRefNameMap, registerRefNameAliases } from '@/utils/refNameResolver'
 
 /**
  * Hook to build the reference map for formula evaluation
@@ -223,22 +224,44 @@ export function useReferenceMap({
         return refs
     }, [inputGlass, inputGlassGroups, inputGlassArrays, timeline.periods])
 
-    // 6. COMBINED Reference Map - merges all focused refs
+    // 6. RefName aliases (e.g., "OmMsa" → same array as "S1.14")
+    const refNameRefs = useMemo(() => {
+        const refs = {}
+        const refNameMap = buildRefNameMap(inputGlass, inputGlassGroups)
+        const combined = { ...inputGroupRefs, ...lookupRefs }
+        for (const [refName, standardRef] of refNameMap) {
+            if (combined[standardRef]) {
+                refs[refName] = combined[standardRef]
+            }
+        }
+        return refs
+    }, [inputGlass, inputGlassGroups, inputGroupRefs, lookupRefs])
+
+    // 7. RefName map for {Name} token resolution in formulas
+    const refNameMap = useMemo(() =>
+        buildRefNameMap(inputGlass, inputGlassGroups),
+        [inputGlass, inputGlassGroups]
+    )
+
+    // 8. COMBINED Reference Map - merges all focused refs
     // Only re-merges when a sub-ref changes, not when unrelated data changes
     const referenceMap = useMemo(() => ({
         ...inputGroupRefs,
         ...flagRefs,
         ...indexationRefs,
         ...timeConstantRefs,
-        ...lookupRefs
-    }), [inputGroupRefs, flagRefs, indexationRefs, timeConstantRefs, lookupRefs])
+        ...lookupRefs,
+        ...refNameRefs
+    }), [inputGroupRefs, flagRefs, indexationRefs, timeConstantRefs, lookupRefs, refNameRefs])
 
     return {
         referenceMap,
+        refNameMap,
         inputGroupRefs,
         flagRefs,
         indexationRefs,
         timeConstantRefs,
-        lookupRefs
+        lookupRefs,
+        refNameRefs
     }
 }

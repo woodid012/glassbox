@@ -5,6 +5,7 @@
 
 import { processArrayFunctions, evaluateSafeExpression, extractShiftTargets, evaluateClusterPeriodByPeriod } from './formulaEvaluator'
 import { calculateModuleOutputs, MODULE_TEMPLATES } from './modules'
+import { resolveRefNameTokens } from './refNameResolver'
 
 // ── Regex cache (shared across all callers) ──────────────────────────
 
@@ -309,10 +310,14 @@ export function evaluateSingleCalc(formula, context, timeline) {
         return { values: new Array(timeline.periods).fill(0), error: null }
     }
 
+    // Resolve {Name} tokens (e.g., {OmMsa} → S1.14) before standard evaluation
+    const refNameMap = context._refNameMap
+    const resolvedFormula = refNameMap ? resolveRefNameTokens(formula, refNameMap) : formula
+
     try {
         const resultArray = new Array(timeline.periods).fill(0)
 
-        const formulaWithoutShift = formula.replace(/(?:SHIFT\s*\([^)]+\)|PREVSUM\s*\([^)]+\)|PREVVAL\s*\([^)]+\))/gi, '')
+        const formulaWithoutShift = resolvedFormula.replace(/(?:SHIFT\s*\([^)]+\)|PREVSUM\s*\([^)]+\)|PREVVAL\s*\([^)]+\))/gi, '')
         const refPattern = /\b([VSCTIFLRM]\d+(?:\.\d+)*(?:\.(?:Start|End|M|Q|Y))?|T\.[A-Za-z]+)\b/g
         const refsInFormula = [...new Set([...formulaWithoutShift.matchAll(refPattern)].map(m => m[1]))]
 
@@ -323,7 +328,7 @@ export function evaluateSingleCalc(formula, context, timeline) {
             }
         }
 
-        const { processedFormula, arrayFnResults } = processArrayFunctions(formula, context, timeline)
+        const { processedFormula, arrayFnResults } = processArrayFunctions(resolvedFormula, context, timeline)
 
         const sortedRefs = refsInFormula.sort((a, b) => b.length - a.length)
         const refArrays = sortedRefs.map(ref => ({ arr: context[ref], regex: getRegexCached(ref) }))

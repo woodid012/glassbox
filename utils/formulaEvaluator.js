@@ -601,7 +601,14 @@ export function extractShiftTargets(formula) {
 export function evaluateClusterPeriodByPeriod(clusterCalcs, internalOrder, context, timeline) {
     const periods = timeline.periods
     const calcMap = new Map()
-    clusterCalcs.forEach(calc => calcMap.set(`R${calc.id}`, calc))
+    // Resolve {Name} tokens in cluster formulas before processing
+    const refNameMap = context._refNameMap
+    clusterCalcs.forEach(calc => {
+        const resolved = refNameMap && calc.formula
+            ? { ...calc, formula: calc.formula.replace(/\{(\w+)\}/g, (match, name) => refNameMap.get(name) || match) }
+            : calc
+        calcMap.set(`R${calc.id}`, resolved)
+    })
 
     // Pre-allocate result arrays and add them to context so SHIFT can read them
     const results = {}

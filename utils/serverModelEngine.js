@@ -4,6 +4,7 @@
 
 import { runCalculationPass } from './calculationCore'
 import { getGroupRef } from './groupRefResolver'
+import { buildRefNameMap, registerRefNameAliases } from './refNameResolver'
 
 /**
  * Build timeline from model config
@@ -217,6 +218,13 @@ function buildReferenceMap(inputs, timeline) {
                 })
             }
         })
+
+    // --- Register refName aliases (e.g., "OmMsa" → same array as "S1.14") ---
+    const refNameMap = buildRefNameMap(inputGlass, inputGlassGroups)
+    registerRefNameAliases(refs, refNameMap)
+
+    // Store refNameMap for {Name} token resolution in formulas
+    refs._refNameMap = refNameMap
 
     return refs
 }

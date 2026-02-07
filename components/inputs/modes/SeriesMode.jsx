@@ -160,9 +160,9 @@ export default function SeriesMode({
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
                                 </td>
-                                <td className="py-0 px-1 w-16 min-w-[64px] bg-white">
-                                    <span className="text-[10px] px-1 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 select-all">
-                                        {getInputRef(input)}
+                                <td className="py-0 px-1 w-16 min-w-[64px] bg-white" title={getInputRef(input)}>
+                                    <span className="text-[10px] px-1 py-0.5 rounded font-mono text-indigo-600 bg-indigo-50 select-all truncate block">
+                                        {input.refName || getInputRef(input)}
                                     </span>
                                 </td>
                                 <td className={`py-0 px-0 w-48 min-w-[192px] bg-white ${sg.id ? 'pl-4' : ''}`}>
